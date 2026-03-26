@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FlightCalc — Mission Planning</title>
+<title>bop Aero TripCalc — Mission Planning</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 :root {
@@ -16,7 +16,7 @@
   --accent2: #00ff9d;
   --warn: #f59e0b;
   --text: #e2e8f0;
-  --text-muted: #64748b;
+  --text-muted: #b8c7d9;
   --red: #ff4444;
   --mono: 'Courier New', Courier, monospace;
   --sans: 'Segoe UI', system-ui, sans-serif;
@@ -31,7 +31,7 @@ header {
 .logo { display:flex; align-items:center; gap:10px; }
 .logo-diamond { width:22px; height:22px; border:2px solid var(--accent); transform:rotate(45deg); position:relative; flex-shrink:0; }
 .logo-diamond::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:7px; height:7px; background:var(--accent); }
-.logo-title { font-size:15px; font-weight:700; letter-spacing:4px; text-transform:uppercase; }
+.logo-title { font-size:15px; font-weight:700; letter-spacing:2px; }
 .logo-title span { color:var(--accent); }
 .hdr-right { font-family:var(--mono); font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:16px; }
 .pulse { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent2); margin-right:6px; animation:blink 2s infinite; }
@@ -209,7 +209,7 @@ select option { background:var(--surface2); }
   font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase;
   padding:4px 8px; border-radius:3px; cursor:pointer; transition:all .15s; margin-bottom:6px;
 }
-.legs-toggle:hover { border-color:var(--border-bright); color:var(--text-dim,#94a3b8); }
+.legs-toggle:hover { border-color:var(--border-bright); color:var(--text-dim,#b8c7d9); }
 .legs-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:10px; }
 .legs-table th { color:var(--text-muted); font-weight:normal; letter-spacing:1px; text-transform:uppercase; padding:3px 5px; border-bottom:1px solid var(--border); text-align:left; font-size:9px; }
 .legs-table td { padding:4px 5px; color:var(--text); border-bottom:1px solid var(--border); }
@@ -245,7 +245,7 @@ select option { background:var(--surface2); }
   html, body { overflow:hidden; }
 
   header { padding:0 14px; height:46px; }
-  .logo-title { font-size:13px; letter-spacing:3px; }
+  .logo-title { font-size:13px; letter-spacing:1px; }
   .hdr-right .pulse { display:inline-block; }
   .hdr-right span:not(:first-child) { display:none; } /* hide clock on mobile */
 
@@ -315,14 +315,14 @@ select option { background:var(--surface2); }
 }
 .layer-btn:hover, .layer-btn.active { border-color:var(--accent); color:var(--accent); }
 
-/* Mobile map interaction guard */
+/* Map interaction guard — desktop and mobile */
 .map-touch-guard {
-  display:none;
   position:absolute; inset:0; z-index:1500;
-  background:rgba(10,12,15,0.45);
-  align-items:center; justify-content:center;
+  background:rgba(10,12,15,0.35);
+  display:flex; align-items:center; justify-content:center;
   cursor:pointer; -webkit-tap-highlight-color:transparent;
 }
+.map-touch-guard.hidden { display:none; }
 .map-touch-guard-msg {
   font-family:var(--mono); font-size:11px; color:var(--text);
   letter-spacing:1.5px; text-transform:uppercase;
@@ -330,14 +330,11 @@ select option { background:var(--surface2); }
   padding:10px 18px; border-radius:4px;
   display:flex; align-items:center; gap:8px; pointer-events:none;
 }
-@media (max-width:768px) {
-  .map-touch-guard { display:flex; }
-}
 
 /* Leaflet overrides */
 .leaflet-container { background:#0d1521; }
 .leaflet-control-zoom { border:1px solid var(--border) !important; }
-.leaflet-control-zoom a { background:var(--surface) !important; color:#94a3b8 !important; border-bottom:1px solid var(--border) !important; }
+.leaflet-control-zoom a { background:var(--surface) !important; color:#b8c7d9 !important; border-bottom:1px solid var(--border) !important; }
 .leaflet-control-zoom a:hover { background:var(--surface2) !important; color:var(--accent) !important; }
 .leaflet-control-attribution { background:rgba(10,12,15,.8) !important; color:var(--text-muted) !important; font-size:9px !important; }
 .leaflet-control-attribution a { color:var(--text-muted) !important; }
@@ -350,8 +347,8 @@ select option { background:var(--surface2); }
 
 <header>
   <div class="logo">
-    <div class="logo-diamond"></div>
-    <div class="logo-title">FLIGHT<span>CALC</span></div>
+    <img src="data:image/png;base64,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" width="32" height="32" style="flex-shrink:0;mix-blend-mode:screen" alt="bop Aero logo">
+    <div class="logo-title">bop Aero <span>TripCalc</span></div>
   </div>
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
@@ -536,7 +533,7 @@ select option { background:var(--surface2); }
     <div id="map"></div>
     <!-- Mobile interaction guard — prevents accidental map interaction while scrolling -->
     <div class="map-touch-guard" id="mapTouchGuard" onclick="engageMap()">
-      <div class="map-touch-guard-msg">&#x1F4CD; Tap to interact with map</div>
+      <div class="map-touch-guard-msg" id="mapTouchMsg">&#x1F4CD; Click to interact with map</div>
     </div>
     <div class="map-badge">
       <div class="mode-dot placing" id="modeDot"></div>
@@ -1037,10 +1034,10 @@ function placeWaypointFromCoords(id, originLat, originLng) {
     if (icao) popupBody += '<span style="color:var(--accent)">' + icao + '</span><br>';
     popupBody += name;
     if (rwyFt) {
-      var rc = warn ? '#f59e0b' : '#64748b';
+      var rc = warn ? '#f59e0b' : '#b8c7d9';
       popupBody += '<br><span style="color:'+rc+'">'+(warn?'⚠ ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
     }
-    popupBody += '<br><span style="color:#64748b">'+useLat.toFixed(4)+'° / '+useLng.toFixed(4)+'°</span>';
+    popupBody += '<br><span style="color:#b8c7d9">'+useLat.toFixed(4)+'° / '+useLng.toFixed(4)+'°</span>';
     if (!airport) popupBody += '<br><span style="color:#f59e0b">⚠ No qualifying airport found nearby</span>';
 
     // For WP1, add a return button — shown/hidden dynamically when popup opens
@@ -1331,6 +1328,8 @@ var CITY_CACHE = null;
       var iCtry  = hdr.indexOf('iso_country');
       var iMuni  = hdr.indexOf('municipality');
       var iRegion= hdr.indexOf('iso_region');
+      var iSched = hdr.indexOf('scheduled_service');
+      var iLocal = hdr.indexOf('local_code');
       console.log('CSV header indices — ident:'+iIdent+' type:'+iType+' name:'+iName+' lat:'+iLat+' lng:'+iLng+' country:'+iCtry);
       var arr = [];
       for (var i = 1; i < lines.length; i++) {
@@ -1340,14 +1339,27 @@ var CITY_CACHE = null;
         if (ctry !== 'US') continue;
         var type = stripQ(cols[iType]);
         if (type !== 'small_airport' && type !== 'medium_airport' && type !== 'large_airport') continue;
+        var name = stripQ(cols[iName]);
+        var ident = stripQ(cols[iIdent]);
+        // Public-use airports always have an FAA local_code (e.g. I67, 60J, 1A5, KLUK).
+        // Private/restricted fields that aren't in the FAA public database have no local_code.
+        // Large and medium airports are always public — only filter small ones.
+        if (type === 'small_airport') {
+          var localCode = iLocal >= 0 ? stripQ(cols[iLocal]) : '';
+          if (!localCode) continue; // no FAA local code = not a public-use airport
+          var nameLower = name.toLowerCase();
+          if (/\bprivate\b|\bpvt\b/.test(nameLower)) continue; // explicitly marked private
+        }
         var lat = parseFloat(cols[iLat]);
         var lng = parseFloat(cols[iLng]);
         if (isNaN(lat) || isNaN(lng)) continue;
-        arr.push({ icao: stripQ(cols[iIdent]), name: stripQ(cols[iName]), lat: lat, lng: lng, type: type, municipality: stripQ(cols[iMuni] || '').toLowerCase(), region: stripQ(cols[iRegion] || '').toLowerCase() });
+        arr.push({ icao: ident, name: name, lat: lat, lng: lng, type: type, municipality: stripQ(cols[iMuni] || '').toLowerCase(), region: stripQ(cols[iRegion] || '').toLowerCase() });
       }
       OA_CACHE = arr;
       OA_READY = true;
       console.log('OurAirports loaded:', arr.length, 'US airports');
+      // Apply FAA public-use filter if it already loaded
+      applyFAAPublicFilter();
     })
     .catch(function(e) {
       // Keep using fallback — already initialized above
@@ -1355,6 +1367,66 @@ var CITY_CACHE = null;
       console.log('OurAirports fetch failed, using fallback:', e.message || e);
     });
 })();
+
+// FAA public-use airport identifiers — loaded from NASR APT_BASE.csv
+// FACILITY_USE_CODE = 'PU' means open to the public, 'PR' = private
+var FAA_PUBLIC_SET = null; // null = not yet loaded, Set when loaded
+
+(function loadFAAPublicSet() {
+  // Compute current NASR 28-day cycle date (cycles started 2021-01-28, every 28 days)
+  var anchor = new Date('2021-01-28');
+  var now = new Date();
+  var days = Math.floor((now - anchor) / 86400000);
+  var cycles = Math.floor(days / 28);
+  var cycleDate = new Date(anchor.getTime() + cycles * 28 * 86400000);
+  var pad = function(n){ return n < 10 ? '0' + n : '' + n; };
+  var dateStr = cycleDate.getFullYear() + '-' + pad(cycleDate.getMonth() + 1) + '-' + pad(cycleDate.getDate());
+  var url = 'https://nfdc.faa.gov/webContent/28DaySub/' + dateStr + '/CSV_Data/APT_BASE.csv';
+
+  fetch(url)
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(function(csv) {
+      var lines = csv.split('\n');
+      var hdr = lines[0].split(',').map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
+      var iLid = hdr.indexOf('LOCATION_ID');
+      var iUse = hdr.indexOf('FACILITY_USE_CODE');
+      if (iLid < 0 || iUse < 0) throw new Error('Missing columns: LOCATION_ID=' + iLid + ' FACILITY_USE_CODE=' + iUse);
+      var set = new Set();
+      for (var i = 1; i < lines.length; i++) {
+        var cols = lines[i].split(',');
+        if (cols.length < Math.max(iLid, iUse) + 1) continue;
+        var use = cols[iUse].replace(/^"|"$/g,'').trim();
+        if (use === 'PU') {
+          set.add(cols[iLid].replace(/^"|"$/g,'').trim());
+        }
+      }
+      FAA_PUBLIC_SET = set;
+      console.log('FAA public-use airports loaded:', set.size);
+      // Re-filter OA_CACHE now that we have authoritative data
+      if (OA_READY) applyFAAPublicFilter();
+    })
+    .catch(function(e) {
+      console.log('FAA public-use DB load failed:', e.message || e, '— keeping local_code filter');
+      FAA_PUBLIC_SET = new Set(); // empty set = fall back to local_code filter only
+    });
+})();
+
+function applyFAAPublicFilter() {
+  if (!FAA_PUBLIC_SET || FAA_PUBLIC_SET.size === 0) return;
+  var before = OA_CACHE.length;
+  OA_CACHE = OA_CACHE.filter(function(a) {
+    // Large and medium airports are always kept
+    if (a.type !== 'small_airport') return true;
+    // For small airports, check FAA public-use set by local code
+    // OA_CACHE ident may be KLUK (ICAO) or I67 (FAA LID) — check both
+    var lid = a.icao.replace(/^K/, ''); // strip K prefix to get FAA LID
+    return FAA_PUBLIC_SET.has(a.icao) || FAA_PUBLIC_SET.has(lid);
+  });
+  console.log('FAA filter applied: ' + before + ' → ' + OA_CACHE.length + ' airports');
+}
 
 function stripQ(s) { return (s || '').replace(/^"|"$/g, '').trim(); }
 
@@ -1495,24 +1567,39 @@ function makeSearchingIcon(color, label) {
   });
 }
 
-// ── MOBILE MAP INTERACTION GUARD ─────────────────────────────────────────────
+// ── MAP INTERACTION GUARD ─────────────────────────────────────────────────────
 window.engageMap = function() {
   var guard = document.getElementById('mapTouchGuard');
-  if (guard) guard.style.display = 'none';
+  if (guard) guard.classList.add('hidden');
   map.dragging.enable();
   map.touchZoom.enable();
   map.scrollWheelZoom.enable();
   map.doubleClickZoom.enable();
+  map.keyboard.enable();
 };
 
 function disengageMap() {
-  if (!isMobile()) return;
   var guard = document.getElementById('mapTouchGuard');
-  if (guard) guard.style.display = '';
+  if (guard) {
+    guard.classList.remove('hidden');
+    // Update message based on device
+    var msg = document.getElementById('mapTouchMsg');
+    if (msg) msg.textContent = isMobile() ? '📍 Tap to interact with map' : '📍 Click to interact with map';
+  }
   map.dragging.disable();
   map.touchZoom.disable();
   map.scrollWheelZoom.disable();
+  map.doubleClickZoom.disable();
+  map.keyboard.disable();
 }
+
+// Disengage map when user clicks anywhere outside the map panel
+document.addEventListener('click', function(e) {
+  var mapPanel = document.getElementById('mobileMapPanel');
+  if (mapPanel && !mapPanel.contains(e.target)) {
+    disengageMap();
+  }
+});
 
 // ── MOBILE TAB NAVIGATION ─────────────────────────────────────────────────────
 var MOBILE_BREAKPOINT = 768;
@@ -2015,7 +2102,7 @@ window.addFavoriteWP = function(icao) {
 
   var popupBody = '<b style="color:'+color+'">WP ' + num + '</b>&nbsp;' +
     '<span style="color:var(--accent)">' + icao + '</span><br>' + name +
-    '<br><span style="color:#64748b">' + fav.lat.toFixed(4) + '° / ' + fav.lng.toFixed(4) + '°</span>';
+    '<br><span style="color:#b8c7d9">' + fav.lat.toFixed(4) + '° / ' + fav.lng.toFixed(4) + '°</span>';
 
   if (num === 1) {
     popupBody += '<br><button id="popupReturnBtn" style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none"></button>';
@@ -2056,6 +2143,8 @@ renderFavorites();
 renderWPList();
 updateMode();
 initMobileLayout();
+// Start with map guard active on all devices
+setTimeout(disengageMap, 300); // after Leaflet finishes initializing
 </script>
 </body>
 </html>
