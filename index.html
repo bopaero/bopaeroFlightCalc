@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlightCalc — Mission Planning</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+:root {
+  --bg: #0a0c0f;
+  --surface: #111418;
+  --surface2: #161b22;
+  --border: #1f2937;
+  --border-bright: #2d3748;
+  --accent: #00d4ff;
+  --accent2: #00ff9d;
+  --warn: #f59e0b;
+  --text: #e2e8f0;
+  --text-muted: #64748b;
+  --red: #ff4444;
+  --mono: 'Courier New', Courier, monospace;
+  --sans: 'Segoe UI', system-ui, sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--sans); }
+
+header {
+  height:50px; background:var(--surface); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; padding:0 20px; flex-shrink:0;
+}
+.logo { display:flex; align-items:center; gap:10px; }
+.logo-diamond { width:22px; height:22px; border:2px solid var(--accent); transform:rotate(45deg); position:relative; flex-shrink:0; }
+.logo-diamond::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:7px; height:7px; background:var(--accent); }
+.logo-title { font-size:15px; font-weight:700; letter-spacing:4px; text-transform:uppercase; }
+.logo-title span { color:var(--accent); }
+.hdr-right { font-family:var(--mono); font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:16px; }
+.pulse { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent2); margin-right:6px; animation:blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+.layout { display:flex; height:calc(100vh - 50px); }
+
+/* SIDEBAR */
+.sidebar {
+  width:330px; flex-shrink:0; background:var(--surface);
+  border-right:1px solid var(--border); overflow-y:auto; display:flex; flex-direction:column;
+}
+.sidebar::-webkit-scrollbar { width:3px; }
+.sidebar::-webkit-scrollbar-thumb { background:var(--border-bright); }
+
+.sec { padding:14px 16px; border-bottom:1px solid var(--border); }
+.sec-title {
+  font-family:var(--mono); font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  color:var(--text-muted); margin-bottom:10px; display:flex; align-items:center; gap:6px;
+}
+.sec-title::before { content:''; width:3px; height:3px; background:var(--accent); border-radius:50%; }
+
+/* WAYPOINT LIST */
+#wp-list { display:flex; flex-direction:column; gap:5px; margin-bottom:8px; }
+
+.wp-row {
+  display:flex; align-items:flex-start; gap:7px; background:var(--surface2);
+  border:1px solid var(--border); border-radius:3px; padding:7px 9px; min-height:42px;
+  position:relative; transition: opacity .15s, border-color .15s; flex-direction:column;
+}
+.wp-row-main { display:flex; align-items:center; gap:7px; width:100%; }
+.wp-row.next-to-place { border-color:var(--accent); box-shadow:0 0 0 1px rgba(0,212,255,.1); }
+.wp-row.drag-over { border-color:var(--accent2); box-shadow:0 0 0 1px rgba(0,255,157,.2); background:rgba(0,255,157,.04); }
+.wp-row.dragging { opacity:0.35; }
+
+/* Address input area */
+.wp-addr-row {
+  display:flex; gap:5px; width:100%; margin-top:4px; padding-left:2px;
+}
+.wp-addr-input {
+  flex:1; background:var(--bg); border:1px solid var(--border-bright); color:var(--text);
+  padding:5px 7px; font-family:var(--sans); font-size:11px; border-radius:3px;
+  outline:none; transition:border-color .15s; min-width:0;
+}
+.wp-addr-input:focus { border-color:var(--accent); }
+.wp-addr-input::placeholder { color:var(--text-muted); }
+.wp-addr-btn {
+  background:none; border:1px solid var(--border-bright); color:var(--text-muted);
+  font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase;
+  padding:4px 7px; border-radius:3px; cursor:pointer; white-space:nowrap; transition:all .15s; flex-shrink:0;
+}
+.wp-addr-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* Drive distance badge */
+.wp-drive {
+  font-family:var(--mono); font-size:9px; color:var(--text-muted);
+  margin-top:3px; padding-left:2px; display:flex; align-items:center; gap:4px;
+}
+.wp-drive-val { color:var(--accent2); font-weight:bold; }
+
+.drag-handle {
+  color:var(--border-bright); cursor:grab; font-size:13px; flex-shrink:0;
+  padding:2px 2px; line-height:1; user-select:none; transition:color .15s;
+}
+.drag-handle:hover { color:var(--text-muted); }
+.drag-handle:active { cursor:grabbing; }
+
+.wp-num {
+  width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:9px; font-weight:bold; flex-shrink:0;
+  border:1px solid var(--border-bright); color:var(--text-muted); background:var(--bg);
+  padding:0; outline:none; /* reset button styles */
+}
+.wp-num.placed { border-color:var(--accent); color:var(--accent); background:rgba(0,212,255,.08); }
+
+.wp-info { flex:1; min-width:0; }
+.wp-name { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
+.wp-name.empty { color:var(--text-muted); font-style:italic; font-weight:400; font-size:11px; }
+.wp-coords { font-family:var(--mono); font-size:9px; color:var(--text-muted); margin-top:1px; }
+
+.wp-actions { display:flex; gap:3px; }
+.wp-btn { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:2px 4px; border-radius:2px; line-height:1; }
+.wp-btn:hover { color:var(--red); }
+
+/* Leg connector */
+.leg-connector {
+  display:flex; align-items:center; gap:6px; padding:2px 0 2px 14px;
+  font-family:var(--mono); font-size:9px; color:var(--text-muted);
+}
+.leg-line { width:1px; height:14px; background:var(--border-bright); margin-left:9px; flex-shrink:0; }
+.leg-dist { color:var(--accent); font-size:9px; margin-left:4px; }
+
+.add-wp-btn {
+  width:100%; background:none; border:1px dashed var(--border-bright); color:var(--text-muted);
+  font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase;
+  padding:7px; border-radius:3px; cursor:pointer; transition:all .15s; margin-top:4px;
+}
+.add-wp-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+.clear-all-btn {
+  width:100%; background:none; border:1px solid var(--border); color:var(--text-muted);
+  font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase;
+  padding:5px; border-radius:3px; cursor:pointer; transition:all .15s; margin-top:5px;
+}
+.clear-all-btn:hover { border-color:var(--red); color:var(--red); }
+
+.map-hint { font-size:11px; color:var(--text-muted); font-style:italic; margin-top:6px; }
+
+/* AIRCRAFT */
+.ac-slot { background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:10px; margin-bottom:8px; }
+.ac-slot-lbl { font-family:var(--mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; display:block; }
+.lbl-a { color:var(--accent); }
+.lbl-b { color:var(--accent2); }
+
+select, input[type=text], input[type=number] {
+  width:100%; background:var(--bg); border:1px solid var(--border-bright);
+  color:var(--text); padding:6px 8px; font-family:var(--sans); font-size:12px;
+  border-radius:3px; outline:none; transition:border-color .15s;
+  -webkit-appearance:none; appearance:none;
+}
+select:focus, input:focus { border-color:var(--accent); }
+select option { background:var(--surface2); }
+.spd-row { display:flex; gap:6px; align-items:center; margin-top:6px; }
+.spd-row input { flex:1; }
+.spd-unit { font-family:var(--mono); font-size:10px; color:var(--text-muted); white-space:nowrap; }
+.cost-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+.cost-lbl { font-family:var(--mono); font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
+.cost-input { background:var(--bg-card); border:1px solid var(--border-bright); color:var(--text); font-family:var(--mono); font-size:12px; padding:4px 6px; border-radius:4px; width:80px; text-align:right; }
+.cost-input:focus { outline:none; border-color:var(--accent2); }
+.fbo-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+.fbo-label { font-family:var(--mono); font-size:10px; color:var(--text-muted); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fbo-title { font-family:var(--mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; margin-top:2px; }
+.fav-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.fav-btn { background:var(--bg-card); border:1px solid var(--border-bright); color:var(--text); font-family:var(--mono); font-size:9px; padding:5px 6px; border-radius:4px; cursor:pointer; text-align:left; line-height:1.3; transition:border-color .15s,color .15s; }
+.fav-btn:hover { border-color:var(--accent); color:var(--accent); }
+.fav-btn .fav-icao { font-size:10px; font-weight:bold; color:var(--accent); display:block; }
+.fav-btn .fav-name { color:var(--text-muted); font-size:8px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.custom-btn {
+  width:100%; background:none; border:1px solid var(--border-bright); color:var(--text-muted);
+  font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase;
+  padding:5px 9px; border-radius:3px; cursor:pointer; margin-top:6px; transition:all .15s;
+}
+.custom-btn:hover { border-color:var(--accent); color:var(--accent); }
+.custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
+
+/* RESULTS */
+.results-wrap { padding:14px 16px; }
+.calc-btn {
+  width:100%; background:transparent; border:1px solid var(--accent); color:var(--accent);
+  font-family:var(--mono); font-size:12px; letter-spacing:3px; text-transform:uppercase;
+  padding:10px; border-radius:3px; cursor:pointer; margin-bottom:12px; transition:all .2s;
+}
+.calc-btn:hover:not(:disabled) { background:rgba(0,212,255,.07); box-shadow:0 0 16px rgba(0,212,255,.1); }
+.calc-btn:disabled { border-color:var(--border-bright); color:var(--text-muted); cursor:not-allowed; }
+.empty-msg { text-align:center; font-family:var(--mono); font-size:10px; color:var(--text-muted); letter-spacing:1px; padding:10px 0; line-height:1.8; }
+
+/* Result cards */
+.res-card { background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:12px; margin-bottom:10px; border-left-width:3px; }
+.res-card.a { border-left-color:var(--accent); }
+.res-card.b { border-left-color:var(--accent2); }
+.res-name { font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.res-card.a .res-name { color:var(--accent); }
+.res-card.b .res-name { color:var(--accent2); }
+.faster-tag { font-family:var(--mono); font-size:9px; color:var(--warn); border:1px solid var(--warn); padding:1px 4px; border-radius:2px; letter-spacing:1px; }
+
+/* Totals row */
+.totals-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px; }
+.res-item-lbl { font-family:var(--mono); font-size:9px; color:var(--text-muted); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px; }
+.res-item-val { font-family:var(--mono); font-size:16px; color:var(--text); line-height:1; }
+.res-item-val .u { font-size:10px; color:var(--text-muted); margin-left:2px; }
+
+/* Leg breakdown */
+.legs-toggle {
+  width:100%; background:none; border:1px solid var(--border); color:var(--text-muted);
+  font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase;
+  padding:4px 8px; border-radius:3px; cursor:pointer; transition:all .15s; margin-bottom:6px;
+}
+.legs-toggle:hover { border-color:var(--border-bright); color:var(--text-dim,#94a3b8); }
+.legs-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:10px; }
+.legs-table th { color:var(--text-muted); font-weight:normal; letter-spacing:1px; text-transform:uppercase; padding:3px 5px; border-bottom:1px solid var(--border); text-align:left; font-size:9px; }
+.legs-table td { padding:4px 5px; color:var(--text); border-bottom:1px solid var(--border); }
+.legs-table tr:last-child td { border-bottom:none; }
+.legs-table td.dim { color:var(--text-muted); }
+
+.delta-row { display:flex; justify-content:space-between; align-items:center; background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:6px 10px; margin-top:6px; }
+.dist-lbl { font-family:var(--mono); font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+.dist-val { font-family:var(--mono); font-size:13px; color:var(--accent); font-weight:bold; }
+
+/* MAP */
+#map { width:100%; height:100%; }
+.map-wrap { flex:1; position:relative; }
+
+.map-badge {
+  position:absolute; top:12px; right:52px; z-index:1000;
+  background:rgba(17,20,24,.92); border:1px solid var(--border); border-radius:3px;
+  padding:6px 11px; font-family:var(--mono); font-size:10px; color:var(--text-muted);
+  pointer-events:none; display:flex; align-items:center; gap:7px;
+}
+.mode-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; animation:blink 1.5s infinite; }
+.mode-dot.placing { background:#00d4ff; }
+.mode-dot.done    { background:var(--text-muted); animation:none; }
+
+.map-layer-toggle {
+  position:absolute; bottom:28px; right:10px; z-index:1000;
+  display:flex; flex-direction:column; gap:4px;
+}
+.layer-btn {
+  background:var(--surface); border:1px solid var(--border); color:var(--text-muted);
+  font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase;
+  padding:5px 8px; border-radius:3px; cursor:pointer; transition:all .15s; text-align:center;
+}
+.layer-btn:hover, .layer-btn.active { border-color:var(--accent); color:var(--accent); }
+
+/* Leaflet overrides */
+.leaflet-container { background:#0d1521; }
+.leaflet-control-zoom { border:1px solid var(--border) !important; }
+.leaflet-control-zoom a { background:var(--surface) !important; color:#94a3b8 !important; border-bottom:1px solid var(--border) !important; }
+.leaflet-control-zoom a:hover { background:var(--surface2) !important; color:var(--accent) !important; }
+.leaflet-control-attribution { background:rgba(10,12,15,.8) !important; color:var(--text-muted) !important; font-size:9px !important; }
+.leaflet-control-attribution a { color:var(--text-muted) !important; }
+.leaflet-popup-content-wrapper { background:var(--surface); border:1px solid var(--border); border-radius:4px; color:var(--text); box-shadow:0 4px 20px rgba(0,0,0,.6); font-family:var(--mono); font-size:11px; }
+.leaflet-popup-tip { background:var(--surface); }
+.leaflet-popup-content { margin:10px 14px; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-diamond"></div>
+    <div class="logo-title">FLIGHT<span>CALC</span></div>
+  </div>
+  <div class="hdr-right">
+    <span><span class="pulse"></span>SYSTEM ONLINE</span>
+    <span id="clk">--:--:-- UTC</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- WAYPOINTS -->
+    <div class="sec">
+      <div class="sec-title">Route Waypoints</div>
+
+      <!-- Cincinnati Metro Favorites -->
+      <div style="margin-bottom:8px">
+        <div class="fbo-title" style="margin-bottom:5px">&#x2605; Cincinnati Metro Airports</div>
+        <div id="favGrid"></div>
+      </div>
+      <div id="wp-list"></div>
+      <div id="returnRow" style="display:none">
+        <div class="leg-connector" id="returnLegConnector"></div>
+        <div class="wp-row" id="returnWpRow" style="opacity:0.6;border-style:dashed">
+          <div class="wp-row-main">
+            <div class="wp-num placed" id="returnBadge" style="border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08)">1</div>
+            <div class="wp-info">
+              <div class="wp-name" id="returnName">—</div>
+              <div class="wp-coords" id="returnCoords"></div>
+            </div>
+            <div class="wp-actions">
+              <button class="wp-btn" title="Remove return leg" onclick="toggleClosedRoute()">&#x2715;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="add-wp-btn" id="addWpBtn" onclick="addWaypoint()">+ Add Waypoint</button>
+      <button class="add-wp-btn" id="returnBtn" onclick="toggleClosedRoute()" style="display:none;color:var(--accent);border-color:var(--accent)">&#x21BA; Return to WP1</button>
+      <button class="clear-all-btn" onclick="clearAll()">&#x2715; Clear All</button>
+      <div class="map-hint" id="mapHint">Add a waypoint, then click the map to place it</div>
+    </div>
+
+    <!-- AIRCRAFT -->
+    <div class="sec">
+      <div class="sec-title">Aircraft</div>
+
+      <!-- Primary aircraft — always shown, defaults to SR22T -->
+      <div class="ac-slot">
+        <span class="ac-slot-lbl lbl-a">// Primary Aircraft</span>
+        <select id="selA" onchange="onSel('A')">
+          <option value="185" selected>Cirrus SR22T — 185 mph</option>
+          <option value="345">Cirrus SF50 G2 Vision Jet — 345 mph</option>
+          <option value="351">Cirrus SF50 G2+ Vision Jet — 351 mph</option>
+        </select>
+        <div class="spd-row" id="spdRowA">
+          <input type="number" id="spdA" min="1" max="9999" value="185" oninput="recalc()">
+          <span class="spd-unit">MPH</span>
+        </div>
+        <button class="custom-btn" onclick="toggleCust('A')">+ Custom Aircraft</button>
+        <div class="custom-fields" id="custA" style="display:none">
+          <input type="text" id="custNameA" placeholder="Aircraft name" oninput="recalc()">
+          <div class="spd-row">
+            <input type="number" id="custSpdA" min="1" max="9999" placeholder="Speed" oninput="recalc()">
+            <span class="spd-unit">MPH</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison aircraft — hidden until user adds it -->
+      <div id="comparisonWrap" style="display:none">
+        <div class="ac-slot">
+          <span class="ac-slot-lbl lbl-b">// Comparison Aircraft</span>
+          <select id="selB" onchange="onSel('B')">
+            <option value="">— Select aircraft —</option>
+            <option value="185">Cirrus SR22T — 185 mph</option>
+            <option value="345">Cirrus SF50 G2 Vision Jet — 345 mph</option>
+            <option value="351">Cirrus SF50 G2+ Vision Jet — 351 mph</option>
+          </select>
+          <div class="spd-row" id="spdRowB" style="display:none">
+            <input type="number" id="spdB" min="1" max="9999" placeholder="Speed" oninput="recalc()">
+            <span class="spd-unit">MPH</span>
+          </div>
+          <button class="custom-btn" onclick="toggleCust('B')">+ Custom Aircraft</button>
+          <div class="custom-fields" id="custB" style="display:none">
+            <input type="text" id="custNameB" placeholder="Aircraft name" oninput="recalc()">
+            <div class="spd-row">
+              <input type="number" id="custSpdB" min="1" max="9999" placeholder="Speed" oninput="recalc()">
+              <span class="spd-unit">MPH</span>
+            </div>
+          </div>
+        </div>
+        <button class="clear-all-btn" style="margin-top:0" onclick="removeComparison()">&#x2715; Remove Comparison</button>
+      </div>
+
+      <button class="add-wp-btn" id="addCompBtn" onclick="addComparison()" style="margin-top:6px">+ Add Comparison Aircraft</button>
+    </div>
+
+    <!-- COST INPUTS -->
+    <div class="sec">
+      <div class="sec-title">Trip Cost</div>
+      <div class="cost-row">
+        <label class="cost-lbl">Aircraft ($/hr)</label>
+        <input type="number" id="costAcPerHr" class="cost-input" value="372" min="0" oninput="recalc()">
+      </div>
+      <div class="cost-row">
+        <label class="cost-lbl">Fuel/Oil/TKS ($/hr)</label>
+        <input type="number" id="costConsumables" class="cost-input" value="110" min="0" oninput="recalc()">
+      </div>
+      <div class="cost-row">
+        <label class="cost-lbl">Pilot ($/day)</label>
+        <div style="display:flex;gap:4px;align-items:center">
+          <input type="number" id="costPilotMin" class="cost-input" value="500" min="0" step="100" oninput="recalc()" style="width:60px">
+          <span style="color:var(--text-muted);font-size:10px">–</span>
+          <input type="number" id="costPilotMax" class="cost-input" value="1500" min="0" step="100" oninput="recalc()" style="width:60px">
+        </div>
+      </div>
+      <div class="cost-row">
+        <label class="cost-lbl">Trip days</label>
+        <input type="number" id="costDays" class="cost-input" value="1" min="1" max="30" oninput="recalc()">
+      </div>
+      <div id="fboList" style="margin-top:6px"></div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results-wrap">
+      <div class="sec-title">Flight Time Results</div>
+      <button class="calc-btn" id="calcBtn" disabled onclick="recalc()">CALCULATE</button>
+      <div class="empty-msg" id="emptyMsg">ADD WAYPOINTS &amp; SELECT AIRCRAFT<br>TO COMPUTE FLIGHT TIMES</div>
+      <div id="resultsOut" style="display:none">
+
+        <div class="res-card a" id="cardA">
+          <div class="res-name" id="rNameA">—</div>
+          <div class="totals-grid">
+            <div><div class="res-item-lbl">Total Time</div><div class="res-item-val" id="rTimeA">—</div></div>
+            <div><div class="res-item-lbl">Total Distance</div><div class="res-item-val" id="rDistA">—</div></div>
+            <div><div class="res-item-lbl">Decimal Hours</div><div class="res-item-val" id="rDecA">—</div></div>
+            <div><div class="res-item-lbl">Speed</div><div class="res-item-val" id="rSpdA">—</div></div>
+          </div>
+          <button class="legs-toggle" onclick="toggleLegs('A')">&#x25BC; Leg Breakdown</button>
+          <div id="legsA" style="display:none">
+            <table class="legs-table" id="legsTableA"></table>
+          </div>
+        </div>
+
+        <div class="res-card b" id="cardB">
+          <div class="res-name" id="rNameB">—</div>
+          <div class="totals-grid">
+            <div><div class="res-item-lbl">Total Time</div><div class="res-item-val" id="rTimeB">—</div></div>
+            <div><div class="res-item-lbl">Total Distance</div><div class="res-item-val" id="rDistB">—</div></div>
+            <div><div class="res-item-lbl">Decimal Hours</div><div class="res-item-val" id="rDecB">—</div></div>
+            <div><div class="res-item-lbl">Speed</div><div class="res-item-val" id="rSpdB">—</div></div>
+          </div>
+          <button class="legs-toggle" onclick="toggleLegs('B')">&#x25BC; Leg Breakdown</button>
+          <div id="legsB" style="display:none">
+            <table class="legs-table" id="legsTableB"></table>
+          </div>
+        </div>
+
+        <div class="delta-row" id="deltaRow" style="display:none">
+          <span class="dist-lbl">Time Difference</span>
+          <span class="dist-val" id="deltaVal">—</span>
+        </div>
+
+        <!-- COST BREAKDOWN -->
+        <div class="res-card" id="costCard" style="margin-top:8px;border-color:var(--accent2)">
+          <div class="res-name" style="color:var(--accent2)">&#x24; Trip Cost Estimate</div>
+          <div class="totals-grid" id="costGrid"></div>
+          <button class="legs-toggle" onclick="toggleLegs('Cost')">&#x25BC; Cost Breakdown</button>
+          <div id="legsCost" style="display:none">
+            <table class="legs-table" id="legsTableCost"></table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MAP -->
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-badge">
+      <div class="mode-dot placing" id="modeDot"></div>
+      <span id="modeText">ADD A WAYPOINT TO BEGIN</span>
+    </div>
+    <div class="map-layer-toggle">
+      <button class="layer-btn"        id="btnDark"     onclick="setLayer('dark')">DARK</button>
+      <button class="layer-btn active"  id="btnStreet"   onclick="setLayer('street')">STREET</button>
+      <button class="layer-btn"        id="btnSatellite" onclick="setLayer('satellite')">SAT</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── TILE LAYERS ───────────────────────────────────────────────────────────────
+var TILES = {
+  dark:      { url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',      attr:'&copy; <a href="https://carto.com/">CARTO</a> &copy; OSM', maxZoom:19 },
+  street:    { url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',                  attr:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19 },
+  satellite: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr:'&copy; Esri', maxZoom:17 }
+};
+
+var map = L.map('map', { center: [37.5, -82], zoom: 6, zoomControl: true });
+var currentTile = null;
+
+function setLayer(name) {
+  if (currentTile) map.removeLayer(currentTile);
+  var t = TILES[name];
+  currentTile = L.tileLayer(t.url, { attribution: t.attr, maxZoom: t.maxZoom }).addTo(map);
+  ['Dark','Street','Satellite'].forEach(function(k) {
+    var btn = document.getElementById('btn'+k);
+    btn.classList.toggle('active', k.toLowerCase() === name);
+  });
+}
+setLayer('street');
+
+// ── WAYPOINT STATE ────────────────────────────────────────────────────────────
+// waypoints: array of { id, lat, lng, name, marker }
+var waypoints = [];
+var gcLines   = [];
+var wpIdCounter = 0;
+var placingId = null;  // id of waypoint currently awaiting map click
+var routeClosed = false; // whether last wp connects back to first
+var custAOpen = false, custBOpen = false;
+
+// Colour ramp for waypoint numbers
+var WP_COLORS = ['#00d4ff','#00ff9d','#f59e0b','#f472b6','#a78bfa','#fb923c','#34d399','#60a5fa'];
+function wpColor(idx) { return WP_COLORS[idx % WP_COLORS.length]; }
+
+// ── WAYPOINT MANAGEMENT ───────────────────────────────────────────────────────
+function addWaypoint() {
+  var id    = ++wpIdCounter;
+  var idx   = waypoints.length;
+  var entry = { id:id, idx:idx, lat:null, lng:null, name:null, marker:null };
+  waypoints.push(entry);
+  placingId = id;
+  renderWPList();
+  updateMode();
+  recalc();
+}
+
+function removeWaypoint(id) {
+  var entry = wpById(id);
+  if (entry && entry.marker) map.removeLayer(entry.marker);
+  waypoints = waypoints.filter(function(w) { return w.id !== id; });
+  waypoints.forEach(function(w, i) { w.idx = i; });
+  if (placingId === id) placingId = null;
+  drawAllLines();
+  renderWPList();
+  updateMode();
+  recalc();
+}
+
+function clearAll() {
+  waypoints.forEach(function(w) { if (w.marker) map.removeLayer(w.marker); });
+  waypoints = [];
+  wpIdCounter = 0;
+  placingId = null;
+  routeClosed = false;
+  drawAllLines();
+  renderWPList();
+  updateReturnUI();
+  updateMode();
+  recalc();
+}
+
+function wpById(id) {
+  for (var i = 0; i < waypoints.length; i++) { if (waypoints[i].id === id) return waypoints[i]; }
+  return null;
+}
+
+// ── DRAG-AND-DROP STATE ───────────────────────────────────────────────────────
+var dragSrcId = null;
+
+// ── RENDER WAYPOINT LIST ──────────────────────────────────────────────────────
+function renderWPList() {
+  var list = document.getElementById('wp-list');
+  list.innerHTML = '';
+
+  waypoints.forEach(function(wp, i) {
+    var color = wpColor(i);
+
+    // Leg distance connector
+    if (i > 0) {
+      var prev = waypoints[i-1];
+      var div = document.createElement('div');
+      div.className = 'leg-connector';
+      var legTxt = '';
+      if (prev.lat !== null && wp.lat !== null) {
+        var mi = haversineNm(prev.lat, prev.lng, wp.lat, wp.lng) * 1.15078;
+        legTxt = '<span class="leg-dist">Leg ' + i + ': ' + Math.round(mi) + ' mi</span>';
+      } else {
+        legTxt = '<span style="color:var(--border-bright)">Leg ' + i + '</span>';
+      }
+      div.innerHTML = '<div class="leg-line"></div>' + legTxt;
+      list.appendChild(div);
+    }
+
+    var row = document.createElement('div');
+    row.className = 'wp-row' + (placingId === wp.id ? ' next-to-place' : '');
+    row.setAttribute('draggable', 'true');
+    row.dataset.wpId = wp.id;
+
+    var isPlaced  = wp.lat !== null;
+    var isPending = placingId === wp.id;
+    var warn = wp.rwyFt > 0 && wpNeedsWarn(wp.rwyFt);
+
+    var subLine = '';
+    if (wp.icao) subLine += '<span style="color:var(--accent);font-family:var(--mono);font-size:10px">' + wp.icao + '</span>';
+    if (wp.rwyFt) {
+      var rwyCol = warn ? '#f59e0b' : 'var(--text-muted)';
+      subLine += (subLine ? ' &nbsp;' : '') + '<span style="color:' + rwyCol + ';font-family:var(--mono);font-size:9px">' + (warn ? '⚠ ' : '') + 'RWY ' + wp.rwyFt.toLocaleString() + 'ft</span>';
+    }
+    if (isPlaced) subLine += (subLine ? '&nbsp; ' : '') + '<span style="color:var(--text-muted);font-family:var(--mono);font-size:9px">' + wp.lat.toFixed(3) + '° / ' + wp.lng.toFixed(3) + '°</span>';
+
+    var isFirst = (i === 0);
+
+    var innerHtml =
+      '<div class="wp-row-main">' +
+        '<div class="drag-handle" title="Drag to reorder">&#x2630;</div>' +
+        '<div class="wp-num' + (isPlaced ? ' placed' : '') + '" style="' + (isPlaced ? 'border-color:'+color+';color:'+color+';background:'+color+'11' : '') + '">' + (i+1) + '</div>' +
+        '<div class="wp-info">';
+
+    if (isPlaced) {
+      // Show airport result
+      innerHtml +=
+        '<div class="wp-name">' + (wp.name || '—') + '</div>' +
+        (subLine ? '<div class="wp-coords">' + subLine + '</div>' : '');
+    } else if (isPending) {
+      // Show "click map" prompt — address input is below as the alternative
+      innerHtml += '<div class="wp-name empty">Click map &mdash; or enter address below</div>';
+    } else {
+      innerHtml += '<div class="wp-name empty">Not placed</div>';
+    }
+
+    innerHtml +=
+        '</div>' +
+        '<div class="wp-actions">' +
+          (isPlaced ? '<button class="wp-btn" title="Re-place" onclick="rePlaceWP('+wp.id+')" style="color:var(--text-muted)">&#x21BA;</button>' : '') +
+          '<button class="wp-btn" title="Remove" onclick="removeWaypoint('+wp.id+')">&#x2715;</button>' +
+        '</div>' +
+      '</div>';
+
+    // Drive distance — shown only when placed
+    if (isPlaced && wp.driveMi !== null && wp.driveMi !== undefined) {
+      innerHtml += '<div class="wp-drive">&#x1F697; <span class="wp-drive-val">' + wp.driveMi.toFixed(1) + ' mi</span>&nbsp;<span style="color:var(--text-muted)">drive to airport</span></div>';
+    }
+
+    // Address input — shown only while this waypoint is pending (disappears once placed by either method)
+    if (isPending) {
+      innerHtml +=
+        '<div class="wp-addr-row">' +
+          '<input class="wp-addr-input" id="addr-'+wp.id+'" type="text" placeholder="&#x1F50D; Or enter address here..." value="' + (wp.addrInput || '') + '" onkeydown="if(event.key===\'Enter\')geocodeAddress('+wp.id+')">' +
+          '<button class="wp-addr-btn" onclick="geocodeAddress('+wp.id+')">GO</button>' +
+        '</div>';
+    }
+
+    row.innerHTML = innerHtml;
+
+    // Drag events
+    row.addEventListener('dragstart', function(e) {
+      dragSrcId = wp.id;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', wp.id);
+    });
+    row.addEventListener('dragend', function() {
+      row.classList.remove('dragging');
+      // Clear all drag-over highlights
+      list.querySelectorAll('.wp-row').forEach(function(r){ r.classList.remove('drag-over'); });
+    });
+    row.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (dragSrcId !== wp.id) row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', function() {
+      row.classList.remove('drag-over');
+    });
+    row.addEventListener('drop', function(e) {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if (dragSrcId === null || dragSrcId === wp.id) return;
+
+      // Reorder waypoints array
+      var srcIdx  = waypoints.findIndex(function(w){ return w.id === dragSrcId; });
+      var destIdx = waypoints.findIndex(function(w){ return w.id === wp.id; });
+      if (srcIdx === -1 || destIdx === -1) return;
+
+      var moved = waypoints.splice(srcIdx, 1)[0];
+      waypoints.splice(destIdx, 0, moved);
+
+      // Re-index
+      waypoints.forEach(function(w, idx){ w.idx = idx; });
+
+      // Update marker icons to reflect new colours/numbers
+      waypoints.forEach(function(w, idx) {
+        if (w.marker && w.lat !== null) {
+          var c = wpColor(idx);
+          w.marker.setIcon(makeIcon(c, idx + 1));
+        }
+      });
+
+      dragSrcId = null;
+      drawAllLines();
+      renderWPList();
+      recalc();
+    });
+
+    list.appendChild(row);
+  });
+
+  // Update the return-to-WP1 UI
+  updateReturnUI();
+
+  // Hint
+  var hint = document.getElementById('mapHint');
+  if (waypoints.length === 0) {
+    hint.textContent = 'Click the map to add your first waypoint';
+  } else if (placingId !== null) {
+    var pidx = waypoints.findIndex(function(w){return w.id===placingId;});
+    hint.textContent = 'WP ' + (pidx+1) + ': click map \u2014 or enter address above';
+  } else {
+    var unplaced = waypoints.filter(function(w){return w.lat===null;});
+    if (unplaced.length > 0) {
+      hint.textContent = 'Click \u21BA on a waypoint to re-place it';
+    } else {
+      hint.textContent = waypoints.length >= 2 ? 'Click map to add more \u00b7 Drag \u2630 to reorder' : 'Add a second waypoint to calculate';
+    }
+  }
+}
+
+function rePlaceWP(id) {
+  var wp = wpById(id);
+  if (wp) {
+    // Clear placed state so the address/click alternatives show again
+    if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
+    wp.lat = null; wp.lng = null; wp.name = null;
+    wp.icao = null; wp.rwyFt = 0; wp.warn = false;
+    wp.driveMi = null; wp.originLat = null; wp.originLng = null;
+    wp.addrInput = '';
+    // Re-index not needed, just re-draw
+    drawAllLines();
+  }
+  placingId = id;
+  renderWPList();
+  updateMode();
+  recalc();
+}
+
+// ── ADDRESS / CITY GEOCODE ────────────────────────────────────────────────────
+window.geocodeAddress = function(id) {
+  var input = document.getElementById('addr-' + id);
+  if (!input) return;
+  var addr = input.value.trim();
+  if (!addr) return;
+
+  var wp = wpById(id);
+  if (!wp) return;
+  wp.addrInput = addr;
+
+  input.disabled = true;
+  input.value = 'Searching...';
+
+  // If no leading digit it's a city/state, not a street address
+  if (!/^\d/.test(addr)) {
+    geocodeCityFromDB(id, addr, input);
+  } else {
+    geocodeCensus(id, addr, input);
+  }
+};
+
+// Search OurAirports by municipality, then fall back to nearest by coords
+function geocodeCityFromDB(id, addr, input) {
+  var parts = addr.split(',');
+  var cityPart  = parts[0].trim().toLowerCase();
+  var statePart = parts.length > 1 ? parts[1].trim().toLowerCase() : '';
+
+  var STATE_ABBR = {
+    'alabama':'al','alaska':'ak','arizona':'az','arkansas':'ar','california':'ca',
+    'colorado':'co','connecticut':'ct','delaware':'de','florida':'fl','georgia':'ga',
+    'hawaii':'hi','idaho':'id','illinois':'il','indiana':'in','iowa':'ia','kansas':'ks',
+    'kentucky':'ky','louisiana':'la','maine':'me','maryland':'md','massachusetts':'ma',
+    'michigan':'mi','minnesota':'mn','mississippi':'ms','missouri':'mo','montana':'mt',
+    'nebraska':'ne','nevada':'nv','new hampshire':'nh','new jersey':'nj','new mexico':'nm',
+    'new york':'ny','north carolina':'nc','north dakota':'nd','ohio':'oh','oklahoma':'ok',
+    'oregon':'or','pennsylvania':'pa','rhode island':'ri','south carolina':'sc',
+    'south dakota':'sd','tennessee':'tn','texas':'tx','utah':'ut','vermont':'vt',
+    'virginia':'va','washington':'wa','west virginia':'wv','wisconsin':'wi','wyoming':'wy'
+  };
+
+  var STATE_CENTERS = {
+    'al':[32.806671,-86.791130],'ak':[61.370716,-152.404419],'az':[33.729759,-111.431221],
+    'ar':[34.969704,-92.373123],'ca':[36.116203,-119.681564],'co':[39.059811,-105.311104],
+    'ct':[41.597782,-72.755371],'de':[39.318523,-75.507141],'fl':[27.766279,-81.686783],
+    'ga':[33.040619,-83.643074],'hi':[21.094318,-157.498337],'id':[44.240459,-114.478828],
+    'il':[40.349457,-88.986137],'in':[39.849426,-86.258278],'ia':[42.011539,-93.210526],
+    'ks':[38.526600,-96.726486],'ky':[37.668140,-84.670067],'la':[31.169960,-91.867805],
+    'me':[44.693947,-69.381927],'md':[39.063946,-76.802101],'ma':[42.230171,-71.530106],
+    'mi':[43.326618,-84.536095],'mn':[45.694454,-93.900192],'ms':[32.741646,-89.678696],
+    'mo':[38.456085,-92.288368],'mt':[46.921925,-110.454353],'ne':[41.125370,-98.268082],
+    'nv':[38.313515,-117.055374],'nh':[43.452492,-71.563896],'nj':[40.298904,-74.521011],
+    'nm':[34.840515,-106.248482],'ny':[42.165726,-74.948051],'nc':[35.630066,-79.806419],
+    'nd':[47.528912,-99.784012],'oh':[40.388783,-82.764915],'ok':[35.565342,-96.928917],
+    'or':[44.572021,-122.070938],'pa':[40.590752,-77.209755],'ri':[41.680893,-71.511780],
+    'sc':[33.856892,-80.945007],'sd':[44.299782,-99.438828],'tn':[35.747845,-86.692345],
+    'tx':[31.054487,-97.563461],'ut':[40.150032,-111.862434],'vt':[44.045876,-72.710686],
+    'va':[37.769337,-78.169968],'wa':[47.400902,-121.490494],'wv':[38.491226,-80.954453],
+    'wi':[44.268543,-89.616508],'wy':[42.755966,-107.302490]
+  };
+
+  var stateAbbr = statePart.length === 2 ? statePart : (STATE_ABBR[statePart] || '');
+
+  function resolveFromCoords(lat, lng) {
+    finishCity(id, addr, input, lat, lng);
+  }
+
+  // Step 1: exact match in US cities DB (has coords for every town including Highlands, NC)
+  if (CITY_CACHE && CITY_CACHE.length > 0) {
+    for (var i = 0; i < CITY_CACHE.length; i++) {
+      var c = CITY_CACHE[i];
+      if (c.city !== cityPart) continue;
+      if (stateAbbr && c.state !== stateAbbr) continue;
+      return resolveFromCoords(c.lat, c.lng);
+    }
+  }
+
+  // Step 2: check OurAirports municipality field
+  for (var i = 0; i < OA_CACHE.length; i++) {
+    var a = OA_CACHE[i];
+    if (!a.municipality || a.municipality !== cityPart) continue;
+    if (stateAbbr && a.region.replace('us-', '') !== stateAbbr) continue;
+    return resolveFromCoords(a.lat, a.lng);
+  }
+
+  // Step 3: city DB not loaded yet or city not found — use state center
+  if (stateAbbr && STATE_CENTERS[stateAbbr]) {
+    return resolveFromCoords(STATE_CENTERS[stateAbbr][0], STATE_CENTERS[stateAbbr][1]);
+  }
+
+  // Step 4: nothing worked
+  input.disabled = false;
+  input.value = addr;
+  input.style.borderColor = 'var(--red)';
+  input.placeholder = 'Try: City, ST (e.g. Highlands, NC)';
+  setTimeout(function(){ input.style.borderColor = ''; input.placeholder = '\uD83D\uDD0D Or enter address here...'; }, 4000);
+}
+
+function nearestAirportToCoords(lat, lng) {
+  var nearest = null, nearestDist = Infinity;
+  for (var i = 0; i < OA_CACHE.length; i++) {
+    var d = haversineM(lat, lng, OA_CACHE[i].lat, OA_CACHE[i].lng);
+    if (d < nearestDist) { nearestDist = d; nearest = OA_CACHE[i]; }
+  }
+  return nearest;
+}
+
+function finishCity(id, addr, input, lat, lng) {
+  input.disabled = false;
+  input.value = addr;
+  input.style.borderColor = 'var(--accent2)';
+  setTimeout(function(){ input.style.borderColor = ''; }, 1500);
+  placeWaypointFromCoords(id, lat, lng);
+}
+
+function geocodeCensus(id, addr, input, onCoords, onFail) {
+  var cbName = '_censusGeo_' + id + '_' + Date.now();
+
+  var timeout = setTimeout(function() {
+    cleanup();
+    if (onFail) { onFail(); } else { input.disabled = false; input.value = addr; showGeoError(input, 'network'); }
+  }, 10000);
+
+  function cleanup() {
+    clearTimeout(timeout);
+    delete window[cbName];
+    var el = document.getElementById(cbName);
+    if (el) el.parentNode.removeChild(el);
+  }
+
+  window[cbName] = function(data) {
+    cleanup();
+    var matches = data.result && data.result.addressMatches;
+    if (!matches || matches.length === 0) {
+      if (onFail) { onFail(); } else { input.disabled = false; input.value = addr; showGeoError(input, 'not_found'); }
+      return;
+    }
+    var loc = matches[0].coordinates;
+    if (onCoords) {
+      onCoords(loc.y, loc.x);
+    } else {
+      input.disabled = false;
+      input.value = addr;
+      input.style.borderColor = 'var(--accent2)';
+      setTimeout(function(){ input.style.borderColor = ''; }, 1500);
+      placeWaypointFromCoords(id, loc.y, loc.x);
+    }
+  };
+
+  var script = document.createElement('script');
+  script.id = cbName;
+  script.src = 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress' +
+    '?address=' + encodeURIComponent(addr) +
+    '&benchmark=4&format=jsonp&callback=' + cbName;
+  script.onerror = function() {
+    cleanup();
+    if (onFail) { onFail(); } else { input.disabled = false; input.value = addr; showGeoError(input, 'network'); }
+  };
+  document.head.appendChild(script);
+}
+
+function showGeoError(input, type) {
+  input.style.borderColor = 'var(--red)';
+  input.placeholder = type === 'not_found'
+    ? 'Not found \u2014 include full city & state'
+    : 'Network error \u2014 check connection';
+  setTimeout(function() {
+    input.style.borderColor = '';
+    input.placeholder = '\uD83D\uDD0D Or enter address here...';
+  }, 3000);
+}
+// ── SHARED: place a waypoint from any lat/lng origin ─────────────────────────
+function placeWaypointFromCoords(id, originLat, originLng) {
+  var wp = wpById(id);
+  if (!wp) return;
+
+  placingId = id;
+  wp.originLat = originLat;
+  wp.originLng = originLng;
+  wp.driveMi   = null;
+
+  if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
+  var color = wpColor(wp.idx);
+  var num   = wp.idx + 1;
+  wp.marker = L.marker([originLat, originLng], { icon: makeSearchingIcon(color, num) })
+    .bindPopup('<span style="color:'+color+'">Searching for nearest airport...</span>')
+    .addTo(map);
+  wp.marker.openPopup();
+  updateMode('searching');
+
+  findNearestAirport(originLat, originLng, function(airport) {
+    var wp2 = wpById(id);
+    if (!wp2) return;
+    if (wp2.marker) map.removeLayer(wp2.marker);
+
+    var useLat = airport ? airport.lat : originLat;
+    var useLng = airport ? airport.lng : originLng;
+    var name   = (airport && airport.name) ? airport.name : formatCoordFallback(originLat, originLng);
+    var icao   = airport ? airport.icao : '';
+    var rwyFt  = airport ? airport.maxRwyFt : 0;
+    var warn   = rwyFt > 0 && wpNeedsWarn(rwyFt);
+
+    wp2.lat   = useLat;
+    wp2.lng   = useLng;
+    wp2.name  = name;
+    wp2.icao  = icao;
+    wp2.rwyFt = rwyFt;
+    wp2.warn  = warn;
+
+    var popupBody = '<b style="color:'+color+'">WP ' + num + '</b>&nbsp;';
+    if (icao) popupBody += '<span style="color:var(--accent)">' + icao + '</span><br>';
+    popupBody += name;
+    if (rwyFt) {
+      var rc = warn ? '#f59e0b' : '#64748b';
+      popupBody += '<br><span style="color:'+rc+'">'+(warn?'⚠ ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
+    }
+    popupBody += '<br><span style="color:#64748b">'+useLat.toFixed(4)+'° / '+useLng.toFixed(4)+'°</span>';
+    if (!airport) popupBody += '<br><span style="color:#f59e0b">⚠ No qualifying airport found nearby</span>';
+
+    // For WP1, add a return button — shown/hidden dynamically when popup opens
+    var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp2);
+    if (wpIndex === 0) {
+      popupBody += '<br><button id="popupReturnBtn" ' +
+        'style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);' +
+        'color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none">' +
+        '</button>';
+    }
+
+    wp2.marker = L.marker([useLat, useLng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
+      .bindPopup(popupBody).addTo(map);
+
+    // Wire up return button on popup open — only show if 2+ placed waypoints
+    if (wpIndex === 0) {
+      wp2.marker.on('popupopen', function() {
+        var btn = document.getElementById('popupReturnBtn');
+        if (!btn) return;
+        var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
+        if (placedNow.length >= 2) {
+          btn.style.display = '';
+          btn.textContent = routeClosed ? '\u2715 Remove return leg' : '\u21BA Return to this airport';
+          btn.onclick = function() {
+            toggleClosedRoute();
+            wp2.marker.closePopup();
+          };
+        } else {
+          btn.style.display = 'none';
+        }
+      });
+    }
+
+    wp2.marker.openPopup();
+
+    // Auto-advance placingId to next unplaced wp (for map-click flow)
+    var next = null, found = false;
+    for (var i = 0; i < waypoints.length; i++) {
+      if (waypoints[i].id === id) { found = true; continue; }
+      if (found && waypoints[i].lat === null) { next = waypoints[i].id; break; }
+    }
+    placingId = next;
+
+    // Drive distance — use straight-line as an approximation (OSRM blocked from file://)
+    var distM = haversineM(originLat, originLng, useLat, useLng);
+    if (airport && distM > 200) {
+      // Straight-line distance with a 1.3x road factor approximation
+      wp2.driveMi = (distM / 1609.344) * 1.3;
+    } else {
+      wp2.driveMi = null;
+    }
+    drawAllLines(); renderWPList(); updateMode(); recalc();
+    fitBoundsIfMultiple();
+  });
+}
+
+function fitBoundsIfMultiple() {
+  var placed = waypoints.filter(function(w){ return w.lat !== null; });
+  if (placed.length >= 2) {
+    map.fitBounds(L.latLngBounds(placed.map(function(w){ return [w.lat, w.lng]; })), { padding: [50, 50] });
+  }
+}
+
+// ── MAP CLICK ─────────────────────────────────────────────────────────────────
+map.on('click', function(e) {
+  var lat = e.latlng.lat, lng = e.latlng.lng;
+
+  // If no waypoint is pending placement, auto-create one
+  if (placingId === null) {
+    var id  = ++wpIdCounter;
+    var idx = waypoints.length;
+    waypoints.push({ id:id, idx:idx, lat:null, lng:null, name:null, marker:null });
+    placingId = id;
+    renderWPList();
+  }
+
+  var currentId = placingId;
+  placeWaypointFromCoords(currentId, lat, lng);
+});
+
+// ── AIRPORT LOOKUP ────────────────────────────────────────────────────────────
+var PAVED_SURFACES = ['paved','asphalt','concrete','tarmac','bituminous','concrete:plates','concrete:lanes'];
+
+// Per-aircraft runway thresholds (mph speed value → thresholds)
+var AC_RWY = {
+  '185': { minFt: 2500, warnFt: 3000 },   // SR22T
+  '345': { minFt: 5000, warnFt: 5000 },   // SF50 G2
+  '351': { minFt: 5000, warnFt: 5000 },   // SF50 G2+
+};
+var DEFAULT_RWY = { minFt: 2500, warnFt: 3000 };
+
+function getRwyThresholds() {
+  // Return the most restrictive minFt across all active aircraft,
+  // and collect all warnFt values so we can flag appropriately
+  var minFt = 2500;
+  var warnFt = 3000;
+  var speeds = [];
+  var spdA = document.getElementById('spdA') ? document.getElementById('spdA').value : '';
+  if (spdA) speeds.push(String(Math.round(parseFloat(spdA))));
+  if (comparisonActive) {
+    var spdB = document.getElementById('spdB') ? document.getElementById('spdB').value : '';
+    if (spdB) speeds.push(String(Math.round(parseFloat(spdB))));
+  }
+  speeds.forEach(function(spd) {
+    var t = AC_RWY[spd] || DEFAULT_RWY;
+    if (t.minFt > minFt) minFt = t.minFt;
+    if (t.warnFt > warnFt) warnFt = t.warnFt;
+  });
+  return { minFt: minFt, warnFt: warnFt };
+}
+
+// Returns the warn threshold for a specific aircraft speed
+function getWarnFtForSpeed(spd) {
+  var t = AC_RWY[String(Math.round(parseFloat(spd)))] || DEFAULT_RWY;
+  return t.warnFt;
+}
+
+// Determine if a waypoint's runway should trigger a warning given current aircraft selection
+function wpNeedsWarn(rwyFt) {
+  if (!rwyFt) return false;
+  var spdA = document.getElementById('spdA') ? parseFloat(document.getElementById('spdA').value) : 0;
+  if (spdA && rwyFt < getWarnFtForSpeed(spdA)) return true;
+  if (comparisonActive) {
+    var spdB = document.getElementById('spdB') ? parseFloat(document.getElementById('spdB').value) : 0;
+    if (spdB && rwyFt < getWarnFtForSpeed(spdB)) return true;
+  }
+  return false;
+}
+
+function findNearestAirport(lat, lng, cb) {
+  // Find nearest airport from local DB instantly — no network call needed
+  var candidate = findNearestDBEntry(lat, lng, 150000);
+  if (!candidate) { cb(null); return; }
+
+  var ap = candidate.entry;
+  var thresholds = getRwyThresholds();
+
+  // Estimate runway length from airport type — instant, no Overpass needed
+  var maxRwyFt = ap.type === 'large_airport' ? 8000 :
+                 ap.type === 'medium_airport' ? 5000 : 3000;
+
+  // If estimated runway doesn't meet minimum, try next nearest
+  if (maxRwyFt < thresholds.minFt) {
+    var next = findNextNearestDBEntry(lat, lng, candidate.dist);
+    if (next) {
+      findNearestAirport_withCandidate(next, lat, lng, thresholds, cb);
+    } else {
+      cb(null);
+    }
+    return;
+  }
+
+  cb({ lat: ap.lat, lng: ap.lng, name: ap.name, icao: ap.icao, maxRwyFt: maxRwyFt });
+}
+
+function findNearestAirport_withCandidate(candidate, lat, lng, thresholds, cb) {
+  var ap = candidate.entry;
+  var maxRwyFt = ap.type === 'large_airport' ? 8000 :
+                 ap.type === 'medium_airport' ? 5000 : 3000;
+  if (maxRwyFt < thresholds.minFt) {
+    var next = findNextNearestDBEntry(lat, lng, candidate.dist);
+    if (next) { findNearestAirport_withCandidate(next, lat, lng, thresholds, cb); }
+    else { cb(null); }
+    return;
+  }
+  cb({ lat: ap.lat, lng: ap.lng, name: ap.name, icao: ap.icao, maxRwyFt: maxRwyFt });
+}
+
+function findNearestDBEntry(lat, lng, maxDistM) {
+  var best = null, bestDist = Infinity;
+  for (var i = 0; i < OA_CACHE.length; i++) {
+    var a = OA_CACHE[i];
+    var d = haversineM(lat, lng, a.lat, a.lng);
+    if (d < bestDist) { bestDist = d; best = a; }
+  }
+  return (best && bestDist < maxDistM) ? { entry: best, dist: bestDist } : null;
+}
+
+function findNextNearestDBEntry(lat, lng, minDistM) {
+  var best = null, bestDist = Infinity;
+  for (var i = 0; i < OA_CACHE.length; i++) {
+    var a = OA_CACHE[i];
+    var d = haversineM(lat, lng, a.lat, a.lng);
+    if (d > minDistM && d < bestDist) { bestDist = d; best = a; }
+  }
+  return (best && bestDist < 150000) ? { entry: best, dist: bestDist } : null;
+}
+
+// ── AIRPORT DATABASE ──────────────────────────────────────────────────────────
+// Small fallback used if OurAirports fetch fails
+var AIRPORT_DB_FALLBACK = [
+  ['KATL','Hartsfield-Jackson Atlanta Intl',33.6367,-84.4281],
+  ['KORD',"Chicago O'Hare Intl",41.9742,-87.9073],
+  ['KLAX','Los Angeles Intl',33.9425,-118.4081],
+  ['KDFW','Dallas/Fort Worth Intl',32.8998,-97.0403],
+  ['KDEN','Denver Intl',39.8561,-104.6737],
+  ['KJFK','John F Kennedy Intl',40.6398,-73.7789],
+  ['KSFO','San Francisco Intl',37.6189,-122.375],
+  ['KLAS','Harry Reid Intl',36.084,-115.1537],
+  ['KPHX','Phoenix Sky Harbor Intl',33.4373,-112.0078],
+  ['KIAH','George Bush Intercontinental',29.9902,-95.3368],
+  ['KMIA','Miami Intl',25.7959,-80.287],
+  ['KCLT','Charlotte Douglas Intl',35.214,-80.9431],
+  ['KMCO','Orlando Intl',28.4294,-81.3089],
+  ['KBOS','Boston Logan Intl',42.3643,-71.0052],
+  ['KEWR','Newark Liberty Intl',40.6895,-74.1745],
+  ['KMSP','Minneapolis-Saint Paul Intl',44.882,-93.2218],
+  ['KSEA','Seattle-Tacoma Intl',47.4502,-122.3088],
+  ['KDTW','Detroit Metropolitan Wayne County',42.2124,-83.3534],
+  ['KPHL','Philadelphia Intl',39.8719,-75.2411],
+  ['KBWI','Baltimore/Washington Intl',39.1754,-76.6682],
+  ['KDCA','Ronald Reagan Washington National',38.8521,-77.0377],
+  ['KIAD','Washington Dulles Intl',38.9445,-77.4558],
+  ['KSLC','Salt Lake City Intl',40.7884,-111.9778],
+  ['KSTL','St Louis Lambert Intl',38.7487,-90.37],
+  ['KTPA','Tampa Intl',27.9755,-82.5332],
+  ['KMEM','Memphis Intl',35.0424,-89.9767],
+  ['KBNA','Nashville Intl',36.1245,-86.6782],
+  ['KAUS','Austin-Bergstrom Intl',30.1945,-97.6699],
+  ['KCVG','Cincinnati/Northern Kentucky Intl',39.0488,-84.6678],
+  ['KCLE','Cleveland Hopkins Intl',41.4117,-81.8498],
+  ['KPIT','Pittsburgh Intl',40.4915,-80.2329],
+  ['KRDU','Raleigh-Durham Intl',35.8776,-78.7875],
+  ['KIND','Indianapolis Intl',39.7173,-86.2944],
+  ['KCMH','John Glenn Columbus Intl',39.998,-82.8919],
+  ['KSDF','Louisville Muhammad Ali Intl',38.1744,-85.736],
+  ['KLEX','Blue Grass Airport',38.0365,-84.6059],
+];
+
+// Fetched once from OurAirports (GitHub Pages has CORS *), then cached.
+var OA_CACHE = AIRPORT_DB_FALLBACK.map(function(a){ return {icao:a[0],name:a[1],lat:a[2],lng:a[3]}; });
+var OA_READY = false;
+
+// US Cities cache — loaded from GitHub at startup for city/state geocoding
+// Format: { city, state_id, lat, lng }
+var CITY_CACHE = null;
+
+(function loadCityDB() {
+  // simplemaps free US cities CSV — MIT licensed, GitHub Pages CORS enabled
+  fetch('https://raw.githubusercontent.com/kelvins/US-Cities-Database/main/csv/us_cities.csv')
+    .then(function(r) { return r.ok ? r.text() : Promise.reject(r.status); })
+    .then(function(csv) {
+      var lines = csv.split('\n');
+      var hdr = lines[0].split(',').map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
+      var iState  = hdr.indexOf('STATE_CODE');
+      var iCity   = hdr.indexOf('CITY');
+      var iLat    = hdr.indexOf('LATITUDE');
+      var iLng    = hdr.indexOf('LONGITUDE');
+      var arr = [];
+      for (var i = 1; i < lines.length; i++) {
+        var cols = lines[i].split(',');
+        if (cols.length < 4) continue;
+        var lat = parseFloat(cols[iLat]);
+        var lng = parseFloat(cols[iLng]);
+        if (isNaN(lat) || isNaN(lng)) continue;
+        arr.push({
+          city:  cols[iCity].replace(/^"|"$/g,'').trim().toLowerCase(),
+          state: cols[iState].replace(/^"|"$/g,'').trim().toLowerCase(),
+          lat:   lat,
+          lng:   lng
+        });
+      }
+      CITY_CACHE = arr;
+      console.log('City DB loaded:', arr.length, 'US cities');
+    })
+    .catch(function(e) {
+      console.log('City DB load failed:', e);
+      CITY_CACHE = []; // empty — will fall back to state centers
+    });
+})();
+
+// Start fetching immediately on page load — replaces fallback with full dataset when done
+(function loadOurAirports() {
+  fetch('https://davidmegginson.github.io/ourairports-data/airports.csv')
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(function(csv) {
+      var lines = csv.split('\n');
+      // Strip quotes from header fields
+      var hdr = lines[0].split(',').map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
+      var iIdent = hdr.indexOf('ident');
+      var iType  = hdr.indexOf('type');
+      var iName  = hdr.indexOf('name');
+      var iLat   = hdr.indexOf('latitude_deg');
+      var iLng   = hdr.indexOf('longitude_deg');
+      var iCtry  = hdr.indexOf('iso_country');
+      var iMuni  = hdr.indexOf('municipality');
+      var iRegion= hdr.indexOf('iso_region');
+      console.log('CSV header indices — ident:'+iIdent+' type:'+iType+' name:'+iName+' lat:'+iLat+' lng:'+iLng+' country:'+iCtry);
+      var arr = [];
+      for (var i = 1; i < lines.length; i++) {
+        var cols = csvSplit(lines[i]);
+        if (!cols || cols.length < 6) continue;
+        var ctry = stripQ(cols[iCtry]);
+        if (ctry !== 'US') continue;
+        var type = stripQ(cols[iType]);
+        if (type !== 'small_airport' && type !== 'medium_airport' && type !== 'large_airport') continue;
+        var lat = parseFloat(cols[iLat]);
+        var lng = parseFloat(cols[iLng]);
+        if (isNaN(lat) || isNaN(lng)) continue;
+        arr.push({ icao: stripQ(cols[iIdent]), name: stripQ(cols[iName]), lat: lat, lng: lng, type: type, municipality: stripQ(cols[iMuni] || '').toLowerCase(), region: stripQ(cols[iRegion] || '').toLowerCase() });
+      }
+      OA_CACHE = arr;
+      OA_READY = true;
+      console.log('OurAirports loaded:', arr.length, 'US airports');
+    })
+    .catch(function(e) {
+      // Keep using fallback — already initialized above
+      OA_READY = true;
+      console.log('OurAirports fetch failed, using fallback:', e.message || e);
+    });
+})();
+
+function stripQ(s) { return (s || '').replace(/^"|"$/g, '').trim(); }
+
+function csvSplit(line) {
+  var res = [], cur = '', inQ = false;
+  for (var i = 0; i < line.length; i++) {
+    var c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { res.push(cur); cur = ''; }
+    else cur += c;
+  }
+  res.push(cur);
+  return res;
+}
+
+function lookupInDB(clusterLat, clusterLng) {
+  var best = null, bestDist = Infinity;
+  for (var i = 0; i < OA_CACHE.length; i++) {
+    var a = OA_CACHE[i];
+    var d = haversineM(clusterLat, clusterLng, a.lat, a.lng);
+    if (d < bestDist) { bestDist = d; best = a; }
+  }
+  console.log('lookupInDB: cache size=' + OA_CACHE.length + ' best=' + (best ? best.name : 'none') + ' dist=' + Math.round(bestDist) + 'm');
+  return (best && bestDist < 25000) ? best : null;
+}
+
+function formatCoordFallback(lat, lng) {
+  return lat.toFixed(3) + '\u00b0, ' + lng.toFixed(3) + '\u00b0';
+}
+
+function findBestRunwayCluster(elements, clickLat, clickLng, minRwyFt, minRwyM) {
+  // Build clusters keyed by ~1km grid squares
+  var clusters = {};
+
+  elements.forEach(function(el) {
+    if (el.type !== 'way' || !el.geometry) return;
+    var surface = (el.tags && el.tags.surface) ? el.tags.surface.toLowerCase() : '';
+    if (!isPaved(surface)) return;
+
+    var len = 0;
+    for (var i = 1; i < el.geometry.length; i++) {
+      len += haversineM(el.geometry[i-1].lat, el.geometry[i-1].lon, el.geometry[i].lat, el.geometry[i].lon);
+    }
+    if (len < minRwyM) return;
+
+    var mid  = Math.floor(el.geometry.length / 2);
+    var rLat = el.geometry[mid].lat;
+    var rLng = el.geometry[mid].lon;
+    var key  = rLat.toFixed(2) + ',' + rLng.toFixed(2);
+    var ft   = Math.round(len / 0.3048);
+
+    if (!clusters[key]) clusters[key] = { lat: rLat, lng: rLng, maxRwyFt: 0, runways: [], spread: 0 };
+    if (ft > clusters[key].maxRwyFt) clusters[key].maxRwyFt = ft;
+    clusters[key].runways.push({ lat: rLat, lng: rLng });
+  });
+
+  // Merge nearby clusters (within 8km) — handles airports whose runways span multiple grid cells
+  var keys = Object.keys(clusters);
+  var merged = [];
+  var used = {};
+
+  keys.forEach(function(k) {
+    if (used[k]) return;
+    var group = [clusters[k]];
+    used[k] = true;
+    keys.forEach(function(k2) {
+      if (used[k2] || k2 === k) return;
+      if (haversineM(clusters[k].lat, clusters[k].lng, clusters[k2].lat, clusters[k2].lng) < 8000) {
+        group.push(clusters[k2]);
+        used[k2] = true;
+      }
+    });
+    // Compute merged cluster center and max runway
+    var sumLat = 0, sumLng = 0, maxFt = 0;
+    group.forEach(function(g) { sumLat += g.lat; sumLng += g.lng; if (g.maxRwyFt > maxFt) maxFt = g.maxRwyFt; });
+    var cLat = sumLat / group.length;
+    var cLng = sumLng / group.length;
+    // Compute spread (max distance from center to any runway)
+    var spread = 0;
+    group.forEach(function(g) {
+      g.runways.forEach(function(r) {
+        var d = haversineM(cLat, cLng, r.lat, r.lng);
+        if (d > spread) spread = d;
+      });
+    });
+    if (maxFt >= minRwyFt) merged.push({ lat: cLat, lng: cLng, maxRwyFt: maxFt, spread: spread });
+  });
+
+  if (merged.length === 0) return null;
+
+  // Return the nearest merged cluster to the click point
+  var best = null, bestDist = Infinity;
+  merged.forEach(function(c) {
+    var d = haversineM(clickLat, clickLng, c.lat, c.lng);
+    if (d < bestDist) { bestDist = d; best = c; }
+  });
+  return best;
+}
+
+function isPaved(surface) {
+  if (!surface) return false;
+  for (var i = 0; i < PAVED_SURFACES.length; i++) {
+    if (surface.indexOf(PAVED_SURFACES[i]) !== -1) return true;
+  }
+  return false;
+}
+
+function haversineM(la1, lo1, la2, lo2) {
+  return haversineNm(la1, lo1, la2, lo2) * 1852;
+}
+
+// ── MARKERS ───────────────────────────────────────────────────────────────────
+function makeIcon(color, label) {
+  return L.divIcon({
+    className: '',
+    html: '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px solid '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:10px;font-weight:bold;color:'+color+';box-shadow:0 0 8px '+color+'44">'+label+'</div>',
+    iconSize: [26,26], iconAnchor: [13,13], popupAnchor: [0,-16]
+  });
+}
+
+function makeWarnIcon(color, label) {
+  // Marker with warning triangle overlay
+  return L.divIcon({
+    className: '',
+    html: '<div style="position:relative;width:26px;height:26px">' +
+          '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px solid '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:10px;font-weight:bold;color:'+color+';box-shadow:0 0 8px '+color+'44">'+label+'</div>' +
+          '<div style="position:absolute;top:-6px;right:-6px;background:#f59e0b;color:#000;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;line-height:1">!</div>' +
+          '</div>',
+    iconSize: [26,26], iconAnchor: [13,13], popupAnchor: [0,-16]
+  });
+}
+
+function makeSearchingIcon(color, label) {
+  return L.divIcon({
+    className: '',
+    html: '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px dashed '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:10px;font-weight:bold;color:'+color+';opacity:0.6;animation:spin 1s linear infinite">'+label+'</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>',
+    iconSize: [26,26], iconAnchor: [13,13], popupAnchor: [0,-16]
+  });
+}
+
+// ── GREAT CIRCLE LINES ────────────────────────────────────────────────────────
+window.toggleClosedRoute = function() {
+  routeClosed = !routeClosed;
+  drawAllLines();
+  updateReturnUI();
+  recalc();
+};
+
+function updateReturnUI() {
+  var placed = waypoints.filter(function(w){ return w.lat !== null; });
+  var canShow = placed.length >= 2;
+
+  // If we no longer have 2 placed waypoints, force routeClosed off
+  if (!canShow && routeClosed) {
+    routeClosed = false;
+    drawAllLines();
+    recalc();
+  }
+
+  var first = canShow ? placed[0] : null;
+  var last  = canShow ? placed[placed.length - 1] : null;
+  var color = wpColor(0);
+
+  // Show/hide the Return to WP1 button
+  var returnBtn = document.getElementById('returnBtn');
+  if (returnBtn) returnBtn.style.display = (canShow && !routeClosed) ? '' : 'none';
+
+  // Show/hide the return row at the bottom
+  var returnRow = document.getElementById('returnRow');
+  if (!returnRow) return;
+
+  if (routeClosed && canShow) {
+    returnRow.style.display = '';
+
+    // Leg connector
+    var closingMi = haversineNm(last.lat, last.lng, first.lat, first.lng) * 1.15078;
+    document.getElementById('returnLegConnector').innerHTML =
+      '<div class="leg-line" style="border-color:' + color + ';opacity:0.5"></div>' +
+      '<span class="leg-dist" style="color:' + color + '">Leg ' + placed.length + ': ' + Math.round(closingMi) + ' mi</span>';
+
+    // WP1 echo
+    document.getElementById('returnBadge').style.cssText =
+      'border-color:' + color + ';color:' + color + ';background:' + color + '11';
+    document.getElementById('returnName').textContent = first.name || '—';
+    var coords = '<span style="color:var(--accent);font-family:var(--mono);font-size:10px">' + (first.icao || '') + '</span>';
+    if (first.lat) coords += '&nbsp;&nbsp;<span style="color:var(--text-muted);font-family:var(--mono);font-size:9px">' +
+      first.lat.toFixed(3) + '° / ' + first.lng.toFixed(3) + '°</span>';
+    document.getElementById('returnCoords').innerHTML = coords;
+  } else {
+    returnRow.style.display = 'none';
+  }
+}
+
+function drawAllLines() {
+  gcLines.forEach(function(l){ map.removeLayer(l); });
+  gcLines = [];
+  var placed = waypoints.filter(function(w){ return w.lat !== null; });
+  for (var i = 1; i < placed.length; i++) {
+    var pts = gcPoints(placed[i-1].lat, placed[i-1].lng, placed[i].lat, placed[i].lng, 80);
+    var line = L.polyline(pts, { color:'#00d4ff', weight:4, opacity:0.9, dashArray:'12 6' }).addTo(map);
+    gcLines.push(line);
+  }
+  // Closing leg
+  if (routeClosed && placed.length >= 2) {
+    var first = placed[0], last = placed[placed.length - 1];
+    var pts = gcPoints(last.lat, last.lng, first.lat, first.lng, 80);
+    var line = L.polyline(pts, { color: wpColor(0), weight:3, opacity:0.6, dashArray:'6 8' }).addTo(map);
+    gcLines.push(line);
+  }
+}
+
+function gcPoints(la1,lo1,la2,lo2,n) {
+  var D2R=Math.PI/180, R2D=180/Math.PI, pts=[];
+  var d=haversineRad(la1*D2R,lo1*D2R,la2*D2R,lo2*D2R);
+  if(d<0.0001) return [[la1,lo1]];
+  for(var i=0;i<=n;i++){
+    var f=i/n;
+    var A=Math.sin((1-f)*d)/Math.sin(d), B=Math.sin(f*d)/Math.sin(d);
+    var x=A*Math.cos(la1*D2R)*Math.cos(lo1*D2R)+B*Math.cos(la2*D2R)*Math.cos(lo2*D2R);
+    var y=A*Math.cos(la1*D2R)*Math.sin(lo1*D2R)+B*Math.cos(la2*D2R)*Math.sin(lo2*D2R);
+    var z=A*Math.sin(la1*D2R)+B*Math.sin(la2*D2R);
+    pts.push([Math.atan2(z,Math.sqrt(x*x+y*y))*R2D, Math.atan2(y,x)*R2D]);
+  }
+  return pts;
+}
+
+// ── MATH ─────────────────────────────────────────────────────────────────────
+function haversineRad(la1,lo1,la2,lo2){
+  var dLa=la2-la1,dLo=lo2-lo1;
+  var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1)*Math.cos(la2)*Math.sin(dLo/2)*Math.sin(dLo/2);
+  return 2*Math.asin(Math.sqrt(a));
+}
+function haversineNm(la1,lo1,la2,lo2){
+  return haversineRad(la1*Math.PI/180,lo1*Math.PI/180,la2*Math.PI/180,lo2*Math.PI/180)*3440.065;
+}
+
+// ── MODE BADGE ────────────────────────────────────────────────────────────────
+function updateMode(state) {
+  var dot = document.getElementById('modeDot');
+  var txt = document.getElementById('modeText');
+  if (state === 'searching') {
+    dot.className = 'mode-dot placing';
+    txt.textContent = 'SEARCHING FOR AIRPORT...';
+  } else if (placingId !== null) {
+    dot.className = 'mode-dot placing';
+    var pidx = waypoints.findIndex(function(w){return w.id===placingId;});
+    txt.textContent = 'CLICK MAP — PLACING WP ' + (pidx+1);
+  } else if (waypoints.length === 0) {
+    dot.className = 'mode-dot done';
+    txt.textContent = 'ADD A WAYPOINT TO BEGIN';
+  } else {
+    dot.className = 'mode-dot done';
+    txt.textContent = 'ROUTE SET — READY';
+  }
+}
+
+// ── AIRCRAFT ─────────────────────────────────────────────────────────────────
+var comparisonActive = false;
+
+window.addComparison = function() {
+  comparisonActive = true;
+  document.getElementById('comparisonWrap').style.display = 'block';
+  document.getElementById('addCompBtn').style.display = 'none';
+  recalc();
+};
+
+window.removeComparison = function() {
+  comparisonActive = false;
+  document.getElementById('comparisonWrap').style.display = 'none';
+  document.getElementById('addCompBtn').style.display = 'block';
+  // Reset B state
+  custBOpen = false;
+  document.getElementById('selB').value = '';
+  document.getElementById('spdRowB').style.display = 'none';
+  document.getElementById('custB').style.display = 'none';
+  recalc();
+};
+
+window.onSel = function(s) {
+  var sel=document.getElementById('sel'+s), row=document.getElementById('spdRow'+s);
+  var spd=document.getElementById('spd'+s), cust=document.getElementById('cust'+s);
+  if(sel.value){ spd.value=sel.value; row.style.display='flex'; cust.style.display='none'; if(s==='A')custAOpen=false;else custBOpen=false; }
+  else { row.style.display='none'; }
+  recalc();
+};
+window.toggleCust = function(s) {
+  var cust=document.getElementById('cust'+s), open=cust.style.display!=='none';
+  if(open){ cust.style.display='none'; if(s==='A')custAOpen=false;else custBOpen=false; }
+  else { cust.style.display='flex'; document.getElementById('sel'+s).value=''; document.getElementById('spdRow'+s).style.display='none'; if(s==='A')custAOpen=true;else custBOpen=true; }
+  recalc();
+};
+function getAC(s) {
+  var isC=s==='A'?custAOpen:custBOpen;
+  if(isC){
+    var name=document.getElementById('custName'+s).value.trim()||('Custom '+s);
+    var spd=parseFloat(document.getElementById('custSpd'+s).value);
+    if(!spd||spd<=0)return null; return{name:name,speed:spd};
+  } else {
+    var sel=document.getElementById('sel'+s);
+    var spd2=parseFloat(document.getElementById('spd'+s).value);
+    if(!spd2||spd2<=0)return null;
+    return{name:sel.options[sel.selectedIndex].text.split(' \u2014 ')[0],speed:spd2};
+  }
+}
+
+// ── CALCULATION ───────────────────────────────────────────────────────────────
+function fmtTime(h){
+  var hrs=Math.floor(h),min=Math.round((h-hrs)*60);
+  if(min===60){hrs++;min=0;}
+  if(hrs===0)return min+'<span class="u">min</span>';
+  if(min===0)return hrs+'<span class="u">hr</span>';
+  return hrs+'<span class="u">hr</span> '+min+'<span class="u">min</span>';
+}
+function fmtPlain(h){
+  var hrs=Math.floor(h),min=Math.round((h-hrs)*60);
+  if(min===60){hrs++;min=0;}
+  if(hrs===0)return min+'min'; if(min===0)return hrs+'hr'; return hrs+'hr '+min+'min';
+}
+
+window.recalc = function() {
+  var acA = getAC('A');
+  var acB = comparisonActive ? getAC('B') : null;
+  var placed = waypoints.filter(function(w){return w.lat!==null;});
+  var ready = placed.length >= 2 && acA;
+  document.getElementById('calcBtn').disabled = !ready;
+
+  // Show/hide card B and delta based on comparison state
+  document.getElementById('cardB').style.display   = comparisonActive ? 'block' : 'none';
+  document.getElementById('deltaRow').style.display = (comparisonActive && acB) ? 'flex' : 'none';
+
+  // Refresh warn icons on map markers (don't call renderWPList to avoid recursion)
+  refreshWarnIcons();
+
+  if(!ready){
+    document.getElementById('emptyMsg').style.display='block';
+    document.getElementById('resultsOut').style.display='none';
+    return;
+  }
+
+  // Build legs in statute miles
+  var legs=[], totalMi=0;
+  for(var i=1;i<placed.length;i++){
+    var mi = haversineNm(placed[i-1].lat,placed[i-1].lng,placed[i].lat,placed[i].lng) * 1.15078;
+    legs.push({ from:placed[i-1].name, to:placed[i].name, mi:mi });
+    totalMi += mi;
+  }
+  // Closing leg
+  if (routeClosed && placed.length >= 2) {
+    var mi = haversineNm(placed[placed.length-1].lat,placed[placed.length-1].lng,placed[0].lat,placed[0].lng) * 1.15078;
+    legs.push({ from:placed[placed.length-1].name, to:placed[0].name, mi:mi });
+    totalMi += mi;
+  }
+
+  var rA={ name:acA.name, speed:acA.speed, hours:totalMi/acA.speed, mi:totalMi, legs:legs };
+
+  document.getElementById('emptyMsg').style.display='none';
+  document.getElementById('resultsOut').style.display='block';
+
+  var fillCard = function(id, r, other){
+    var faster = other && r.hours < other.hours;
+    document.getElementById('rName'+id).innerHTML=r.name+(faster?' <span class="faster-tag">FASTER</span>':'');
+    document.getElementById('rTime'+id).innerHTML=fmtTime(r.hours);
+    document.getElementById('rDist'+id).innerHTML=Math.round(r.mi)+'<span class="u">mi</span>';
+    document.getElementById('rDec'+id).innerHTML=r.hours.toFixed(2)+'<span class="u">hr</span>';
+    document.getElementById('rSpd'+id).innerHTML=r.speed+'<span class="u">mph</span>';
+    var tbl=document.getElementById('legsTable'+id);
+    var rows='<tr><th>#</th><th>From</th><th>To</th><th>Dist</th><th>Time</th></tr>';
+    r.legs.forEach(function(leg,li){
+      var legHrs=leg.mi/r.speed;
+      rows+='<tr><td class="dim">'+(li+1)+'</td><td>'+truncate(leg.from,14)+'</td><td>'+truncate(leg.to,14)+'</td><td>'+Math.round(leg.mi)+'<span style="color:var(--text-muted)"> mi</span></td><td>'+fmtPlain(legHrs)+'</td></tr>';
+    });
+    tbl.innerHTML=rows;
+  }
+
+  fillCard('A', rA, null);
+
+  if(comparisonActive && acB){
+    var rB={ name:acB.name, speed:acB.speed, hours:totalMi/acB.speed, mi:totalMi, legs:legs };
+    fillCard('A', rA, rB);
+    fillCard('B', rB, rA);
+    var delta=Math.abs(rA.hours-rB.hours);
+    if(delta>0.01){
+      document.getElementById('deltaVal').textContent=fmtPlain(delta);
+      document.getElementById('deltaRow').style.display='flex';
+    } else {
+      document.getElementById('deltaRow').style.display='none';
+    }
+  }
+
+  // ── COST CALCULATION ─────────────────────────────────────────────────────────
+  renderFBOInputs(placed);
+
+  var acPerHr       = parseFloat(document.getElementById('costAcPerHr').value) || 0;
+  var consumPerHr   = parseFloat(document.getElementById('costConsumables').value) || 0;
+  var pilotMin      = parseFloat(document.getElementById('costPilotMin').value) || 0;
+  var pilotMax      = parseFloat(document.getElementById('costPilotMax').value) || 0;
+  var days          = parseFloat(document.getElementById('costDays').value) || 1;
+
+  var acCost        = acPerHr * rA.hours;
+  var consumCost    = consumPerHr * rA.hours;
+  var pilotLow      = pilotMin * days;
+  var pilotHigh     = pilotMax * days;
+
+  // Sum FBO fees
+  var fboTotal = 0;
+  placed.forEach(function(wp, idx) {
+    var inp = document.getElementById('fbo-' + wp.id);
+    if (inp) fboTotal += parseFloat(inp.value) || 0;
+  });
+
+  var totalLow  = acCost + consumCost + pilotLow  + fboTotal;
+  var totalHigh = acCost + consumCost + pilotHigh + fboTotal;
+
+  function fmt$(n){ return '$' + Math.round(n).toLocaleString(); }
+  function fmtRange(lo, hi){ return lo === hi ? fmt$(lo) : fmt$(lo) + ' – ' + fmt$(hi); }
+
+  var grid = document.getElementById('costGrid');
+  grid.innerHTML =
+    '<div><div class="res-item-lbl">Aircraft</div><div class="res-item-val" style="font-size:14px">' + fmt$(acCost) + '</div></div>' +
+    '<div><div class="res-item-lbl">Fuel/Oil/TKS</div><div class="res-item-val" style="font-size:14px">' + fmt$(consumCost) + '</div></div>' +
+    '<div><div class="res-item-lbl">Pilot (' + days + 'd)</div><div class="res-item-val" style="font-size:14px">' + fmtRange(pilotLow, pilotHigh) + '</div></div>' +
+    '<div><div class="res-item-lbl">FBO Fees</div><div class="res-item-val" style="font-size:14px">' + fmt$(fboTotal) + '</div></div>' +
+    '<div><div class="res-item-lbl">Total</div><div class="res-item-val" style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</div></div>';
+
+  // Cost breakdown table
+  var tbl = document.getElementById('legsTableCost');
+  var rows = '<tr><th>Item</th><th>Detail</th><th>Cost</th></tr>';
+  rows += '<tr><td>Aircraft</td><td>' + rA.hours.toFixed(2) + ' hr × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
+  rows += '<tr><td>Fuel/Oil/TKS</td><td>' + rA.hours.toFixed(2) + ' hr × $' + consumPerHr + '/hr</td><td>' + fmt$(consumCost) + '</td></tr>';
+  rows += '<tr><td>Pilot</td><td>' + days + ' day' + (days>1?'s':'') + ' × $' + pilotMin + '–$' + pilotMax + '/day</td><td>' + fmtRange(pilotLow, pilotHigh) + '</td></tr>';
+  placed.forEach(function(wp) {
+    var inp = document.getElementById('fbo-' + wp.id);
+    var fee = inp ? (parseFloat(inp.value) || 0) : 0;
+    if (fee > 0) rows += '<tr><td>FBO</td><td>' + truncate(wp.name, 18) + '</td><td>' + fmt$(fee) + '</td></tr>';
+  });
+  if (fboTotal === 0) rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:10px">No FBO fees entered</td></tr>';
+  rows += '<tr style="font-weight:bold;border-top:1px solid var(--border-bright)"><td colspan="2">Total</td><td style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</td></tr>';
+  tbl.innerHTML = rows;
+};
+
+function renderFBOInputs(placed) {
+  var container = document.getElementById('fboList');
+  if (!container) return;
+
+  // Preserve existing values by id
+  var saved = {};
+  placed.forEach(function(wp) {
+    var inp = document.getElementById('fbo-' + wp.id);
+    if (inp) saved[wp.id] = inp.value;
+  });
+
+  if (placed.length === 0) { container.innerHTML = ''; return; }
+
+  var html = '<div class="fbo-title">FBO / Airport Fees <span style="color:var(--text-muted);font-weight:normal">(enter manually)</span></div>';
+  placed.forEach(function(wp, idx) {
+    var val = saved[wp.id] !== undefined ? saved[wp.id] : '';
+    var icao = wp.icao || '';
+    var links = '';
+    if (icao) {
+      links = ' <a href="https://www.airnav.com/airport/' + icao + '" target="_blank" style="color:var(--text-muted);font-size:9px;text-decoration:none;margin-right:3px" title="AirNav fees">↗ AirNav</a>' +
+              '<a href="https://webapp.aopa.org/destinations/airports/' + icao + '/details" target="_blank" style="color:var(--text-muted);font-size:9px;text-decoration:none" title="AOPA Airport Directory">↗ AOPA</a>';
+    }
+    html += '<div class="fbo-row">' +
+      '<span class="fbo-label" style="color:' + wpColor(idx) + '">' + truncate(wp.name || wp.icao || ('WP'+(idx+1)), 18) + links + '</span>' +
+      '<span style="color:var(--text-muted);font-size:11px;margin-right:2px">$</span>' +
+      '<input type="number" id="fbo-' + wp.id + '" class="cost-input" style="width:70px" min="0" placeholder="0" value="' + val + '" oninput="recalc()">' +
+    '</div>';
+  });
+  html += '<div style="color:var(--text-muted);font-size:9px;margin-top:4px;line-height:1.5">FBO fees vary by operator. Use ↗ AirNav<br>or ↗ AOPA links above to look up fees,<br>then enter them manually.</div>';
+  container.innerHTML = html;
+}
+
+function refreshWarnIcons() {
+  waypoints.forEach(function(w, idx) {
+    if (w.marker && w.lat !== null) {
+      var c    = wpColor(idx);
+      var warn = w.rwyFt > 0 && wpNeedsWarn(w.rwyFt);
+      w.warn   = warn;
+      w.marker.setIcon(warn ? makeWarnIcon(c, idx+1) : makeIcon(c, idx+1));
+    }
+  });
+}
+
+window.toggleLegs = function(id) {
+  var el=document.getElementById('legs'+id);
+  var btn=el.previousElementSibling;
+  var open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  btn.innerHTML=(open?'&#x25BC;':'&#x25B2;')+' Leg Breakdown';
+};
+
+function truncate(str,n){ return str&&str.length>n?str.substring(0,n-1)+'\u2026':str||'—'; }
+
+// ── UTC CLOCK ─────────────────────────────────────────────────────────────────
+function tick(){
+  var n=new Date();
+  document.getElementById('clk').textContent=
+    ('0'+n.getUTCHours()).slice(-2)+':'+('0'+n.getUTCMinutes()).slice(-2)+':'+('0'+n.getUTCSeconds()).slice(-2)+' UTC';
+}
+setInterval(tick,1000); tick();
+
+// ── CINCINNATI METRO FAVORITES ────────────────────────────────────────────────
+var CIN_FAVORITES = [
+  { icao:'KCVG', name:'Cincinnati/NKY Intl',   lat:39.0488,  lng:-84.6678 },
+  { icao:'KLUK', name:'Lunken Field',           lat:39.1033,  lng:-84.4186 },
+  { icao:'KHAO', name:'Hamilton Municipal',     lat:39.3638,  lng:-84.5220 },
+  { icao:'KI67', name:'Cincinnati West',        lat:39.2589,  lng:-84.7743 },
+  { icao:'KI69', name:'Clermont County',        lat:39.0757,  lng:-84.0855 },
+  { icao:'KFZY', name:'Fulton County',          lat:39.3513,  lng:-84.5278 },
+  { icao:'KDAY', name:'Dayton Intl',            lat:39.9024,  lng:-84.2194 },
+  { icao:'KMGY', name:'Dayton Wright Brothers', lat:39.5891,  lng:-84.2243 },
+];
+
+function renderFavorites() {
+  var grid = document.getElementById('favGrid');
+  if (!grid) return;
+  var html = '<div class="fav-grid">';
+  CIN_FAVORITES.forEach(function(fav) {
+    html += '<button class="fav-btn" onclick="addFavoriteWP(\'' + fav.icao + '\')" title="Add ' + fav.name + '">' +
+      '<span class="fav-icao">' + fav.icao + '</span>' +
+      '<span class="fav-name">' + fav.name + '</span>' +
+    '</button>';
+  });
+  html += '</div>';
+  grid.innerHTML = html;
+}
+
+window.addFavoriteWP = function(icao) {
+  var fav = CIN_FAVORITES.find(function(f){ return f.icao === icao; });
+  if (!fav) return;
+
+  // Create a new waypoint pre-placed at the favorite's coordinates
+  var id  = ++wpIdCounter;
+  var idx = waypoints.length;
+  waypoints.push({ id:id, idx:idx, lat:null, lng:null, name:null, marker:null });
+  placingId = id;
+  renderWPList();
+
+  // Place it directly — skip the searching animation since we know the airport
+  var wp = wpById(id);
+  if (!wp) return;
+
+  wp.originLat = fav.lat;
+  wp.originLng = fav.lng;
+  wp.driveMi   = null;
+
+  // Look up full details from OA_CACHE if available
+  var info = null;
+  for (var i = 0; i < OA_CACHE.length; i++) {
+    if (OA_CACHE[i].icao === icao) { info = OA_CACHE[i]; break; }
+  }
+
+  var color = wpColor(idx);
+  var num   = idx + 1;
+  var name  = info ? info.name : fav.name;
+  var rwyFt = info ? (info.type === 'large_airport' ? 8000 : info.type === 'medium_airport' ? 5000 : 3000) : 3000;
+  var warn  = wpNeedsWarn(rwyFt);
+
+  wp.lat   = fav.lat;
+  wp.lng   = fav.lng;
+  wp.name  = name;
+  wp.icao  = icao;
+  wp.rwyFt = rwyFt;
+  wp.warn  = warn;
+
+  var popupBody = '<b style="color:'+color+'">WP ' + num + '</b>&nbsp;' +
+    '<span style="color:var(--accent)">' + icao + '</span><br>' + name +
+    '<br><span style="color:#64748b">' + fav.lat.toFixed(4) + '° / ' + fav.lng.toFixed(4) + '°</span>';
+
+  if (num === 1) {
+    popupBody += '<br><button id="popupReturnBtn" style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none"></button>';
+  }
+
+  wp.marker = L.marker([fav.lat, fav.lng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
+    .bindPopup(popupBody).addTo(map);
+
+  if (num === 1) {
+    wp.marker.on('popupopen', function() {
+      var btn = document.getElementById('popupReturnBtn');
+      if (!btn) return;
+      var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
+      if (placedNow.length >= 2) {
+        btn.style.display = '';
+        btn.textContent = routeClosed ? '\u2715 Remove return leg' : '\u21BA Return to this airport';
+        btn.onclick = function() { toggleClosedRoute(); wp.marker.closePopup(); };
+      } else {
+        btn.style.display = 'none';
+      }
+    });
+  }
+
+  // Auto-advance to next unplaced waypoint
+  var next = null, found = false;
+  for (var i = 0; i < waypoints.length; i++) {
+    if (waypoints[i].id === id) { found = true; continue; }
+    if (found && waypoints[i].lat === null) { next = waypoints[i].id; break; }
+  }
+  placingId = next;
+
+  drawAllLines(); renderWPList(); updateMode(); recalc();
+  fitBoundsIfMultiple();
+};
+
+// Init
+renderFavorites();
+renderWPList();
+updateMode();
+</script>
+</body>
+</html>
