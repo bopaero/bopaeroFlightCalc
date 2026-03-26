@@ -118,11 +118,14 @@ header {
 
 /* Leg connector */
 .leg-connector {
-  display:flex; align-items:center; gap:6px; padding:2px 0 2px 14px;
-  font-family:var(--mono); font-size:9px; color:var(--text-muted);
+  display:flex; align-items:flex-start; gap:6px; padding:2px 0 2px 14px;
+  font-family:var(--mono); font-size:9px; color:var(--text-muted); flex-wrap:wrap;
 }
-.leg-line { width:1px; height:14px; background:var(--border-bright); margin-left:9px; flex-shrink:0; }
+.leg-line { width:1px; height:14px; background:var(--border-bright); margin-left:9px; flex-shrink:0; margin-top:1px; }
 .leg-dist { color:var(--accent); font-size:9px; margin-left:4px; }
+.leg-details { display:flex; gap:8px; width:100%; padding-left:20px; font-family:var(--mono); font-size:9px; }
+.leg-time { color:var(--accent2); }
+.leg-fuel { color:var(--warn); }
 
 .add-wp-btn {
   width:100%; background:none; border:1px dashed var(--border-bright); color:var(--text-muted);
@@ -408,12 +411,20 @@ select option { background:var(--surface2); }
           <input type="number" id="spdA" min="1" max="9999" value="185" oninput="recalc()">
           <span class="spd-unit">MPH</span>
         </div>
+        <div class="spd-row" id="gphRowA">
+          <input type="number" id="gphA" min="0" max="9999" value="18" step="0.1" oninput="recalc()">
+          <span class="spd-unit">GPH</span>
+        </div>
         <button class="custom-btn" onclick="toggleCust('A')">+ Custom Aircraft</button>
         <div class="custom-fields" id="custA" style="display:none">
           <input type="text" id="custNameA" placeholder="Aircraft name" oninput="recalc()">
           <div class="spd-row">
             <input type="number" id="custSpdA" min="1" max="9999" placeholder="Speed" oninput="recalc()">
             <span class="spd-unit">MPH</span>
+          </div>
+          <div class="spd-row">
+            <input type="number" id="custGphA" min="0" max="9999" placeholder="Fuel burn" step="0.1" oninput="recalc()">
+            <span class="spd-unit">GPH</span>
           </div>
         </div>
       </div>
@@ -432,12 +443,20 @@ select option { background:var(--surface2); }
             <input type="number" id="spdB" min="1" max="9999" placeholder="Speed" oninput="recalc()">
             <span class="spd-unit">MPH</span>
           </div>
+          <div class="spd-row" id="gphRowB" style="display:none">
+            <input type="number" id="gphB" min="0" max="9999" placeholder="Fuel burn" step="0.1" oninput="recalc()">
+            <span class="spd-unit">GPH</span>
+          </div>
           <button class="custom-btn" onclick="toggleCust('B')">+ Custom Aircraft</button>
           <div class="custom-fields" id="custB" style="display:none">
             <input type="text" id="custNameB" placeholder="Aircraft name" oninput="recalc()">
             <div class="spd-row">
               <input type="number" id="custSpdB" min="1" max="9999" placeholder="Speed" oninput="recalc()">
               <span class="spd-unit">MPH</span>
+            </div>
+            <div class="spd-row">
+              <input type="number" id="custGphB" min="0" max="9999" placeholder="Fuel burn" step="0.1" oninput="recalc()">
+              <span class="spd-unit">GPH</span>
             </div>
           </div>
         </div>
@@ -487,6 +506,7 @@ select option { background:var(--surface2); }
             <div><div class="res-item-lbl">Total Distance</div><div class="res-item-val" id="rDistA">—</div></div>
             <div><div class="res-item-lbl">Decimal Hours</div><div class="res-item-val" id="rDecA">—</div></div>
             <div><div class="res-item-lbl">Speed</div><div class="res-item-val" id="rSpdA">—</div></div>
+            <div id="rFuelWrapA" style="display:none"><div class="res-item-lbl">Total Fuel</div><div class="res-item-val" id="rFuelA">—</div></div>
           </div>
           <button class="legs-toggle" onclick="toggleLegs('A')">&#x25BC; Leg Breakdown</button>
           <div id="legsA" style="display:none">
@@ -501,6 +521,7 @@ select option { background:var(--surface2); }
             <div><div class="res-item-lbl">Total Distance</div><div class="res-item-val" id="rDistB">—</div></div>
             <div><div class="res-item-lbl">Decimal Hours</div><div class="res-item-val" id="rDecB">—</div></div>
             <div><div class="res-item-lbl">Speed</div><div class="res-item-val" id="rSpdB">—</div></div>
+            <div id="rFuelWrapB" style="display:none"><div class="res-item-lbl">Total Fuel</div><div class="res-item-val" id="rFuelB">—</div></div>
           </div>
           <button class="legs-toggle" onclick="toggleLegs('B')">&#x25BC; Leg Breakdown</button>
           <div id="legsB" style="display:none">
@@ -662,6 +683,16 @@ function renderWPList() {
       if (prev.lat !== null && wp.lat !== null) {
         var mi = haversineNm(prev.lat, prev.lng, wp.lat, wp.lng) * 1.15078;
         legTxt = '<span class="leg-dist">Leg ' + i + ': ' + Math.round(mi) + ' mi</span>';
+        var acA = getAC('A');
+        if (acA && acA.speed > 0) {
+          var legHrs = mi / acA.speed;
+          legTxt += '<div class="leg-details">';
+          legTxt += '<span class="leg-time">' + fmtPlain(legHrs) + '</span>';
+          if (acA.gph > 0) {
+            legTxt += '<span class="leg-fuel">' + (legHrs * acA.gph).toFixed(1) + ' gal</span>';
+          }
+          legTxt += '</div>';
+        }
       } else {
         legTxt = '<span style="color:var(--border-bright)">Leg ' + i + '</span>';
       }
@@ -1120,6 +1151,13 @@ map.on('click', function(e) {
 
 // ── AIRPORT LOOKUP ────────────────────────────────────────────────────────────
 var PAVED_SURFACES = ['paved','asphalt','concrete','tarmac','bituminous','concrete:plates','concrete:lanes'];
+
+// Per-aircraft GPH lookup (mph speed value → fuel burn in GPH)
+var acGph = {
+  '185': 18,    // SR22T
+  '345': 59,    // SF50 G2
+  '351': 59     // SF50 G2+
+};
 
 // Per-aircraft runway thresholds (mph speed value → thresholds)
 var AC_RWY = {
@@ -1711,9 +1749,20 @@ function updateReturnUI() {
 
     // Leg connector
     var closingMi = haversineNm(last.lat, last.lng, first.lat, first.lng) * 1.15078;
-    document.getElementById('returnLegConnector').innerHTML =
+    var returnLegHtml =
       '<div class="leg-line" style="border-color:' + color + ';opacity:0.5"></div>' +
       '<span class="leg-dist" style="color:' + color + '">Leg ' + placed.length + ': ' + Math.round(closingMi) + ' mi</span>';
+    var acA = getAC('A');
+    if (acA && acA.speed > 0) {
+      var retHrs = closingMi / acA.speed;
+      returnLegHtml += '<div class="leg-details">';
+      returnLegHtml += '<span class="leg-time">' + fmtPlain(retHrs) + '</span>';
+      if (acA.gph > 0) {
+        returnLegHtml += '<span class="leg-fuel">' + (retHrs * acA.gph).toFixed(1) + ' gal</span>';
+      }
+      returnLegHtml += '</div>';
+    }
+    document.getElementById('returnLegConnector').innerHTML = returnLegHtml;
 
     // WP1 echo
     document.getElementById('returnBadge').style.cssText =
@@ -1809,6 +1858,7 @@ window.removeComparison = function() {
   custBOpen = false;
   document.getElementById('selB').value = '';
   document.getElementById('spdRowB').style.display = 'none';
+  document.getElementById('gphRowB').style.display = 'none';
   document.getElementById('custB').style.display = 'none';
   recalc();
 };
@@ -1816,14 +1866,16 @@ window.removeComparison = function() {
 window.onSel = function(s) {
   var sel=document.getElementById('sel'+s), row=document.getElementById('spdRow'+s);
   var spd=document.getElementById('spd'+s), cust=document.getElementById('cust'+s);
-  if(sel.value){ spd.value=sel.value; row.style.display='flex'; cust.style.display='none'; if(s==='A')custAOpen=false;else custBOpen=false; }
-  else { row.style.display='none'; }
+  var gphRow=document.getElementById('gphRow'+s), gphInp=document.getElementById('gph'+s);
+  if(sel.value){ spd.value=sel.value; row.style.display='flex'; cust.style.display='none'; if(s==='A')custAOpen=false;else custBOpen=false;
+    if(gphInp){ gphInp.value=acGph[sel.value]||''; } if(gphRow) gphRow.style.display='flex';
+  } else { row.style.display='none'; if(gphRow) gphRow.style.display='none'; }
   recalc();
 };
 window.toggleCust = function(s) {
   var cust=document.getElementById('cust'+s), open=cust.style.display!=='none';
   if(open){ cust.style.display='none'; if(s==='A')custAOpen=false;else custBOpen=false; }
-  else { cust.style.display='flex'; document.getElementById('sel'+s).value=''; document.getElementById('spdRow'+s).style.display='none'; if(s==='A')custAOpen=true;else custBOpen=true; }
+  else { cust.style.display='flex'; document.getElementById('sel'+s).value=''; document.getElementById('spdRow'+s).style.display='none'; document.getElementById('gphRow'+s).style.display='none'; if(s==='A')custAOpen=true;else custBOpen=true; }
   recalc();
 };
 function getAC(s) {
@@ -1831,12 +1883,14 @@ function getAC(s) {
   if(isC){
     var name=document.getElementById('custName'+s).value.trim()||('Custom '+s);
     var spd=parseFloat(document.getElementById('custSpd'+s).value);
-    if(!spd||spd<=0)return null; return{name:name,speed:spd};
+    var gph=parseFloat(document.getElementById('custGph'+s).value)||0;
+    if(!spd||spd<=0)return null; return{name:name,speed:spd,gph:gph};
   } else {
     var sel=document.getElementById('sel'+s);
     var spd2=parseFloat(document.getElementById('spd'+s).value);
+    var gph2=parseFloat(document.getElementById('gph'+s).value)||0;
     if(!spd2||spd2<=0)return null;
-    return{name:sel.options[sel.selectedIndex].text.split(' \u2014 ')[0],speed:spd2};
+    return{name:sel.options[sel.selectedIndex].text.split(' \u2014 ')[0],speed:spd2,gph:gph2};
   }
 }
 
@@ -1888,7 +1942,7 @@ window.recalc = function() {
     totalMi += mi;
   }
 
-  var rA={ name:acA.name, speed:acA.speed, hours:totalMi/acA.speed, mi:totalMi, legs:legs };
+  var rA={ name:acA.name, speed:acA.speed, gph:acA.gph, hours:totalMi/acA.speed, mi:totalMi, legs:legs };
 
   document.getElementById('emptyMsg').style.display='none';
   document.getElementById('resultsOut').style.display='block';
@@ -1900,11 +1954,20 @@ window.recalc = function() {
     document.getElementById('rDist'+id).innerHTML=Math.round(r.mi)+'<span class="u">mi</span>';
     document.getElementById('rDec'+id).innerHTML=r.hours.toFixed(2)+'<span class="u">hr</span>';
     document.getElementById('rSpd'+id).innerHTML=r.speed+'<span class="u">mph</span>';
+    if(r.gph>0){
+      document.getElementById('rFuelWrap'+id).style.display='';
+      document.getElementById('rFuel'+id).innerHTML=(r.hours*r.gph).toFixed(1)+'<span class="u">gal</span>';
+    } else {
+      document.getElementById('rFuelWrap'+id).style.display='none';
+    }
     var tbl=document.getElementById('legsTable'+id);
-    var rows='<tr><th>#</th><th>From</th><th>To</th><th>Dist</th><th>Time</th></tr>';
+    var hasFuel = r.gph > 0;
+    var rows='<tr><th>#</th><th>From</th><th>To</th><th>Dist</th><th>Time</th>' + (hasFuel ? '<th>Fuel</th>' : '') + '</tr>';
     r.legs.forEach(function(leg,li){
       var legHrs=leg.mi/r.speed;
-      rows+='<tr><td class="dim">'+(li+1)+'</td><td>'+truncate(leg.from,14)+'</td><td>'+truncate(leg.to,14)+'</td><td>'+Math.round(leg.mi)+'<span style="color:var(--text-muted)"> mi</span></td><td>'+fmtPlain(legHrs)+'</td></tr>';
+      rows+='<tr><td class="dim">'+(li+1)+'</td><td>'+truncate(leg.from,14)+'</td><td>'+truncate(leg.to,14)+'</td><td>'+Math.round(leg.mi)+'<span style="color:var(--text-muted)"> mi</span></td><td>'+fmtPlain(legHrs)+'</td>';
+      if(hasFuel) rows+='<td>'+(legHrs*r.gph).toFixed(1)+'<span style="color:var(--text-muted)"> gal</span></td>';
+      rows+='</tr>';
     });
     tbl.innerHTML=rows;
   }
@@ -1912,7 +1975,7 @@ window.recalc = function() {
   fillCard('A', rA, null);
 
   if(comparisonActive && acB){
-    var rB={ name:acB.name, speed:acB.speed, hours:totalMi/acB.speed, mi:totalMi, legs:legs };
+    var rB={ name:acB.name, speed:acB.speed, gph:acB.gph, hours:totalMi/acB.speed, mi:totalMi, legs:legs };
     fillCard('A', rA, rB);
     fillCard('B', rB, rA);
     var delta=Math.abs(rA.hours-rB.hours);
