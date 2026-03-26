@@ -343,7 +343,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-26.7</span>
+    <span style="color:var(--text-muted)">v2026-03-26.8</span>
   </div>
 </header>
 
@@ -538,7 +538,7 @@ select option { background:var(--surface2); }
   <!-- MAP -->
   <div class="map-wrap mobile-active" id="mobileMapPanel">
     <div id="map"></div>
-    <button class="map-lock-btn" id="mapLockBtn" onclick="toggleMapLock()" title="Lock map to scroll page">&#x1F513; MAP UNLOCKED</button>
+    <button class="map-lock-btn locked" id="mapLockBtn" onclick="toggleMapLock(event)" title="Lock map to scroll page">&#x1F512; MAP LOCKED</button>
     <div class="map-badge">
       <div class="mode-dot placing" id="modeDot"></div>
       <span id="modeText">ADD A WAYPOINT TO BEGIN</span>
@@ -1678,9 +1678,10 @@ function makeSearchingIcon(color, label) {
 }
 
 // ── MAP LOCK/UNLOCK TOGGLE ────────────────────────────────────────────────────
-var mapLocked = false;
+var mapLocked = true;
 
-window.toggleMapLock = function() {
+window.toggleMapLock = function(e) {
+  if (e) e.stopPropagation();
   if (mapLocked) {
     unlockMap();
   } else {
@@ -2205,11 +2206,8 @@ function renderFavorites() {
   if (!grid) return;
   var html = '<div class="fav-grid">';
   CIN_FAVORITES.forEach(function(fav) {
-    // Display FAA LID without K prefix for local codes (e.g. KI67 → I67)
-    var displayCode = fav.icao;
-    if (/^K[A-Z0-9]{2,3}$/.test(fav.icao) && /^\d/.test(fav.icao.charAt(1))) {
-      displayCode = fav.icao.substring(1);
-    }
+    // Display without K prefix in favorites (e.g. KCVG → CVG, KI67 → I67)
+    var displayCode = fav.icao.charAt(0) === 'K' ? fav.icao.substring(1) : fav.icao;
     html += '<button class="fav-btn" onclick="addFavoriteWP(\'' + fav.icao + '\')" title="Add ' + fav.name + '">' +
       '<span class="fav-icao">' + displayCode + '</span>' +
       '<span class="fav-name">' + fav.name + '</span>' +
@@ -2301,7 +2299,11 @@ renderWPList();
 updateMode();
 initMobileLayout();
 // Start with map guard active on all devices
-// Map starts unlocked and interactive
+// Map starts locked; unlock on first interaction anywhere
+setTimeout(lockMap, 300);
+document.addEventListener('click', function() {
+  if (mapLocked) unlockMap();
+}, { once: false });
 </script>
 </body>
 </html>
