@@ -224,6 +224,76 @@ select option { background:var(--surface2); }
 #map { width:100%; height:100%; }
 .map-wrap { flex:1; position:relative; }
 
+/* ── MOBILE NAV BAR ──────────────────────────────────────────────────────── */
+.mobile-nav {
+  display:none;
+  position:fixed; bottom:0; left:0; right:0; z-index:2000;
+  height:56px; background:var(--surface); border-top:1px solid var(--border);
+  display:none; align-items:stretch;
+}
+.mobile-nav-btn {
+  flex:1; background:none; border:none; color:var(--text-muted);
+  font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  cursor:pointer; transition:color .15s; padding-bottom:env(safe-area-inset-bottom, 0);
+}
+.mobile-nav-btn svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.5; }
+.mobile-nav-btn.active { color:var(--accent); }
+.mobile-nav-btn.active svg { stroke:var(--accent); }
+
+@media (max-width: 768px) {
+  html, body { overflow:hidden; }
+
+  header { padding:0 14px; height:46px; }
+  .logo-title { font-size:13px; letter-spacing:3px; }
+  .hdr-right .pulse { display:inline-block; }
+  .hdr-right span:not(:first-child) { display:none; } /* hide clock on mobile */
+
+  .layout { flex-direction:column; height:calc(100vh - 46px); position:relative; }
+
+  /* Sidebar becomes a full-screen panel */
+  .sidebar {
+    width:100%; height:100%;
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    z-index:100; display:none; flex-direction:column;
+    padding-bottom:56px; /* room for nav bar */
+  }
+  .sidebar.mobile-active { display:flex; }
+
+  /* Map panel */
+  .map-wrap {
+    width:100%; height:100%;
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    z-index:50; display:none;
+  }
+  .map-wrap.mobile-active { display:block; }
+
+  /* Results panel — shown as third tab, overlays on sidebar */
+  .results-wrap {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    z-index:200; display:none; flex-direction:column;
+    background:var(--surface); overflow-y:auto; padding:14px 16px;
+    padding-bottom:56px;
+  }
+  .results-wrap.mobile-active { display:flex; }
+
+  /* Show mobile nav */
+  .mobile-nav { display:flex; }
+
+  /* Map badge repositioned */
+  .map-badge { top:8px; right:10px; font-size:9px; padding:4px 8px; }
+
+  /* Touch-friendly tap targets */
+  .wp-btn { width:28px; height:28px; }
+  .fav-btn { padding:7px 6px; }
+  .add-wp-btn, .clear-all-btn { padding:9px 12px; font-size:10px; }
+  .calc-btn { padding:12px; font-size:11px; }
+
+  /* Slightly larger inputs on mobile */
+  .cost-input { font-size:14px; padding:6px 8px; }
+  .wp-addr-input { font-size:14px; }
+}
+
 .map-badge {
   position:absolute; top:12px; right:52px; z-index:1000;
   background:rgba(17,20,24,.92); border:1px solid var(--border); border-radius:3px;
@@ -443,7 +513,7 @@ select option { background:var(--surface2); }
   </div>
 
   <!-- MAP -->
-  <div class="map-wrap">
+  <div class="map-wrap mobile-active" id="mobileMapPanel">
     <div id="map"></div>
     <div class="map-badge">
       <div class="mode-dot placing" id="modeDot"></div>
@@ -457,6 +527,22 @@ select option { background:var(--surface2); }
   </div>
 
 </div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav" id="mobileNav">
+  <button class="mobile-nav-btn active" id="mnavMap" onclick="mobileTab('map')">
+    <svg viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7"/></svg>
+    Map
+  </button>
+  <button class="mobile-nav-btn" id="mnavPlan" onclick="mobileTab('plan')">
+    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10M4 18h7"/></svg>
+    Plan
+  </button>
+  <button class="mobile-nav-btn" id="mnavResults" onclick="mobileTab('results')">
+    <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    Results
+  </button>
+</nav>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -1386,7 +1472,78 @@ function makeSearchingIcon(color, label) {
   });
 }
 
-// ── GREAT CIRCLE LINES ────────────────────────────────────────────────────────
+// ── MOBILE TAB NAVIGATION ─────────────────────────────────────────────────────
+var MOBILE_BREAKPOINT = 768;
+
+function isMobile() { return window.innerWidth <= MOBILE_BREAKPOINT; }
+
+window.mobileTab = function(tab) {
+  if (!isMobile()) return;
+
+  var sidebar   = document.querySelector('.sidebar');
+  var mapPanel  = document.getElementById('mobileMapPanel');
+  var resultsWrap = document.querySelector('.results-wrap');
+
+  // Hide all panels
+  sidebar.classList.remove('mobile-active');
+  mapPanel.classList.remove('mobile-active');
+  if (resultsWrap) resultsWrap.classList.remove('mobile-active');
+
+  // Deactivate all nav buttons
+  ['mnavMap','mnavPlan','mnavResults'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+
+  if (tab === 'map') {
+    mapPanel.classList.add('mobile-active');
+    document.getElementById('mnavMap').classList.add('active');
+    // Trigger map resize so tiles load correctly
+    setTimeout(function(){ map.invalidateSize(); }, 100);
+  } else if (tab === 'plan') {
+    sidebar.classList.add('mobile-active');
+    document.getElementById('mnavPlan').classList.add('active');
+  } else if (tab === 'results') {
+    if (resultsWrap) {
+      resultsWrap.classList.add('mobile-active');
+    } else {
+      // Fallback — show sidebar scrolled to results
+      sidebar.classList.add('mobile-active');
+      setTimeout(function(){
+        var r = document.getElementById('resultsOut');
+        if (r) r.scrollIntoView({ behavior:'smooth' });
+      }, 50);
+    }
+    document.getElementById('mnavResults').classList.add('active');
+  }
+};
+
+// Move results-wrap outside sidebar on mobile for independent scrolling
+function initMobileLayout() {
+  if (!isMobile()) return;
+  var sidebar = document.querySelector('.sidebar');
+  var resultsWrap = document.querySelector('.results-wrap');
+  if (resultsWrap && resultsWrap.parentElement === sidebar) {
+    document.querySelector('.layout').appendChild(resultsWrap);
+  }
+  // Start on map tab
+  sidebar.classList.remove('mobile-active');
+  document.getElementById('mobileMapPanel').classList.add('mobile-active');
+  setTimeout(function(){ map.invalidateSize(); }, 200);
+}
+
+window.addEventListener('resize', function() {
+  if (!isMobile()) {
+    // Restore desktop layout
+    var sidebar = document.querySelector('.sidebar');
+    var mapPanel = document.getElementById('mobileMapPanel');
+    var resultsWrap = document.querySelector('.results-wrap');
+    sidebar.classList.remove('mobile-active');
+    mapPanel.classList.remove('mobile-active');
+    if (resultsWrap) resultsWrap.classList.remove('mobile-active');
+    map.invalidateSize();
+  }
+});
 window.toggleClosedRoute = function() {
   routeClosed = !routeClosed;
   drawAllLines();
@@ -1603,6 +1760,8 @@ window.recalc = function() {
 
   document.getElementById('emptyMsg').style.display='none';
   document.getElementById('resultsOut').style.display='block';
+  // Auto-switch to Results tab on mobile
+  if (isMobile()) mobileTab('results');
 
   var fillCard = function(id, r, other){
     var faster = other && r.hours < other.hours;
@@ -1849,11 +2008,11 @@ window.addFavoriteWP = function(icao) {
   fitBoundsIfMultiple();
 };
 
-  
 // Init
 renderFavorites();
 renderWPList();
 updateMode();
+initMobileLayout();
 </script>
 </body>
 </html>
