@@ -315,6 +315,25 @@ select option { background:var(--surface2); }
 }
 .layer-btn:hover, .layer-btn.active { border-color:var(--accent); color:var(--accent); }
 
+/* Mobile map interaction guard */
+.map-touch-guard {
+  display:none;
+  position:absolute; inset:0; z-index:1500;
+  background:rgba(10,12,15,0.45);
+  align-items:center; justify-content:center;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.map-touch-guard-msg {
+  font-family:var(--mono); font-size:11px; color:var(--text);
+  letter-spacing:1.5px; text-transform:uppercase;
+  background:rgba(17,20,24,.92); border:1px solid var(--border-bright);
+  padding:10px 18px; border-radius:4px;
+  display:flex; align-items:center; gap:8px; pointer-events:none;
+}
+@media (max-width:768px) {
+  .map-touch-guard { display:flex; }
+}
+
 /* Leaflet overrides */
 .leaflet-container { background:#0d1521; }
 .leaflet-control-zoom { border:1px solid var(--border) !important; }
@@ -515,6 +534,10 @@ select option { background:var(--surface2); }
   <!-- MAP -->
   <div class="map-wrap mobile-active" id="mobileMapPanel">
     <div id="map"></div>
+    <!-- Mobile interaction guard — prevents accidental map interaction while scrolling -->
+    <div class="map-touch-guard" id="mapTouchGuard" onclick="engageMap()">
+      <div class="map-touch-guard-msg">&#x1F4CD; Tap to interact with map</div>
+    </div>
     <div class="map-badge">
       <div class="mode-dot placing" id="modeDot"></div>
       <span id="modeText">ADD A WAYPOINT TO BEGIN</span>
@@ -1472,6 +1495,25 @@ function makeSearchingIcon(color, label) {
   });
 }
 
+// ── MOBILE MAP INTERACTION GUARD ─────────────────────────────────────────────
+window.engageMap = function() {
+  var guard = document.getElementById('mapTouchGuard');
+  if (guard) guard.style.display = 'none';
+  map.dragging.enable();
+  map.touchZoom.enable();
+  map.scrollWheelZoom.enable();
+  map.doubleClickZoom.enable();
+};
+
+function disengageMap() {
+  if (!isMobile()) return;
+  var guard = document.getElementById('mapTouchGuard');
+  if (guard) guard.style.display = '';
+  map.dragging.disable();
+  map.touchZoom.disable();
+  map.scrollWheelZoom.disable();
+}
+
 // ── MOBILE TAB NAVIGATION ─────────────────────────────────────────────────────
 var MOBILE_BREAKPOINT = 768;
 
@@ -1500,6 +1542,8 @@ window.mobileTab = function(tab) {
     document.getElementById('mnavMap').classList.add('active');
     // Trigger map resize so tiles load correctly
     setTimeout(function(){ map.invalidateSize(); }, 100);
+    // Show the touch guard so map isn't accidentally engaged
+    disengageMap();
   } else if (tab === 'plan') {
     sidebar.classList.add('mobile-active');
     document.getElementById('mnavPlan').classList.add('active');
@@ -1526,9 +1570,10 @@ function initMobileLayout() {
   if (resultsWrap && resultsWrap.parentElement === sidebar) {
     document.querySelector('.layout').appendChild(resultsWrap);
   }
-  // Start on map tab
+  // Start on map tab with guard active
   sidebar.classList.remove('mobile-active');
   document.getElementById('mobileMapPanel').classList.add('mobile-active');
+  disengageMap();
   setTimeout(function(){ map.invalidateSize(); }, 200);
 }
 
@@ -1760,8 +1805,6 @@ window.recalc = function() {
 
   document.getElementById('emptyMsg').style.display='none';
   document.getElementById('resultsOut').style.display='block';
-  // Auto-switch to Results tab on mobile
-  if (isMobile()) mobileTab('results');
 
   var fillCard = function(id, r, other){
     var faster = other && r.hours < other.hours;
