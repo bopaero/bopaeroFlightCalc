@@ -356,7 +356,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-26.3</span>
+    <span style="color:var(--text-muted)">v2026-03-26.4</span>
   </div>
 </header>
 
@@ -754,7 +754,7 @@ function renderWPList() {
     if (isPending) {
       innerHtml +=
         '<div class="wp-addr-row">' +
-          '<input class="wp-addr-input" id="addr-'+wp.id+'" type="text" placeholder="&#x1F50D; Or enter address here..." value="' + (wp.addrInput || '') + '" onkeydown="if(event.key===\'Enter\')geocodeAddress('+wp.id+')">' +
+          '<input class="wp-addr-input" id="addr-'+wp.id+'" type="text" placeholder="&#x1F50D; ICAO code or address..." value="' + (wp.addrInput || '') + '" onkeydown="if(event.key===\'Enter\')geocodeAddress('+wp.id+')">' +
           '<button class="wp-addr-btn" onclick="geocodeAddress('+wp.id+')">GO</button>' +
         '</div>';
     }
@@ -866,6 +866,12 @@ window.geocodeAddress = function(id) {
   input.disabled = true;
   input.value = 'Searching...';
 
+  // Try ICAO/FAA identifier lookup first (3-4 character code)
+  if (/^[A-Za-z0-9]{2,5}$/.test(addr)) {
+    var found = lookupByIdentifier(id, addr.toUpperCase(), input);
+    if (found) return;
+  }
+
   // If no leading digit it's a city/state, not a street address
   if (!/^\d/.test(addr)) {
     geocodeCityFromDB(id, addr, input);
@@ -873,6 +879,85 @@ window.geocodeAddress = function(id) {
     geocodeCensus(id, addr, input);
   }
 };
+
+// Look up airport by ICAO/FAA identifier (e.g. KATL, I67, KLUK)
+function lookupByIdentifier(id, code, input) {
+  var match = null;
+  // Try exact match, then with K prefix (e.g. I67 → KI67, ATL → KATL)
+  var variants = [code];
+  if (code.length <= 4 && code.charAt(0) !== 'K') variants.push('K' + code);
+  for (var v = 0; v < variants.length; v++) {
+    for (var i = 0; i < OA_CACHE.length; i++) {
+      if (OA_CACHE[i].icao === variants[v]) { match = OA_CACHE[i]; break; }
+    }
+    if (match) break;
+  }
+  if (!match) return false;
+
+  var wp = wpById(id);
+  if (!wp) return false;
+
+  if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
+
+  var color = wpColor(wp.idx);
+  var num   = wp.idx + 1;
+  var rwyFt = match.type === 'large_airport' ? 8000 : match.type === 'medium_airport' ? 5000 : 3000;
+  var warn  = wpNeedsWarn(rwyFt);
+
+  wp.lat   = match.lat;
+  wp.lng   = match.lng;
+  wp.name  = match.name;
+  wp.icao  = match.icao;
+  wp.rwyFt = rwyFt;
+  wp.warn  = warn;
+  wp.originLat = match.lat;
+  wp.originLng = match.lng;
+  wp.driveMi   = null;
+
+  var popupBody = '<b style="color:'+color+'">WP ' + num + '</b>&nbsp;' +
+    '<span style="color:var(--accent)">' + match.icao + '</span><br>' + match.name +
+    '<br><span style="color:#b8c7d9">' + match.lat.toFixed(4) + '° / ' + match.lng.toFixed(4) + '°</span>';
+
+  var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp);
+  if (wpIndex === 0 || (wpIndex === -1 && waypoints.filter(function(w){ return w.lat !== null; }).length === 0)) {
+    popupBody += '<br><button id="popupReturnBtn" style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none"></button>';
+  }
+
+  wp.marker = L.marker([match.lat, match.lng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
+    .bindPopup(popupBody).addTo(map);
+
+  if (wpIndex === 0 || (wpIndex === -1 && waypoints.filter(function(w){ return w.lat !== null; }).length === 0)) {
+    wp.marker.on('popupopen', function() {
+      var btn = document.getElementById('popupReturnBtn');
+      if (!btn) return;
+      var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
+      if (placedNow.length >= 2) {
+        btn.style.display = '';
+        btn.textContent = routeClosed ? '\u2715 Remove return leg' : '\u21BA Return to this airport';
+        btn.onclick = function() { toggleClosedRoute(); wp.marker.closePopup(); };
+      } else {
+        btn.style.display = 'none';
+      }
+    });
+  }
+
+  // Auto-advance to next unplaced waypoint
+  var next = null, found = false;
+  for (var j = 0; j < waypoints.length; j++) {
+    if (waypoints[j].id === id) { found = true; continue; }
+    if (found && waypoints[j].lat === null) { next = waypoints[j].id; break; }
+  }
+  placingId = next;
+
+  input.disabled = false;
+  input.value = '';
+  input.placeholder = '\uD83D\uDD0D ICAO code or address...';
+
+  drawAllLines(); renderWPList(); updateMode(); recalc();
+  fitBoundsIfMultiple();
+  map.setView([match.lat, match.lng], 10);
+  return true;
+}
 
 // Search OurAirports by municipality, then fall back to nearest by coords
 function geocodeCityFromDB(id, addr, input) {
@@ -947,7 +1032,7 @@ function geocodeCityFromDB(id, addr, input) {
   input.value = addr;
   input.style.borderColor = 'var(--red)';
   input.placeholder = 'Try: City, ST (e.g. Highlands, NC)';
-  setTimeout(function(){ input.style.borderColor = ''; input.placeholder = '\uD83D\uDD0D Or enter address here...'; }, 4000);
+  setTimeout(function(){ input.style.borderColor = ''; input.placeholder = '\uD83D\uDD0D ICAO code or address...'; }, 4000);
 }
 
 function nearestAirportToCoords(lat, lng) {
@@ -1020,7 +1105,7 @@ function showGeoError(input, type) {
     : 'Network error \u2014 check connection';
   setTimeout(function() {
     input.style.borderColor = '';
-    input.placeholder = '\uD83D\uDD0D Or enter address here...';
+    input.placeholder = '\uD83D\uDD0D ICAO code or address...';
   }, 3000);
 }
 // ── SHARED: place a waypoint from any lat/lng origin ─────────────────────────
