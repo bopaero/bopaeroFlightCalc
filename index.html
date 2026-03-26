@@ -343,7 +343,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-26.8</span>
+    <span style="color:var(--text-muted)">v2026-03-26.9</span>
   </div>
 </header>
 
@@ -577,7 +577,9 @@ var TILES = {
   satellite: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr:'&copy; Esri', maxZoom:17 }
 };
 
-var map = L.map('map', { center: [37.5, -82], zoom: 6, zoomControl: true });
+var map = L.map('map', { center: [37.5, -82], zoom: 6, zoomControl: true,
+  dragging: false, touchZoom: false, scrollWheelZoom: false,
+  doubleClickZoom: false, keyboard: false });
 var currentTile = null;
 
 function setLayer(name) {
