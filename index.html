@@ -182,13 +182,6 @@ select option { background:var(--surface2); }
 
 /* RESULTS */
 .results-wrap { padding:14px 16px; }
-.calc-btn {
-  width:100%; background:transparent; border:1px solid var(--accent); color:var(--accent);
-  font-family:var(--mono); font-size:12px; letter-spacing:3px; text-transform:uppercase;
-  padding:10px; border-radius:3px; cursor:pointer; margin-bottom:12px; transition:all .2s;
-}
-.calc-btn:hover:not(:disabled) { background:rgba(0,212,255,.07); box-shadow:0 0 16px rgba(0,212,255,.1); }
-.calc-btn:disabled { border-color:var(--border-bright); color:var(--text-muted); cursor:not-allowed; }
 .empty-msg { text-align:center; font-family:var(--mono); font-size:10px; color:var(--text-muted); letter-spacing:1px; padding:10px 0; line-height:1.8; }
 
 /* Result cards */
@@ -290,8 +283,6 @@ select option { background:var(--surface2); }
   .wp-btn { width:28px; height:28px; }
   .fav-btn { padding:7px 6px; }
   .add-wp-btn, .clear-all-btn { padding:9px 12px; font-size:10px; }
-  .calc-btn { padding:12px; font-size:11px; }
-
   /* Slightly larger inputs on mobile */
   .cost-input { font-size:14px; padding:6px 8px; }
   .wp-addr-input { font-size:14px; }
@@ -356,7 +347,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-26.4</span>
+    <span style="color:var(--text-muted)">v2026-03-26.5</span>
   </div>
 </header>
 
@@ -495,7 +486,6 @@ select option { background:var(--surface2); }
     <!-- RESULTS -->
     <div class="results-wrap">
       <div class="sec-title">Flight Time Results</div>
-      <button class="calc-btn" id="calcBtn" disabled onclick="recalc()">CALCULATE</button>
       <div class="empty-msg" id="emptyMsg">ADD WAYPOINTS &amp; SELECT AIRCRAFT<br>TO COMPUTE FLIGHT TIMES</div>
       <div id="resultsOut" style="display:none">
 
@@ -1991,18 +1981,23 @@ function fmtPlain(h){
   if(hrs===0)return min+'min'; if(min===0)return hrs+'hr'; return hrs+'hr '+min+'min';
 }
 
+var _recalcRunning = false;
 window.recalc = function() {
   var acA = getAC('A');
   var acB = comparisonActive ? getAC('B') : null;
   var placed = waypoints.filter(function(w){return w.lat!==null;});
   var ready = placed.length >= 2 && acA;
-  document.getElementById('calcBtn').disabled = !ready;
 
   // Show/hide card B and delta based on comparison state
   document.getElementById('cardB').style.display   = comparisonActive ? 'block' : 'none';
   document.getElementById('deltaRow').style.display = (comparisonActive && acB) ? 'flex' : 'none';
 
-  // Refresh warn icons on map markers (don't call renderWPList to avoid recursion)
+  // Refresh leg connectors (time/fuel depend on aircraft) and warn icons
+  if (!_recalcRunning) {
+    _recalcRunning = true;
+    renderWPList();
+    _recalcRunning = false;
+  }
   refreshWarnIcons();
 
   if(!ready){
