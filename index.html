@@ -309,21 +309,17 @@ select option { background:var(--surface2); }
 }
 .layer-btn:hover, .layer-btn.active { border-color:var(--accent); color:var(--accent); }
 
-/* Map interaction guard — desktop and mobile */
-.map-touch-guard {
-  position:absolute; inset:0; z-index:1500;
-  background:rgba(10,12,15,0.35);
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer; -webkit-tap-highlight-color:transparent;
-}
-.map-touch-guard.hidden { display:none; }
-.map-touch-guard-msg {
-  font-family:var(--mono); font-size:11px; color:var(--text);
-  letter-spacing:1.5px; text-transform:uppercase;
+/* Map lock toggle button */
+.map-lock-btn {
+  position:absolute; bottom:12px; left:12px; z-index:1500;
   background:rgba(17,20,24,.92); border:1px solid var(--border-bright);
-  padding:10px 18px; border-radius:4px;
-  display:flex; align-items:center; gap:8px; pointer-events:none;
+  color:var(--text-muted); font-family:var(--mono); font-size:10px;
+  letter-spacing:1px; text-transform:uppercase;
+  padding:6px 10px; border-radius:3px; cursor:pointer;
+  display:flex; align-items:center; gap:5px; transition:all .15s;
 }
+.map-lock-btn:hover { border-color:var(--accent); color:var(--accent); }
+.map-lock-btn.locked { border-color:var(--warn); color:var(--warn); }
 
 /* Leaflet overrides */
 .leaflet-container { background:#0d1521; }
@@ -347,7 +343,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-26.6</span>
+    <span style="color:var(--text-muted)">v2026-03-26.7</span>
   </div>
 </header>
 
@@ -542,10 +538,7 @@ select option { background:var(--surface2); }
   <!-- MAP -->
   <div class="map-wrap mobile-active" id="mobileMapPanel">
     <div id="map"></div>
-    <!-- Mobile interaction guard — prevents accidental map interaction while scrolling -->
-    <div class="map-touch-guard" id="mapTouchGuard" onclick="engageMap()">
-      <div class="map-touch-guard-msg" id="mapTouchMsg">&#x1F4CD; Click to interact with map</div>
-    </div>
+    <button class="map-lock-btn" id="mapLockBtn" onclick="toggleMapLock()" title="Lock map to scroll page">&#x1F513; MAP UNLOCKED</button>
     <div class="map-badge">
       <div class="mode-dot placing" id="modeDot"></div>
       <span id="modeText">ADD A WAYPOINT TO BEGIN</span>
@@ -1684,39 +1677,38 @@ function makeSearchingIcon(color, label) {
   });
 }
 
-// ── MAP INTERACTION GUARD ─────────────────────────────────────────────────────
-window.engageMap = function() {
-  var guard = document.getElementById('mapTouchGuard');
-  if (guard) guard.classList.add('hidden');
+// ── MAP LOCK/UNLOCK TOGGLE ────────────────────────────────────────────────────
+var mapLocked = false;
+
+window.toggleMapLock = function() {
+  if (mapLocked) {
+    unlockMap();
+  } else {
+    lockMap();
+  }
+};
+
+function unlockMap() {
+  mapLocked = false;
   map.dragging.enable();
   map.touchZoom.enable();
   map.scrollWheelZoom.enable();
   map.doubleClickZoom.enable();
   map.keyboard.enable();
-};
+  var btn = document.getElementById('mapLockBtn');
+  if (btn) { btn.innerHTML = '&#x1F513; MAP UNLOCKED'; btn.classList.remove('locked'); }
+}
 
-function disengageMap() {
-  var guard = document.getElementById('mapTouchGuard');
-  if (guard) {
-    guard.classList.remove('hidden');
-    // Update message based on device
-    var msg = document.getElementById('mapTouchMsg');
-    if (msg) msg.textContent = isMobile() ? '📍 Tap to interact with map' : '📍 Click to interact with map';
-  }
+function lockMap() {
+  mapLocked = true;
   map.dragging.disable();
   map.touchZoom.disable();
   map.scrollWheelZoom.disable();
   map.doubleClickZoom.disable();
   map.keyboard.disable();
+  var btn = document.getElementById('mapLockBtn');
+  if (btn) { btn.innerHTML = '&#x1F512; MAP LOCKED'; btn.classList.add('locked'); }
 }
-
-// Disengage map when user clicks anywhere outside the map panel
-document.addEventListener('click', function(e) {
-  var mapPanel = document.getElementById('mobileMapPanel');
-  if (mapPanel && !mapPanel.contains(e.target)) {
-    disengageMap();
-  }
-});
 
 // ── MOBILE TAB NAVIGATION ─────────────────────────────────────────────────────
 var MOBILE_BREAKPOINT = 768;
@@ -1746,8 +1738,6 @@ window.mobileTab = function(tab) {
     document.getElementById('mnavMap').classList.add('active');
     // Trigger map resize so tiles load correctly
     setTimeout(function(){ map.invalidateSize(); }, 100);
-    // Show the touch guard so map isn't accidentally engaged
-    disengageMap();
   } else if (tab === 'plan') {
     sidebar.classList.add('mobile-active');
     document.getElementById('mnavPlan').classList.add('active');
@@ -1774,10 +1764,9 @@ function initMobileLayout() {
   if (resultsWrap && resultsWrap.parentElement === sidebar) {
     document.querySelector('.layout').appendChild(resultsWrap);
   }
-  // Start on map tab with guard active
+  // Start on map tab
   sidebar.classList.remove('mobile-active');
   document.getElementById('mobileMapPanel').classList.add('mobile-active');
-  disengageMap();
   setTimeout(function(){ map.invalidateSize(); }, 200);
 }
 
@@ -2161,7 +2150,7 @@ function renderFBOInputs(placed) {
               '<a href="https://webapp.aopa.org/destinations/airports/' + icao + '/details" target="_blank" style="color:var(--text-muted);font-size:9px;text-decoration:none" title="AOPA Airport Directory">↗ AOPA</a>';
     }
     html += '<div class="fbo-row">' +
-      '<span class="fbo-label" style="color:' + wpColor(idx) + '">' + truncate(wp.name || wp.icao || ('WP'+(idx+1)), 18) + links + '</span>' +
+      '<span class="fbo-label" style="color:' + wpColor(idx) + '">' + (wp.icao || truncate(wp.name || ('WP'+(idx+1)), 18)) + links + '</span>' +
       '<span style="color:var(--text-muted);font-size:11px;margin-right:2px">$</span>' +
       '<input type="number" id="fbo-' + wp.id + '" class="cost-input" style="width:70px" min="0" placeholder="0" value="' + val + '" oninput="recalc()">' +
     '</div>';
@@ -2216,8 +2205,13 @@ function renderFavorites() {
   if (!grid) return;
   var html = '<div class="fav-grid">';
   CIN_FAVORITES.forEach(function(fav) {
+    // Display FAA LID without K prefix for local codes (e.g. KI67 → I67)
+    var displayCode = fav.icao;
+    if (/^K[A-Z0-9]{2,3}$/.test(fav.icao) && /^\d/.test(fav.icao.charAt(1))) {
+      displayCode = fav.icao.substring(1);
+    }
     html += '<button class="fav-btn" onclick="addFavoriteWP(\'' + fav.icao + '\')" title="Add ' + fav.name + '">' +
-      '<span class="fav-icao">' + fav.icao + '</span>' +
+      '<span class="fav-icao">' + displayCode + '</span>' +
       '<span class="fav-name">' + fav.name + '</span>' +
     '</button>';
   });
@@ -2307,7 +2301,7 @@ renderWPList();
 updateMode();
 initMobileLayout();
 // Start with map guard active on all devices
-setTimeout(disengageMap, 300); // after Leaflet finishes initializing
+// Map starts unlocked and interactive
 </script>
 </body>
 </html>
