@@ -347,7 +347,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-26.5</span>
+    <span style="color:var(--text-muted)">v2026-03-26.6</span>
   </div>
 </header>
 
@@ -465,7 +465,7 @@ select option { background:var(--surface2); }
         <input type="number" id="costAcPerHr" class="cost-input" value="372" min="0" oninput="recalc()">
       </div>
       <div class="cost-row">
-        <label class="cost-lbl">Fuel/Oil/TKS ($/hr)</label>
+        <label class="cost-lbl" id="consumablesLbl">Fuel/Oil/TKS ($/hr)</label>
         <input type="number" id="costConsumables" class="cost-input" value="110" min="0" oninput="recalc()">
       </div>
       <div class="cost-row">
@@ -1233,6 +1233,12 @@ var acGph = {
   '300': 59     // SF50
 };
 
+// Per-aircraft cost presets (mph speed value → { acPerHr, consumPerHr, consumLabel })
+var acCostPresets = {
+  '185': { acPerHr: 372, consumPerHr: 110, consumLabel: 'Fuel/Oil/TKS' },
+  '300': { acPerHr: 372, consumPerHr: 375, consumLabel: 'Fuel/Oil' }
+};
+
 // Per-aircraft runway thresholds (mph speed value → thresholds)
 var AC_RWY = {
   '185': { minFt: 2500, warnFt: 3000 },   // SR22T
@@ -1936,12 +1942,28 @@ window.removeComparison = function() {
   recalc();
 };
 
+function applyCostPreset(spdKey) {
+  var preset = acCostPresets[spdKey];
+  if (!preset) return;
+  document.getElementById('costAcPerHr').value = preset.acPerHr;
+  document.getElementById('costConsumables').value = preset.consumPerHr;
+  document.getElementById('consumablesLbl').textContent = preset.consumLabel + ' ($/hr)';
+}
+
+function getConsumablesLabel() {
+  var lbl = document.getElementById('consumablesLbl');
+  var text = lbl ? lbl.textContent : 'Fuel/Oil/TKS ($/hr)';
+  return text.replace(' ($/hr)', '');
+}
+
 window.onSel = function(s) {
   var sel=document.getElementById('sel'+s), row=document.getElementById('spdRow'+s);
   var spd=document.getElementById('spd'+s), cust=document.getElementById('cust'+s);
   var gphRow=document.getElementById('gphRow'+s), gphInp=document.getElementById('gph'+s);
   if(sel.value){ spd.value=sel.value; row.style.display='flex'; cust.style.display='none'; if(s==='A')custAOpen=false;else custBOpen=false;
     if(gphInp){ gphInp.value=acGph[sel.value]||''; } if(gphRow) gphRow.style.display='flex';
+    // Update cost presets for primary aircraft
+    if(s==='A') { applyCostPreset(sel.value); }
   } else { row.style.display='none'; if(gphRow) gphRow.style.display='none'; }
   recalc();
 };
@@ -2095,7 +2117,7 @@ window.recalc = function() {
   var grid = document.getElementById('costGrid');
   grid.innerHTML =
     '<div><div class="res-item-lbl">Aircraft</div><div class="res-item-val" style="font-size:14px">' + fmt$(acCost) + '</div></div>' +
-    '<div><div class="res-item-lbl">Fuel/Oil/TKS</div><div class="res-item-val" style="font-size:14px">' + fmt$(consumCost) + '</div></div>' +
+    '<div><div class="res-item-lbl">' + getConsumablesLabel() + '</div><div class="res-item-val" style="font-size:14px">' + fmt$(consumCost) + '</div></div>' +
     '<div><div class="res-item-lbl">Pilot (' + days + 'd)</div><div class="res-item-val" style="font-size:14px">' + fmtRange(pilotLow, pilotHigh) + '</div></div>' +
     '<div><div class="res-item-lbl">FBO Fees</div><div class="res-item-val" style="font-size:14px">' + fmt$(fboTotal) + '</div></div>' +
     '<div><div class="res-item-lbl">Total</div><div class="res-item-val" style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</div></div>';
@@ -2104,7 +2126,7 @@ window.recalc = function() {
   var tbl = document.getElementById('legsTableCost');
   var rows = '<tr><th>Item</th><th>Detail</th><th>Cost</th></tr>';
   rows += '<tr><td>Aircraft</td><td>' + rA.hours.toFixed(2) + ' hr × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
-  rows += '<tr><td>Fuel/Oil/TKS</td><td>' + rA.hours.toFixed(2) + ' hr × $' + consumPerHr + '/hr</td><td>' + fmt$(consumCost) + '</td></tr>';
+  rows += '<tr><td>' + getConsumablesLabel() + '</td><td>' + rA.hours.toFixed(2) + ' hr × $' + consumPerHr + '/hr</td><td>' + fmt$(consumCost) + '</td></tr>';
   rows += '<tr><td>Pilot</td><td>' + days + ' day' + (days>1?'s':'') + ' × $' + pilotMin + '–$' + pilotMax + '/day</td><td>' + fmtRange(pilotLow, pilotHigh) + '</td></tr>';
   placed.forEach(function(wp) {
     var inp = document.getElementById('fbo-' + wp.id);
