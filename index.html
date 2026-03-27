@@ -31,9 +31,9 @@ header {
 .logo { display:flex; align-items:center; gap:10px; }
 .logo-diamond { width:22px; height:22px; border:2px solid var(--accent); transform:rotate(45deg); position:relative; flex-shrink:0; }
 .logo-diamond::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:7px; height:7px; background:var(--accent); }
-.logo-title { font-size:15px; font-weight:700; letter-spacing:2px; }
+.logo-title { font-size:17px; font-weight:700; letter-spacing:2px; }
 .logo-title span { color:var(--accent); }
-.hdr-right { font-family:var(--mono); font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:16px; }
+.hdr-right { font-family:var(--mono); font-size:13px; color:var(--text-muted); display:flex; align-items:center; gap:16px; }
 .pulse { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent2); margin-right:6px; animation:blink 2s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
@@ -49,7 +49,7 @@ header {
 
 .sec { padding:14px 16px; border-bottom:1px solid var(--border); }
 .sec-title {
-  font-family:var(--mono); font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  font-family:var(--mono); font-size:12px; letter-spacing:2px; text-transform:uppercase;
   color:var(--text-muted); margin-bottom:10px; display:flex; align-items:center; gap:6px;
 }
 .sec-title::before { content:''; width:3px; height:3px; background:var(--accent); border-radius:50%; }
@@ -73,27 +73,27 @@ header {
 }
 .wp-addr-input {
   flex:1; background:var(--bg); border:1px solid var(--border-bright); color:var(--text);
-  padding:5px 7px; font-family:var(--sans); font-size:11px; border-radius:3px;
+  padding:5px 7px; font-family:var(--sans); font-size:13px; border-radius:3px;
   outline:none; transition:border-color .15s; min-width:0;
 }
 .wp-addr-input:focus { border-color:var(--accent); }
 .wp-addr-input::placeholder { color:var(--text-muted); }
 .wp-addr-btn {
   background:none; border:1px solid var(--border-bright); color:var(--text-muted);
-  font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase;
+  font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase;
   padding:4px 7px; border-radius:3px; cursor:pointer; white-space:nowrap; transition:all .15s; flex-shrink:0;
 }
 .wp-addr-btn:hover { border-color:var(--accent); color:var(--accent); }
 
 /* Drive distance badge */
 .wp-drive {
-  font-family:var(--mono); font-size:9px; color:var(--text-muted);
+  font-family:var(--mono); font-size:11px; color:var(--text-muted);
   margin-top:3px; padding-left:2px; display:flex; align-items:center; gap:4px;
 }
 .wp-drive-val { color:var(--accent2); font-weight:bold; }
 
 .drag-handle {
-  color:var(--border-bright); cursor:grab; font-size:13px; flex-shrink:0;
+  color:var(--border-bright); cursor:grab; font-size:15px; flex-shrink:0;
   padding:2px 2px; line-height:1; user-select:none; transition:color .15s;
 }
 .drag-handle:hover { color:var(--text-muted); }
@@ -101,57 +101,57 @@ header {
 
 .wp-num {
   width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-  font-family:var(--mono); font-size:9px; font-weight:bold; flex-shrink:0;
+  font-family:var(--mono); font-size:11px; font-weight:bold; flex-shrink:0;
   border:1px solid var(--border-bright); color:var(--text-muted); background:var(--bg);
   padding:0; outline:none; /* reset button styles */
 }
 .wp-num.placed { border-color:var(--accent); color:var(--accent); background:rgba(0,212,255,.08); }
 
 .wp-info { flex:1; min-width:0; }
-.wp-name { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
-.wp-name.empty { color:var(--text-muted); font-style:italic; font-weight:400; font-size:11px; }
-.wp-coords { font-family:var(--mono); font-size:9px; color:var(--text-muted); margin-top:1px; }
+.wp-name { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
+.wp-name.empty { color:var(--text-muted); font-style:italic; font-weight:400; font-size:13px; }
+.wp-coords { font-family:var(--mono); font-size:11px; color:var(--text-muted); margin-top:1px; }
 
 .wp-actions { display:flex; gap:3px; }
-.wp-btn { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:2px 4px; border-radius:2px; line-height:1; }
+.wp-btn { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 4px; border-radius:2px; line-height:1; }
 .wp-btn:hover { color:var(--red); }
 
 /* Leg connector */
 .leg-connector {
   display:flex; align-items:flex-start; gap:6px; padding:2px 0 2px 14px;
-  font-family:var(--mono); font-size:9px; color:var(--text-muted); flex-wrap:wrap;
+  font-family:var(--mono); font-size:11px; color:var(--text-muted); flex-wrap:wrap;
 }
 .leg-line { width:1px; height:14px; background:var(--border-bright); margin-left:9px; flex-shrink:0; margin-top:1px; }
-.leg-dist { color:var(--accent); font-size:9px; margin-left:4px; }
-.leg-details { display:flex; gap:8px; width:100%; padding-left:20px; font-family:var(--mono); font-size:9px; }
+.leg-dist { color:var(--accent); font-size:11px; margin-left:4px; }
+.leg-details { display:flex; gap:8px; width:100%; padding-left:20px; font-family:var(--mono); font-size:11px; }
 .leg-time { color:var(--accent2); }
 .leg-fuel { color:var(--warn); }
 
 .add-wp-btn {
   width:100%; background:none; border:1px dashed var(--border-bright); color:var(--text-muted);
-  font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase;
+  font-family:var(--mono); font-size:12px; letter-spacing:1px; text-transform:uppercase;
   padding:7px; border-radius:3px; cursor:pointer; transition:all .15s; margin-top:4px;
 }
 .add-wp-btn:hover { border-color:var(--accent); color:var(--accent); }
 
 .clear-all-btn {
   width:100%; background:none; border:1px solid var(--border); color:var(--text-muted);
-  font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase;
+  font-family:var(--mono); font-size:12px; letter-spacing:1px; text-transform:uppercase;
   padding:5px; border-radius:3px; cursor:pointer; transition:all .15s; margin-top:5px;
 }
 .clear-all-btn:hover { border-color:var(--red); color:var(--red); }
 
-.map-hint { font-size:11px; color:var(--text-muted); font-style:italic; margin-top:6px; }
+.map-hint { font-size:13px; color:var(--text-muted); font-style:italic; margin-top:6px; }
 
 /* AIRCRAFT */
 .ac-slot { background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:10px; margin-bottom:8px; }
-.ac-slot-lbl { font-family:var(--mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; display:block; }
+.ac-slot-lbl { font-family:var(--mono); font-size:12px; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; display:block; }
 .lbl-a { color:var(--accent); }
 .lbl-b { color:var(--accent2); }
 
 select, input[type=text], input[type=number] {
   width:100%; background:var(--bg); border:1px solid var(--border-bright);
-  color:var(--text); padding:6px 8px; font-family:var(--sans); font-size:12px;
+  color:var(--text); padding:6px 8px; font-family:var(--sans); font-size:14px;
   border-radius:3px; outline:none; transition:border-color .15s;
   -webkit-appearance:none; appearance:none;
 }
@@ -159,22 +159,22 @@ select:focus, input:focus { border-color:var(--accent); }
 select option { background:var(--surface2); }
 .spd-row { display:flex; gap:6px; align-items:center; margin-top:6px; }
 .spd-row input { flex:1; }
-.spd-unit { font-family:var(--mono); font-size:10px; color:var(--text-muted); white-space:nowrap; }
+.spd-unit { font-family:var(--mono); font-size:12px; color:var(--text-muted); white-space:nowrap; }
 .cost-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
-.cost-lbl { font-family:var(--mono); font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
-.cost-input { background:var(--bg-card); border:1px solid var(--border-bright); color:var(--text); font-family:var(--mono); font-size:12px; padding:4px 6px; border-radius:4px; width:80px; text-align:right; }
+.cost-lbl { font-family:var(--mono); font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
+.cost-input { background:var(--bg-card); border:1px solid var(--border-bright); color:var(--text); font-family:var(--mono); font-size:14px; padding:4px 6px; border-radius:4px; width:80px; text-align:right; }
 .cost-input:focus { outline:none; border-color:var(--accent2); }
 .fbo-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
-.fbo-label { font-family:var(--mono); font-size:10px; color:var(--text-muted); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.fbo-title { font-family:var(--mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; margin-top:2px; }
+.fbo-label { font-family:var(--mono); font-size:12px; color:var(--text-muted); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fbo-title { font-family:var(--mono); font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; margin-top:2px; }
 .fav-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
-.fav-btn { background:var(--bg-card); border:1px solid var(--border-bright); color:var(--text); font-family:var(--mono); font-size:9px; padding:5px 6px; border-radius:4px; cursor:pointer; text-align:left; line-height:1.3; transition:border-color .15s,color .15s; }
+.fav-btn { background:var(--bg-card); border:1px solid var(--border-bright); color:var(--text); font-family:var(--mono); font-size:11px; padding:5px 6px; border-radius:4px; cursor:pointer; text-align:left; line-height:1.3; transition:border-color .15s,color .15s; }
 .fav-btn:hover { border-color:var(--accent); color:var(--accent); }
-.fav-btn .fav-icao { font-size:10px; font-weight:bold; color:var(--accent); display:block; }
-.fav-btn .fav-name { color:var(--text-muted); font-size:8px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fav-btn .fav-icao { font-size:12px; font-weight:bold; color:var(--accent); display:block; }
+.fav-btn .fav-name { color:var(--text-muted); font-size:10px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .custom-btn {
   width:100%; background:none; border:1px solid var(--border-bright); color:var(--text-muted);
-  font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase;
+  font-family:var(--mono); font-size:12px; letter-spacing:1px; text-transform:uppercase;
   padding:5px 9px; border-radius:3px; cursor:pointer; margin-top:6px; transition:all .15s;
 }
 .custom-btn:hover { border-color:var(--accent); color:var(--accent); }
@@ -182,39 +182,39 @@ select option { background:var(--surface2); }
 
 /* RESULTS */
 .results-wrap { padding:14px 16px; }
-.empty-msg { text-align:center; font-family:var(--mono); font-size:10px; color:var(--text-muted); letter-spacing:1px; padding:10px 0; line-height:1.8; }
+.empty-msg { text-align:center; font-family:var(--mono); font-size:12px; color:var(--text-muted); letter-spacing:1px; padding:10px 0; line-height:1.8; }
 
 /* Result cards */
 .res-card { background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:12px; margin-bottom:10px; border-left-width:3px; }
 .res-card.a { border-left-color:var(--accent); }
 .res-card.b { border-left-color:var(--accent2); }
-.res-name { font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.res-name { font-size:14px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .res-card.a .res-name { color:var(--accent); }
 .res-card.b .res-name { color:var(--accent2); }
-.faster-tag { font-family:var(--mono); font-size:9px; color:var(--warn); border:1px solid var(--warn); padding:1px 4px; border-radius:2px; letter-spacing:1px; }
+.faster-tag { font-family:var(--mono); font-size:11px; color:var(--warn); border:1px solid var(--warn); padding:1px 4px; border-radius:2px; letter-spacing:1px; }
 
 /* Totals row */
 .totals-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px; }
-.res-item-lbl { font-family:var(--mono); font-size:9px; color:var(--text-muted); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px; }
-.res-item-val { font-family:var(--mono); font-size:16px; color:var(--text); line-height:1; }
-.res-item-val .u { font-size:10px; color:var(--text-muted); margin-left:2px; }
+.res-item-lbl { font-family:var(--mono); font-size:11px; color:var(--text-muted); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px; }
+.res-item-val { font-family:var(--mono); font-size:18px; color:var(--text); line-height:1; }
+.res-item-val .u { font-size:12px; color:var(--text-muted); margin-left:2px; }
 
 /* Leg breakdown */
 .legs-toggle {
   width:100%; background:none; border:1px solid var(--border); color:var(--text-muted);
-  font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase;
+  font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase;
   padding:4px 8px; border-radius:3px; cursor:pointer; transition:all .15s; margin-bottom:6px;
 }
 .legs-toggle:hover { border-color:var(--border-bright); color:var(--text-dim,#b8c7d9); }
-.legs-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:10px; }
-.legs-table th { color:var(--text-muted); font-weight:normal; letter-spacing:1px; text-transform:uppercase; padding:3px 5px; border-bottom:1px solid var(--border); text-align:left; font-size:9px; }
+.legs-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12px; }
+.legs-table th { color:var(--text-muted); font-weight:normal; letter-spacing:1px; text-transform:uppercase; padding:3px 5px; border-bottom:1px solid var(--border); text-align:left; font-size:11px; }
 .legs-table td { padding:4px 5px; color:var(--text); border-bottom:1px solid var(--border); }
 .legs-table tr:last-child td { border-bottom:none; }
 .legs-table td.dim { color:var(--text-muted); }
 
 .delta-row { display:flex; justify-content:space-between; align-items:center; background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:6px 10px; margin-top:6px; }
-.dist-lbl { font-family:var(--mono); font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
-.dist-val { font-family:var(--mono); font-size:13px; color:var(--accent); font-weight:bold; }
+.dist-lbl { font-family:var(--mono); font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+.dist-val { font-family:var(--mono); font-size:15px; color:var(--accent); font-weight:bold; }
 
 /* MAP */
 #map { width:100%; height:100%; }
@@ -229,7 +229,7 @@ select option { background:var(--surface2); }
 }
 .mobile-nav-btn {
   flex:1; background:none; border:none; color:var(--text-muted);
-  font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase;
+  font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
   cursor:pointer; transition:color .15s; padding:8px 0 env(safe-area-inset-bottom, 4px);
 }
@@ -241,7 +241,7 @@ select option { background:var(--surface2); }
   html, body { overflow:hidden; }
 
   header { padding:0 14px; height:46px; }
-  .logo-title { font-size:13px; letter-spacing:1px; }
+  .logo-title { font-size:15px; letter-spacing:1px; }
   .hdr-right .pulse { display:inline-block; }
   .hdr-right span:not(:first-child) { display:none; } /* hide clock on mobile */
 
@@ -277,20 +277,20 @@ select option { background:var(--surface2); }
   .mobile-nav { display:flex; }
 
   /* Map badge repositioned */
-  .map-badge { top:8px; right:10px; font-size:9px; padding:4px 8px; }
+  .map-badge { top:8px; right:10px; font-size:11px; padding:4px 8px; }
   /* Touch-friendly tap targets */
   .wp-btn { width:28px; height:28px; }
   .fav-btn { padding:7px 6px; }
-  .add-wp-btn, .clear-all-btn { padding:9px 12px; font-size:10px; }
+  .add-wp-btn, .clear-all-btn { padding:9px 12px; font-size:12px; }
   /* Slightly larger inputs on mobile */
-  .cost-input { font-size:14px; padding:6px 8px; }
-  .wp-addr-input { font-size:14px; }
+  .cost-input { font-size:16px; padding:6px 8px; }
+  .wp-addr-input { font-size:16px; }
 }
 
 .map-badge {
   position:absolute; top:12px; right:52px; z-index:1000;
   background:rgba(17,20,24,.92); border:1px solid var(--border); border-radius:3px;
-  padding:6px 11px; font-family:var(--mono); font-size:10px; color:var(--text-muted);
+  padding:6px 11px; font-family:var(--mono); font-size:12px; color:var(--text-muted);
   pointer-events:none; display:flex; align-items:center; gap:7px;
 }
 .mode-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; animation:blink 1.5s infinite; }
@@ -303,7 +303,7 @@ select option { background:var(--surface2); }
 }
 .layer-btn {
   background:var(--surface); border:1px solid var(--border); color:var(--text-muted);
-  font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase;
+  font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase;
   padding:5px 8px; border-radius:3px; cursor:pointer; transition:all .15s; text-align:center;
 }
 .layer-btn:hover, .layer-btn.active { border-color:var(--accent); color:var(--accent); }
@@ -312,7 +312,7 @@ select option { background:var(--surface2); }
 .map-lock-btn {
   position:fixed; bottom:12px; left:342px; z-index:2500;
   background:rgba(17,20,24,.92); border:1px solid var(--border-bright);
-  color:var(--text-muted); font-family:var(--mono); font-size:10px;
+  color:var(--text-muted); font-family:var(--mono); font-size:12px;
   letter-spacing:1px; text-transform:uppercase;
   padding:6px 10px; border-radius:3px; cursor:pointer;
   display:flex; align-items:center; gap:5px; transition:all .15s;
@@ -331,9 +331,9 @@ select option { background:var(--surface2); }
 .leaflet-control-zoom { border:1px solid var(--border) !important; }
 .leaflet-control-zoom a { background:var(--surface) !important; color:#b8c7d9 !important; border-bottom:1px solid var(--border) !important; }
 .leaflet-control-zoom a:hover { background:var(--surface2) !important; color:var(--accent) !important; }
-.leaflet-control-attribution { background:rgba(10,12,15,.8) !important; color:var(--text-muted) !important; font-size:9px !important; }
+.leaflet-control-attribution { background:rgba(10,12,15,.8) !important; color:var(--text-muted) !important; font-size:11px !important; }
 .leaflet-control-attribution a { color:var(--text-muted) !important; }
-.leaflet-popup-content-wrapper { background:var(--surface); border:1px solid var(--border); border-radius:4px; color:var(--text); box-shadow:0 4px 20px rgba(0,0,0,.6); font-family:var(--mono); font-size:11px; }
+.leaflet-popup-content-wrapper { background:var(--surface); border:1px solid var(--border); border-radius:4px; color:var(--text); box-shadow:0 4px 20px rgba(0,0,0,.6); font-family:var(--mono); font-size:13px; }
 .leaflet-popup-tip { background:var(--surface); }
 .leaflet-popup-content { margin:10px 14px; line-height:1.6; }
 </style>
@@ -348,7 +348,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-27.11</span>
+    <span style="color:var(--text-muted)">v2026-03-27.12</span>
   </div>
 </header>
 
@@ -473,7 +473,7 @@ select option { background:var(--surface2); }
         <label class="cost-lbl">Pilot ($/day)</label>
         <div style="display:flex;gap:4px;align-items:center">
           <input type="number" id="costPilotMin" class="cost-input" value="500" min="0" step="100" oninput="recalc()" style="width:60px">
-          <span style="color:var(--text-muted);font-size:10px">–</span>
+          <span style="color:var(--text-muted);font-size:12px">–</span>
           <input type="number" id="costPilotMax" class="cost-input" value="1500" min="0" step="100" oninput="recalc()" style="width:60px">
         </div>
       </div>
@@ -702,12 +702,12 @@ function renderWPList() {
     var warn = wp.rwyFt > 0 && wpNeedsWarn(wp.rwyFt);
 
     var subLine = '';
-    if (wp.icao) subLine += '<span style="color:var(--accent);font-family:var(--mono);font-size:10px">' + wp.icao + '</span>';
+    if (wp.icao) subLine += '<span style="color:var(--accent);font-family:var(--mono);font-size:12px">' + wp.icao + '</span>';
     if (wp.rwyFt) {
       var rwyCol = warn ? '#f59e0b' : 'var(--text-muted)';
-      subLine += (subLine ? ' &nbsp;' : '') + '<span style="color:' + rwyCol + ';font-family:var(--mono);font-size:9px">' + (warn ? '⚠ SHORT ' : '') + 'RWY ' + wp.rwyFt.toLocaleString() + 'ft</span>';
+      subLine += (subLine ? ' &nbsp;' : '') + '<span style="color:' + rwyCol + ';font-family:var(--mono);font-size:11px">' + (warn ? '⚠ SHORT ' : '') + 'RWY ' + wp.rwyFt.toLocaleString() + 'ft</span>';
     }
-    if (isPlaced) subLine += (subLine ? '&nbsp; ' : '') + '<span style="color:var(--text-muted);font-family:var(--mono);font-size:9px">' + wp.lat.toFixed(3) + '° / ' + wp.lng.toFixed(3) + '°</span>';
+    if (isPlaced) subLine += (subLine ? '&nbsp; ' : '') + '<span style="color:var(--text-muted);font-family:var(--mono);font-size:11px">' + wp.lat.toFixed(3) + '° / ' + wp.lng.toFixed(3) + '°</span>';
 
     var isFirst = (i === 0);
 
@@ -912,7 +912,7 @@ function lookupByIdentifier(id, code, input) {
 
   var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp);
   if (wpIndex === 0 || (wpIndex === -1 && waypoints.filter(function(w){ return w.lat !== null; }).length === 0)) {
-    popupBody += '<br><button id="popupReturnBtn" style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none"></button>';
+    popupBody += '<br><button id="popupReturnBtn" style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-size:13px;display:none"></button>';
   }
 
   wp.marker = L.marker([match.lat, match.lng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
@@ -1163,7 +1163,7 @@ function placeWaypointDirect(id, airport) {
   if (wpIndex === 0) {
     popupBody += '<br><button id="popupReturnBtn" ' +
       'style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);' +
-      'color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none">' +
+      'color:var(--accent);border-radius:4px;cursor:pointer;font-size:13px;display:none">' +
       '</button>';
   }
 
@@ -1250,7 +1250,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
     if (wpIndex === 0) {
       popupBody += '<br><button id="popupReturnBtn" ' +
         'style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);' +
-        'color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none">' +
+        'color:var(--accent);border-radius:4px;cursor:pointer;font-size:13px;display:none">' +
         '</button>';
     }
 
@@ -1838,7 +1838,7 @@ function haversineM(la1, lo1, la2, lo2) {
 function makeIcon(color, label) {
   return L.divIcon({
     className: '',
-    html: '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px solid '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:10px;font-weight:bold;color:'+color+';box-shadow:0 0 8px '+color+'44">'+label+'</div>',
+    html: '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px solid '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:12px;font-weight:bold;color:'+color+';box-shadow:0 0 8px '+color+'44">'+label+'</div>',
     iconSize: [26,26], iconAnchor: [13,13], popupAnchor: [0,-16]
   });
 }
@@ -1848,8 +1848,8 @@ function makeWarnIcon(color, label) {
   return L.divIcon({
     className: '',
     html: '<div style="position:relative;width:26px;height:26px">' +
-          '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px solid '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:10px;font-weight:bold;color:'+color+';box-shadow:0 0 8px '+color+'44">'+label+'</div>' +
-          '<div style="position:absolute;top:-6px;right:-6px;background:#f59e0b;color:#000;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;line-height:1">!</div>' +
+          '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px solid '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:12px;font-weight:bold;color:'+color+';box-shadow:0 0 8px '+color+'44">'+label+'</div>' +
+          '<div style="position:absolute;top:-6px;right:-6px;background:#f59e0b;color:#000;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;line-height:1">!</div>' +
           '</div>',
     iconSize: [26,26], iconAnchor: [13,13], popupAnchor: [0,-16]
   });
@@ -1858,7 +1858,7 @@ function makeWarnIcon(color, label) {
 function makeSearchingIcon(color, label) {
   return L.divIcon({
     className: '',
-    html: '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px dashed '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:10px;font-weight:bold;color:'+color+';opacity:0.6;animation:spin 1s linear infinite">'+label+'</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>',
+    html: '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px dashed '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:12px;font-weight:bold;color:'+color+';opacity:0.6;animation:spin 1s linear infinite">'+label+'</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>',
     iconSize: [26,26], iconAnchor: [13,13], popupAnchor: [0,-16]
   });
 }
@@ -2029,8 +2029,8 @@ function updateReturnUI() {
     document.getElementById('returnBadge').style.cssText =
       'border-color:' + color + ';color:' + color + ';background:' + color + '11';
     document.getElementById('returnName').textContent = first.name || '—';
-    var coords = '<span style="color:var(--accent);font-family:var(--mono);font-size:10px">' + (first.icao || '') + '</span>';
-    if (first.lat) coords += '&nbsp;&nbsp;<span style="color:var(--text-muted);font-family:var(--mono);font-size:9px">' +
+    var coords = '<span style="color:var(--accent);font-family:var(--mono);font-size:12px">' + (first.icao || '') + '</span>';
+    if (first.lat) coords += '&nbsp;&nbsp;<span style="color:var(--text-muted);font-family:var(--mono);font-size:11px">' +
       first.lat.toFixed(3) + '° / ' + first.lng.toFixed(3) + '°</span>';
     document.getElementById('returnCoords').innerHTML = coords;
   } else {
@@ -2298,10 +2298,10 @@ window.recalc = function() {
 
   var grid = document.getElementById('costGrid');
   grid.innerHTML =
-    '<div><div class="res-item-lbl">Aircraft</div><div class="res-item-val" style="font-size:14px">' + fmt$(acCost) + '</div></div>' +
-    '<div><div class="res-item-lbl">' + getConsumablesLabel() + '</div><div class="res-item-val" style="font-size:14px">' + fmt$(consumCost) + '</div></div>' +
-    '<div><div class="res-item-lbl">Pilot (' + days + 'd)</div><div class="res-item-val" style="font-size:14px">' + fmtRange(pilotLow, pilotHigh) + '</div></div>' +
-    '<div><div class="res-item-lbl">FBO Fees</div><div class="res-item-val" style="font-size:14px">' + fmt$(fboTotal) + '</div></div>' +
+    '<div><div class="res-item-lbl">Aircraft</div><div class="res-item-val" style="font-size:16px">' + fmt$(acCost) + '</div></div>' +
+    '<div><div class="res-item-lbl">' + getConsumablesLabel() + '</div><div class="res-item-val" style="font-size:16px">' + fmt$(consumCost) + '</div></div>' +
+    '<div><div class="res-item-lbl">Pilot (' + days + 'd)</div><div class="res-item-val" style="font-size:16px">' + fmtRange(pilotLow, pilotHigh) + '</div></div>' +
+    '<div><div class="res-item-lbl">FBO Fees</div><div class="res-item-val" style="font-size:16px">' + fmt$(fboTotal) + '</div></div>' +
     '<div><div class="res-item-lbl">Total</div><div class="res-item-val" style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</div></div>';
 
   // Cost breakdown table
@@ -2315,7 +2315,7 @@ window.recalc = function() {
     var fee = inp ? (parseFloat(inp.value) || 0) : 0;
     if (fee > 0) rows += '<tr><td>FBO</td><td>' + truncate(wp.name, 18) + '</td><td>' + fmt$(fee) + '</td></tr>';
   });
-  if (fboTotal === 0) rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:10px">No FBO fees entered</td></tr>';
+  if (fboTotal === 0) rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:12px">No FBO fees entered</td></tr>';
   rows += '<tr style="font-weight:bold;border-top:1px solid var(--border-bright)"><td colspan="2">Total</td><td style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</td></tr>';
   tbl.innerHTML = rows;
 };
@@ -2339,16 +2339,16 @@ function renderFBOInputs(placed) {
     var icao = wp.icao || '';
     var links = '';
     if (icao) {
-      links = ' <a href="https://www.airnav.com/airport/' + icao + '" target="_blank" style="color:var(--text-muted);font-size:9px;text-decoration:none;margin-right:3px" title="AirNav fees">↗ AirNav</a>' +
-              '<a href="https://webapp.aopa.org/destinations/airports/' + icao + '/details" target="_blank" style="color:var(--text-muted);font-size:9px;text-decoration:none" title="AOPA Airport Directory">↗ AOPA</a>';
+      links = ' <a href="https://www.airnav.com/airport/' + icao + '" target="_blank" style="color:var(--text-muted);font-size:11px;text-decoration:none;margin-right:3px" title="AirNav fees">↗ AirNav</a>' +
+              '<a href="https://webapp.aopa.org/destinations/airports/' + icao + '/details" target="_blank" style="color:var(--text-muted);font-size:11px;text-decoration:none" title="AOPA Airport Directory">↗ AOPA</a>';
     }
     html += '<div class="fbo-row">' +
       '<span class="fbo-label" style="color:' + wpColor(idx) + '">' + (wp.icao || truncate(wp.name || ('WP'+(idx+1)), 18)) + links + '</span>' +
-      '<span style="color:var(--text-muted);font-size:11px;margin-right:2px">$</span>' +
+      '<span style="color:var(--text-muted);font-size:13px;margin-right:2px">$</span>' +
       '<input type="number" id="fbo-' + wp.id + '" class="cost-input" style="width:70px" min="0" placeholder="0" value="' + val + '" oninput="recalc()">' +
     '</div>';
   });
-  html += '<div style="color:var(--text-muted);font-size:9px;margin-top:4px;line-height:1.5">FBO fees vary by operator. Use ↗ AirNav<br>or ↗ AOPA links above to look up fees,<br>then enter them manually.</div>';
+  html += '<div style="color:var(--text-muted);font-size:11px;margin-top:4px;line-height:1.5">FBO fees vary by operator. Use ↗ AirNav<br>or ↗ AOPA links above to look up fees,<br>then enter them manually.</div>';
   container.innerHTML = html;
 }
 
@@ -2452,7 +2452,7 @@ window.addFavoriteWP = function(icao) {
     '<br><span style="color:#b8c7d9">' + fav.lat.toFixed(4) + '° / ' + fav.lng.toFixed(4) + '°</span>';
 
   if (num === 1) {
-    popupBody += '<br><button id="popupReturnBtn" style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none"></button>';
+    popupBody += '<br><button id="popupReturnBtn" style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-size:13px;display:none"></button>';
   }
 
   wp.marker = L.marker([fav.lat, fav.lng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
