@@ -224,14 +224,14 @@ select option { background:var(--surface2); }
 .mobile-nav {
   display:none;
   position:fixed; bottom:0; left:0; right:0; z-index:2000;
-  height:56px; background:var(--surface); border-top:1px solid var(--border);
+  height:68px; background:var(--surface); border-top:1px solid var(--border);
   display:none; align-items:stretch;
 }
 .mobile-nav-btn {
   flex:1; background:none; border:none; color:var(--text-muted);
   font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
-  cursor:pointer; transition:color .15s; padding-bottom:env(safe-area-inset-bottom, 0);
+  cursor:pointer; transition:color .15s; padding:8px 0 env(safe-area-inset-bottom, 4px);
 }
 .mobile-nav-btn svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.5; }
 .mobile-nav-btn.active { color:var(--accent); }
@@ -252,7 +252,7 @@ select option { background:var(--surface2); }
     width:100%; height:100%;
     position:absolute; top:0; left:0; right:0; bottom:0;
     z-index:100; display:none; flex-direction:column;
-    padding-bottom:56px; /* room for nav bar */
+    padding-bottom:68px; /* room for nav bar */
   }
   .sidebar.mobile-active { display:flex; }
 
@@ -269,7 +269,7 @@ select option { background:var(--surface2); }
     position:absolute; top:0; left:0; right:0; bottom:0;
     z-index:200; display:none; flex-direction:column;
     background:var(--surface); overflow-y:auto; padding:14px 16px;
-    padding-bottom:56px;
+    padding-bottom:68px;
   }
   .results-wrap.mobile-active { display:flex; }
 
@@ -343,7 +343,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-27.2</span>
+    <span style="color:var(--text-muted)">v2026-03-27.3</span>
   </div>
 </header>
 
