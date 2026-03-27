@@ -278,8 +278,8 @@ select option { background:var(--surface2); }
 
   /* Map badge repositioned */
   .map-badge { top:8px; right:10px; font-size:9px; padding:4px 8px; }
-  .map-layer-toggle { position:fixed; bottom:80px; right:10px; z-index:2500; }
-  .map-lock-btn { position:fixed; bottom:80px; left:12px; z-index:2500; }
+  .map-layer-toggle { position:fixed; bottom:82px; right:10px; z-index:2500; }
+  .map-lock-btn { position:fixed; bottom:82px; left:12px; z-index:2500; }
 
   /* Touch-friendly tap targets */
   .wp-btn { width:28px; height:28px; }
@@ -301,7 +301,7 @@ select option { background:var(--surface2); }
 .mode-dot.done    { background:var(--text-muted); animation:none; }
 
 .map-layer-toggle {
-  position:fixed; bottom:28px; right:10px; z-index:2500;
+  position:absolute; bottom:28px; right:10px; z-index:1000;
   display:flex; flex-direction:column; gap:4px;
 }
 .layer-btn {
@@ -313,7 +313,7 @@ select option { background:var(--surface2); }
 
 /* Map lock toggle button */
 .map-lock-btn {
-  position:fixed; bottom:12px; left:12px; z-index:2500;
+  position:absolute; bottom:12px; left:12px; z-index:1000;
   background:rgba(17,20,24,.92); border:1px solid var(--border-bright);
   color:var(--text-muted); font-family:var(--mono); font-size:10px;
   letter-spacing:1px; text-transform:uppercase;
@@ -345,7 +345,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-27.7</span>
+    <span style="color:var(--text-muted)">v2026-03-27.8</span>
   </div>
 </header>
 
@@ -544,16 +544,15 @@ select option { background:var(--surface2); }
       <div class="mode-dot placing" id="modeDot"></div>
       <span id="modeText">ADD A WAYPOINT TO BEGIN</span>
     </div>
+    <!-- MAP OVERLAY CONTROLS (inside map-wrap for desktop; mobile uses position:fixed to escape stacking context) -->
+    <button class="map-lock-btn locked" id="mapLockBtn" onclick="toggleMapLock(event)" title="Lock map to scroll page">&#x1F512; MAP LOCKED</button>
+    <div class="map-layer-toggle" id="mapLayerToggle">
+      <button class="layer-btn"        id="btnDark"     onclick="setLayer('dark')">DARK</button>
+      <button class="layer-btn active"  id="btnStreet"   onclick="setLayer('street')">STREET</button>
+      <button class="layer-btn"        id="btnSatellite" onclick="setLayer('satellite')">SAT</button>
+    </div>
   </div>
 
-</div>
-
-<!-- MAP OVERLAY CONTROLS (outside map-wrap for iOS stacking context compatibility) -->
-<button class="map-lock-btn locked" id="mapLockBtn" onclick="toggleMapLock(event)" title="Lock map to scroll page">&#x1F512; MAP LOCKED</button>
-<div class="map-layer-toggle" id="mapLayerToggle">
-  <button class="layer-btn"        id="btnDark"     onclick="setLayer('dark')">DARK</button>
-  <button class="layer-btn active"  id="btnStreet"   onclick="setLayer('street')">STREET</button>
-  <button class="layer-btn"        id="btnSatellite" onclick="setLayer('satellite')">SAT</button>
 </div>
 
 <!-- MOBILE BOTTOM NAV -->
