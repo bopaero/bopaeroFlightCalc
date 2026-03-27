@@ -278,8 +278,8 @@ select option { background:var(--surface2); }
 
   /* Map badge repositioned */
   .map-badge { top:8px; right:10px; font-size:9px; padding:4px 8px; }
-  .map-layer-toggle { position:fixed; bottom:82px; right:10px; z-index:2500; }
-  .map-lock-btn { position:fixed; bottom:82px; left:12px; z-index:2500; }
+  .map-layer-toggle { position:fixed; bottom:calc(68px + env(safe-area-inset-bottom, 0px) + 14px); right:10px; z-index:2500; }
+  .map-lock-btn { position:fixed; bottom:calc(68px + env(safe-area-inset-bottom, 0px) + 14px); left:12px; z-index:2500; }
 
 
   /* Touch-friendly tap targets */
@@ -346,7 +346,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-27.9</span>
+    <span style="color:var(--text-muted)">v2026-03-27.10</span>
   </div>
 </header>
 
