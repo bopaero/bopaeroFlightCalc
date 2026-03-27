@@ -237,7 +237,7 @@ select option { background:var(--surface2); }
 .mobile-nav-btn.active { color:var(--accent); }
 .mobile-nav-btn.active svg { stroke:var(--accent); }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   html, body { overflow:hidden; }
 
   header { padding:0 14px; height:46px; }
@@ -345,7 +345,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-27.4</span>
+    <span style="color:var(--text-muted)">v2026-03-27.5</span>
   </div>
 </header>
 
@@ -1893,7 +1893,7 @@ function lockMap() {
 }
 
 // ── MOBILE TAB NAVIGATION ─────────────────────────────────────────────────────
-var MOBILE_BREAKPOINT = 768;
+var MOBILE_BREAKPOINT = 1024;
 
 function isMobile() { return window.innerWidth <= MOBILE_BREAKPOINT; }
 
