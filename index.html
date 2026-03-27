@@ -698,7 +698,7 @@ function renderWPList() {
     if (wp.icao) subLine += '<span style="color:var(--accent);font-family:var(--mono);font-size:10px">' + wp.icao + '</span>';
     if (wp.rwyFt) {
       var rwyCol = warn ? '#f59e0b' : 'var(--text-muted)';
-      subLine += (subLine ? ' &nbsp;' : '') + '<span style="color:' + rwyCol + ';font-family:var(--mono);font-size:9px">' + (warn ? '⚠ ' : '') + 'RWY ' + wp.rwyFt.toLocaleString() + 'ft</span>';
+      subLine += (subLine ? ' &nbsp;' : '') + '<span style="color:' + rwyCol + ';font-family:var(--mono);font-size:9px">' + (warn ? '⚠ SHORT ' : '') + 'RWY ' + wp.rwyFt.toLocaleString() + 'ft</span>';
     }
     if (isPlaced) subLine += (subLine ? '&nbsp; ' : '') + '<span style="color:var(--text-muted);font-family:var(--mono);font-size:9px">' + wp.lat.toFixed(3) + '° / ' + wp.lng.toFixed(3) + '°</span>';
 
@@ -886,7 +886,7 @@ function lookupByIdentifier(id, code, input) {
 
   var color = wpColor(wp.idx);
   var num   = wp.idx + 1;
-  var rwyFt = match.type === 'large_airport' ? 8000 : match.type === 'medium_airport' ? 5000 : 3000;
+  var rwyFt = getMaxPavedRwyFt(match);
   var warn  = wpNeedsWarn(rwyFt);
 
   wp.lat   = match.lat;
@@ -1136,7 +1136,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
     popupBody += name;
     if (rwyFt) {
       var rc = warn ? '#f59e0b' : '#b8c7d9';
-      popupBody += '<br><span style="color:'+rc+'">'+(warn?'⚠ ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
+      popupBody += '<br><span style="color:'+rc+'">'+(warn?'⚠ SHORT ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
     }
     popupBody += '<br><span style="color:#b8c7d9">'+useLat.toFixed(4)+'° / '+useLng.toFixed(4)+'°</span>';
     if (!airport) popupBody += '<br><span style="color:#f59e0b">⚠ No qualifying airport found nearby</span>';
@@ -1279,6 +1279,15 @@ function wpNeedsWarn(rwyFt) {
   return false;
 }
 
+// Return max paved runway length for an OA_CACHE entry — real data if available, else type estimate
+function getMaxPavedRwyFt(entry) {
+  if (entry.maxPavedRwyFt) return entry.maxPavedRwyFt;
+  var rwy = RWY_MAP[entry.icao];
+  if (rwy && rwy.maxPavedFt > 0) return rwy.maxPavedFt;
+  return entry.type === 'large_airport' ? 8000 :
+         entry.type === 'medium_airport' ? 5000 : 3000;
+}
+
 function findNearestAirport(lat, lng, cb) {
   // Find nearest airport from local DB instantly — no network call needed
   var candidate = findNearestDBEntry(lat, lng, 150000);
@@ -1287,11 +1296,10 @@ function findNearestAirport(lat, lng, cb) {
   var ap = candidate.entry;
   var thresholds = getRwyThresholds();
 
-  // Estimate runway length from airport type — instant, no Overpass needed
-  var maxRwyFt = ap.type === 'large_airport' ? 8000 :
-                 ap.type === 'medium_airport' ? 5000 : 3000;
+  // Use actual paved runway length if available, otherwise estimate from type
+  var maxRwyFt = getMaxPavedRwyFt(ap);
 
-  // If estimated runway doesn't meet minimum, try next nearest
+  // If runway doesn't meet minimum, try next nearest
   if (maxRwyFt < thresholds.minFt) {
     var next = findNextNearestDBEntry(lat, lng, candidate.dist);
     if (next) {
@@ -1307,8 +1315,7 @@ function findNearestAirport(lat, lng, cb) {
 
 function findNearestAirport_withCandidate(candidate, lat, lng, thresholds, cb) {
   var ap = candidate.entry;
-  var maxRwyFt = ap.type === 'large_airport' ? 8000 :
-                 ap.type === 'medium_airport' ? 5000 : 3000;
+  var maxRwyFt = getMaxPavedRwyFt(ap);
   if (maxRwyFt < thresholds.minFt) {
     var next = findNextNearestDBEntry(lat, lng, candidate.dist);
     if (next) { findNearestAirport_withCandidate(next, lat, lng, thresholds, cb); }
@@ -1383,6 +1390,10 @@ var AIRPORT_DB_FALLBACK = [
 var OA_CACHE = AIRPORT_DB_FALLBACK.map(function(a){ return {icao:a[0],name:a[1],lat:a[2],lng:a[3]}; });
 var OA_READY = false;
 
+// Runway data from OurAirports runways.csv — airport_ident → { maxPavedFt }
+var RWY_MAP = {};
+var RWY_READY = false;
+
 // US Cities cache — loaded from GitHub at startup for city/state geocoding
 // Format: { city, state_id, lat, lng }
 var CITY_CACHE = null;
@@ -1442,6 +1453,7 @@ var CITY_CACHE = null;
       var iRegion= hdr.indexOf('iso_region');
       var iSched = hdr.indexOf('scheduled_service');
       var iLocal = hdr.indexOf('local_code');
+      var iKeywords = hdr.indexOf('keywords');
       console.log('CSV header indices — ident:'+iIdent+' type:'+iType+' name:'+iName+' lat:'+iLat+' lng:'+iLng+' country:'+iCtry);
       var arr = [];
       for (var i = 1; i < lines.length; i++) {
@@ -1453,25 +1465,29 @@ var CITY_CACHE = null;
         if (type !== 'small_airport' && type !== 'medium_airport' && type !== 'large_airport') continue;
         var name = stripQ(cols[iName]);
         var ident = stripQ(cols[iIdent]);
+        var localCode = iLocal >= 0 ? stripQ(cols[iLocal]) : '';
         // Public-use airports always have an FAA local_code (e.g. I67, 60J, 1A5, KLUK).
         // Private/restricted fields that aren't in the FAA public database have no local_code.
         // Large and medium airports are always public — only filter small ones.
         if (type === 'small_airport') {
-          var localCode = iLocal >= 0 ? stripQ(cols[iLocal]) : '';
           if (!localCode) continue; // no FAA local code = not a public-use airport
           var nameLower = name.toLowerCase();
-          if (/\bprivate\b|\bpvt\b/.test(nameLower)) continue; // explicitly marked private
+          if (/\bprivate\b|\bpvt\b|\brestricted\b|\bpersonal\b|\bresidential\b/.test(nameLower)) continue;
+          var keywords = iKeywords >= 0 ? stripQ(cols[iKeywords]).toLowerCase() : '';
+          if (/\bprivate\b|\bpvt\b/.test(keywords)) continue;
         }
         var lat = parseFloat(cols[iLat]);
         var lng = parseFloat(cols[iLng]);
         if (isNaN(lat) || isNaN(lng)) continue;
-        arr.push({ icao: ident, name: name, lat: lat, lng: lng, type: type, municipality: stripQ(cols[iMuni] || '').toLowerCase(), region: stripQ(cols[iRegion] || '').toLowerCase() });
+        arr.push({ icao: ident, name: name, lat: lat, lng: lng, type: type, localCode: localCode, municipality: stripQ(cols[iMuni] || '').toLowerCase(), region: stripQ(cols[iRegion] || '').toLowerCase() });
       }
       OA_CACHE = arr;
       OA_READY = true;
       console.log('OurAirports loaded:', arr.length, 'US airports');
       // Apply FAA public-use filter if it already loaded
       applyFAAPublicFilter();
+      // Apply runway data if it already loaded
+      applyRunwayData();
     })
     .catch(function(e) {
       // Keep using fallback — already initialized above
@@ -1479,6 +1495,69 @@ var CITY_CACHE = null;
       console.log('OurAirports fetch failed, using fallback:', e.message || e);
     });
 })();
+
+// Load actual runway lengths and surface types from OurAirports
+(function loadOurAirportsRunways() {
+  fetch('https://davidmegginson.github.io/ourairports-data/runways.csv')
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(function(csv) {
+      var lines = csv.split('\n');
+      var hdr = lines[0].split(',').map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
+      var iIdent   = hdr.indexOf('airport_ident');
+      var iLen     = hdr.indexOf('length_ft');
+      var iSurface = hdr.indexOf('surface');
+      var iClosed  = hdr.indexOf('closed');
+      for (var i = 1; i < lines.length; i++) {
+        var cols = csvSplit(lines[i]);
+        if (!cols || cols.length < 6) continue;
+        var closed = iClosed >= 0 ? stripQ(cols[iClosed]) : '0';
+        if (closed === '1') continue;
+        var ident = stripQ(cols[iIdent]);
+        var lenFt = parseInt(stripQ(cols[iLen]), 10);
+        if (isNaN(lenFt) || lenFt <= 0) continue;
+        var surface = stripQ(cols[iSurface]).toLowerCase();
+        if (!RWY_MAP[ident]) RWY_MAP[ident] = { maxPavedFt: 0 };
+        if (isPaved(surface) && lenFt > RWY_MAP[ident].maxPavedFt) {
+          RWY_MAP[ident].maxPavedFt = lenFt;
+        }
+      }
+      RWY_READY = true;
+      console.log('Runways loaded:', Object.keys(RWY_MAP).length, 'airports with runway data');
+      applyRunwayData();
+    })
+    .catch(function(e) {
+      RWY_READY = true;
+      console.log('Runways fetch failed, using type-based estimates:', e.message || e);
+    });
+})();
+
+// Enrich OA_CACHE with actual paved runway lengths, then filter out unpaved-only airports
+function applyRunwayData() {
+  if (!OA_READY || !RWY_READY) return;
+  for (var i = 0; i < OA_CACHE.length; i++) {
+    var a = OA_CACHE[i];
+    var rwy = RWY_MAP[a.icao];
+    if (rwy) {
+      a.maxPavedRwyFt = rwy.maxPavedFt;
+    } else {
+      // Fallback to type-based estimate if no runway data
+      a.maxPavedRwyFt = a.type === 'large_airport' ? 8000 :
+                         a.type === 'medium_airport' ? 5000 : 3000;
+    }
+  }
+  // Remove small airports with no paved runways (catches private grass strips)
+  var before = OA_CACHE.length;
+  OA_CACHE = OA_CACHE.filter(function(a) {
+    if (a.type !== 'small_airport') return true;
+    var rwy = RWY_MAP[a.icao];
+    if (rwy && rwy.maxPavedFt === 0) return false;
+    return true;
+  });
+  console.log('Runway paved filter: ' + before + ' → ' + OA_CACHE.length + ' airports');
+}
 
 // FAA public-use airport identifiers — loaded from NASR APT_BASE.csv
 // FACILITY_USE_CODE = 'PU' means open to the public, 'PR' = private
@@ -1535,7 +1614,8 @@ function applyFAAPublicFilter() {
     // For small airports, check FAA public-use set by local code
     // OA_CACHE ident may be KLUK (ICAO) or I67 (FAA LID) — check both
     var lid = a.icao.replace(/^K/, ''); // strip K prefix to get FAA LID
-    return FAA_PUBLIC_SET.has(a.icao) || FAA_PUBLIC_SET.has(lid);
+    return FAA_PUBLIC_SET.has(a.icao) || FAA_PUBLIC_SET.has(lid) ||
+           (a.localCode && FAA_PUBLIC_SET.has(a.localCode));
   });
   console.log('FAA filter applied: ' + before + ' → ' + OA_CACHE.length + ' airports');
 }
@@ -2247,7 +2327,7 @@ window.addFavoriteWP = function(icao) {
   var color = wpColor(idx);
   var num   = idx + 1;
   var name  = info ? info.name : fav.name;
-  var rwyFt = info ? (info.type === 'large_airport' ? 8000 : info.type === 'medium_airport' ? 5000 : 3000) : 3000;
+  var rwyFt = info ? getMaxPavedRwyFt(info) : 3000;
   var warn  = wpNeedsWarn(rwyFt);
 
   wp.lat   = fav.lat;
