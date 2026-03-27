@@ -301,7 +301,7 @@ select option { background:var(--surface2); }
 .mode-dot.done    { background:var(--text-muted); animation:none; }
 
 .map-layer-toggle {
-  position:absolute; bottom:28px; right:10px; z-index:1000;
+  position:fixed; bottom:28px; right:10px; z-index:2500;
   display:flex; flex-direction:column; gap:4px;
 }
 .layer-btn {
@@ -313,7 +313,7 @@ select option { background:var(--surface2); }
 
 /* Map lock toggle button */
 .map-lock-btn {
-  position:absolute; bottom:12px; left:12px; z-index:1500;
+  position:fixed; bottom:12px; left:12px; z-index:2500;
   background:rgba(17,20,24,.92); border:1px solid var(--border-bright);
   color:var(--text-muted); font-family:var(--mono); font-size:10px;
   letter-spacing:1px; text-transform:uppercase;
@@ -345,7 +345,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-27.6</span>
+    <span style="color:var(--text-muted)">v2026-03-27.7</span>
   </div>
 </header>
 
@@ -540,18 +540,20 @@ select option { background:var(--surface2); }
   <!-- MAP -->
   <div class="map-wrap mobile-active" id="mobileMapPanel">
     <div id="map"></div>
-    <button class="map-lock-btn locked" id="mapLockBtn" onclick="toggleMapLock(event)" title="Lock map to scroll page">&#x1F512; MAP LOCKED</button>
     <div class="map-badge">
       <div class="mode-dot placing" id="modeDot"></div>
       <span id="modeText">ADD A WAYPOINT TO BEGIN</span>
     </div>
-    <div class="map-layer-toggle">
-      <button class="layer-btn"        id="btnDark"     onclick="setLayer('dark')">DARK</button>
-      <button class="layer-btn active"  id="btnStreet"   onclick="setLayer('street')">STREET</button>
-      <button class="layer-btn"        id="btnSatellite" onclick="setLayer('satellite')">SAT</button>
-    </div>
   </div>
 
+</div>
+
+<!-- MAP OVERLAY CONTROLS (outside map-wrap for iOS stacking context compatibility) -->
+<button class="map-lock-btn locked" id="mapLockBtn" onclick="toggleMapLock(event)" title="Lock map to scroll page">&#x1F512; MAP LOCKED</button>
+<div class="map-layer-toggle" id="mapLayerToggle">
+  <button class="layer-btn"        id="btnDark"     onclick="setLayer('dark')">DARK</button>
+  <button class="layer-btn active"  id="btnStreet"   onclick="setLayer('street')">STREET</button>
+  <button class="layer-btn"        id="btnSatellite" onclick="setLayer('satellite')">SAT</button>
 </div>
 
 <!-- MOBILE BOTTOM NAV -->
@@ -1909,6 +1911,10 @@ window.mobileTab = function(tab) {
   mapPanel.classList.remove('mobile-active');
   if (resultsWrap) resultsWrap.classList.remove('mobile-active');
 
+  // Hide map overlay controls when not on map tab
+  var mapOverlays = [document.getElementById('mapLockBtn'), document.getElementById('mapLayerToggle')];
+  mapOverlays.forEach(function(el) { if (el) el.style.display = 'none'; });
+
   // Deactivate all nav buttons
   ['mnavMap','mnavPlan','mnavResults'].forEach(function(id) {
     var el = document.getElementById(id);
@@ -1918,6 +1924,8 @@ window.mobileTab = function(tab) {
   if (tab === 'map') {
     mapPanel.classList.add('mobile-active');
     document.getElementById('mnavMap').classList.add('active');
+    // Show map overlay controls
+    mapOverlays.forEach(function(el) { if (el) el.style.display = ''; });
     // Trigger map resize so tiles load correctly
     setTimeout(function(){ map.invalidateSize(); }, 100);
   } else if (tab === 'plan') {
