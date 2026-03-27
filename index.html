@@ -278,10 +278,6 @@ select option { background:var(--surface2); }
 
   /* Map badge repositioned */
   .map-badge { top:8px; right:10px; font-size:9px; padding:4px 8px; }
-  .map-layer-toggle { position:fixed; bottom:calc(68px + env(safe-area-inset-bottom, 0px) + 14px); right:10px; z-index:2500; }
-  .map-lock-btn { position:fixed; bottom:calc(68px + env(safe-area-inset-bottom, 0px) + 14px); left:12px; z-index:2500; }
-
-
   /* Touch-friendly tap targets */
   .wp-btn { width:28px; height:28px; }
   .fav-btn { padding:7px 6px; }
@@ -324,6 +320,12 @@ select option { background:var(--surface2); }
 .map-lock-btn:hover { border-color:var(--accent); color:var(--accent); }
 .map-lock-btn.locked { border-color:var(--warn); color:var(--warn); }
 
+/* Mobile override for map overlay buttons — must come AFTER default styles */
+@media (max-width: 1024px) {
+  .map-layer-toggle { bottom:calc(68px + env(safe-area-inset-bottom, 0px) + 14px); right:10px; }
+  .map-lock-btn { bottom:calc(68px + env(safe-area-inset-bottom, 0px) + 14px); left:12px; }
+}
+
 /* Leaflet overrides */
 .leaflet-container { background:#0d1521; }
 .leaflet-control-zoom { border:1px solid var(--border) !important; }
@@ -346,7 +348,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-27.10</span>
+    <span style="color:var(--text-muted)">v2026-03-27.11</span>
   </div>
 </header>
 
