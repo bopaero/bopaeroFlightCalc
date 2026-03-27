@@ -343,7 +343,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-26.9</span>
+    <span style="color:var(--text-muted)">v2026-03-27.1</span>
   </div>
 </header>
 
@@ -986,7 +986,7 @@ function geocodeCityFromDB(id, addr, input) {
   var stateAbbr = statePart.length === 2 ? statePart : (STATE_ABBR[statePart] || '');
 
   function resolveFromCoords(lat, lng) {
-    finishCity(id, addr, input, lat, lng);
+    finishCity(id, addr, input, lat, lng, cityPart, stateAbbr);
   }
 
   // Step 1: exact match in US cities DB (has coords for every town including Highlands, NC)
@@ -1029,11 +1029,19 @@ function nearestAirportToCoords(lat, lng) {
   return nearest;
 }
 
-function finishCity(id, addr, input, lat, lng) {
+function finishCity(id, addr, input, lat, lng, cityHint, stateHint) {
   input.disabled = false;
   input.value = addr;
   input.style.borderColor = 'var(--accent2)';
   setTimeout(function(){ input.style.borderColor = ''; }, 1500);
+  // If we have a city/state hint, prefer an airport whose municipality matches
+  if (cityHint) {
+    var muniMatch = findAirportByMunicipality(cityHint, stateHint, lat, lng);
+    if (muniMatch) {
+      placeWaypointDirect(id, muniMatch);
+      return;
+    }
+  }
   placeWaypointFromCoords(id, lat, lng);
 }
 
@@ -1093,6 +1101,95 @@ function showGeoError(input, type) {
     input.placeholder = '\uD83D\uDD0D ICAO code or address...';
   }, 3000);
 }
+// Find the best airport whose municipality matches the searched city
+function findAirportByMunicipality(city, state, originLat, originLng) {
+  var candidates = [];
+  for (var i = 0; i < OA_CACHE.length; i++) {
+    var a = OA_CACHE[i];
+    if (a.municipality !== city) continue;
+    if (state && a.region.replace('us-', '') !== state) continue;
+    var thresholds = getRwyThresholds();
+    var rwyFt = getMaxPavedRwyFt(a);
+    if (rwyFt < thresholds.minFt) continue;
+    var d = haversineM(originLat, originLng, a.lat, a.lng);
+    candidates.push({ entry: a, dist: d, rwyFt: rwyFt });
+  }
+  if (candidates.length === 0) return null;
+  // Pick the closest municipality-matching airport
+  candidates.sort(function(a, b) { return a.dist - b.dist; });
+  var best = candidates[0];
+  return { lat: best.entry.lat, lng: best.entry.lng, name: best.entry.name, icao: best.entry.icao, maxRwyFt: best.rwyFt };
+}
+
+// Place a waypoint directly from a known airport (no nearest-airport search)
+function placeWaypointDirect(id, airport) {
+  var wp = wpById(id);
+  if (!wp) return;
+  placingId = id;
+  wp.originLat = airport.lat;
+  wp.originLng = airport.lng;
+  wp.driveMi   = null;
+  if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
+  // Reuse the same placement logic as placeWaypointFromCoords callback
+  var color = wpColor(wp.idx);
+  var num   = wp.idx + 1;
+  var rwyFt = airport.maxRwyFt || 0;
+  var warn  = rwyFt > 0 && wpNeedsWarn(rwyFt);
+
+  wp.lat   = airport.lat;
+  wp.lng   = airport.lng;
+  wp.name  = airport.name;
+  wp.icao  = airport.icao;
+  wp.rwyFt = rwyFt;
+  wp.warn  = warn;
+
+  var popupBody = '<b style="color:'+color+'">WP ' + num + '</b>&nbsp;';
+  if (airport.icao) popupBody += '<span style="color:var(--accent)">' + airport.icao + '</span><br>';
+  popupBody += airport.name;
+  if (rwyFt) {
+    var rc = warn ? '#f59e0b' : '#b8c7d9';
+    popupBody += '<br><span style="color:'+rc+'">'+(warn?'⚠ SHORT ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
+  }
+  popupBody += '<br><span style="color:#b8c7d9">'+airport.lat.toFixed(4)+'° / '+airport.lng.toFixed(4)+'°</span>';
+
+  var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp);
+  if (wpIndex === 0) {
+    popupBody += '<br><button id="popupReturnBtn" ' +
+      'style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);' +
+      'color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none">' +
+      '</button>';
+  }
+
+  wp.marker = L.marker([airport.lat, airport.lng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
+    .bindPopup(popupBody).addTo(map);
+
+  if (wpIndex === 0) {
+    wp.marker.on('popupopen', function() {
+      var btn = document.getElementById('popupReturnBtn');
+      if (!btn) return;
+      var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
+      if (placedNow.length >= 2) {
+        btn.style.display = '';
+        btn.textContent = routeClosed ? '\u2715 Remove return leg' : '\u21BA Return to this airport';
+        btn.onclick = function() { toggleClosedRoute(); wp.marker.closePopup(); };
+      } else { btn.style.display = 'none'; }
+    });
+  }
+
+  wp.marker.openPopup();
+
+  var next = null, found = false;
+  for (var i = 0; i < waypoints.length; i++) {
+    if (waypoints[i].id === id) { found = true; continue; }
+    if (found && waypoints[i].lat === null) { next = waypoints[i].id; break; }
+  }
+  placingId = next;
+
+  drawAllLines(); renderWPList(); updateMode(); recalc();
+  map.setView([airport.lat, airport.lng], 10);
+  fitBoundsIfMultiple();
+}
+
 // ── SHARED: place a waypoint from any lat/lng origin ─────────────────────────
 function placeWaypointFromCoords(id, originLat, originLng) {
   var wp = wpById(id);
