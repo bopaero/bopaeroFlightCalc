@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>TripCalc — Mission Planning</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
@@ -281,9 +281,9 @@ select option { background:var(--surface2); }
   /* Map badge repositioned */
   .map-badge { top:8px; right:10px; font-size:9px; padding:4px 8px; }
 
-  /* Move map controls above mobile nav bar */
-  .map-layer-toggle { bottom:100px; }
-  .map-lock-btn { bottom:100px; }
+  /* Move map controls above mobile nav bar + iOS safe area */
+  .map-layer-toggle { bottom:calc(100px + env(safe-area-inset-bottom, 0px)); }
+  .map-lock-btn { bottom:calc(100px + env(safe-area-inset-bottom, 0px)); }
 
   /* Touch-friendly tap targets */
   .wp-btn { width:28px; height:28px; }
@@ -297,8 +297,8 @@ select option { background:var(--surface2); }
 /* iPad portrait — nav bar may be present via mobile nav at this breakpoint */
 @media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
   .mobile-nav { display:flex; }
-  .map-layer-toggle { bottom:100px; }
-  .map-lock-btn { bottom:100px; }
+  .map-layer-toggle { bottom:calc(100px + env(safe-area-inset-bottom, 0px)); }
+  .map-lock-btn { bottom:calc(100px + env(safe-area-inset-bottom, 0px)); }
 }
 
 .map-badge {
@@ -356,7 +356,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-28.13</span>
+    <span style="color:var(--text-muted)">v2026-03-28.14</span>
   </div>
 </header>
 
