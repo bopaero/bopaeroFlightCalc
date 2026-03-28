@@ -357,7 +357,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-28.22</span>
+    <span style="color:var(--text-muted)">v2026-03-28.23</span>
   </div>
 </header>
 
@@ -752,7 +752,8 @@ function renderWPList() {
 
     // Drive distance — shown only when placed
     if (isPlaced && wp.driveMi !== null && wp.driveMi !== undefined) {
-      innerHtml += '<div class="wp-drive">&#x1F697; <span class="wp-drive-val">' + wp.driveMi.toFixed(1) + ' mi</span>&nbsp;<span style="color:var(--text-muted)">drive to airport</span></div>';
+      var driveLabel = wp.addrInput ? 'from ' + wp.addrInput : 'drive to airport';
+      innerHtml += '<div class="wp-drive">&#x1F697; <span class="wp-drive-val">' + wp.driveMi.toFixed(1) + ' mi</span>&nbsp;<span style="color:var(--text-muted)">' + driveLabel + '</span></div>';
     }
 
     // Address input — shown only while this waypoint is pending (disappears once placed by either method)
