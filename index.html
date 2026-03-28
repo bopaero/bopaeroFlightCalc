@@ -66,6 +66,7 @@ header {
 .wp-row.next-to-place { border-color:var(--accent); box-shadow:0 0 0 1px rgba(0,212,255,.1); }
 .wp-row.drag-over { border-color:var(--accent2); box-shadow:0 0 0 1px rgba(0,255,157,.2); background:rgba(0,255,157,.04); }
 .wp-row.dragging { opacity:0.35; }
+.wp-row.wp-rwy-unsuitable { border-color:#ff4444; box-shadow:0 0 0 1px rgba(255,68,68,.2); background:rgba(255,68,68,.06); }
 
 /* Address input area */
 .wp-addr-row {
@@ -344,7 +345,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-28.6</span>
+    <span style="color:var(--text-muted)">v2026-03-28.7</span>
   </div>
 </header>
 
@@ -691,19 +692,21 @@ function renderWPList() {
     }
 
     var row = document.createElement('div');
-    row.className = 'wp-row' + (placingId === wp.id ? ' next-to-place' : '');
+    row.className = 'wp-row' + (placingId === wp.id ? ' next-to-place' : '') + (rwyTooShort ? ' wp-rwy-unsuitable' : '');
     row.setAttribute('draggable', 'true');
     row.dataset.wpId = wp.id;
 
     var isPlaced  = wp.lat !== null;
     var isPending = placingId === wp.id;
     var warn = wp.rwyFt > 0 && wpNeedsWarn(wp.rwyFt);
+    var rwyTooShort = warn && wp.rwyFt < getRwyThresholds().minFt;
 
     var subLine = '';
     if (wp.icao) subLine += '<span style="color:var(--accent);font-family:var(--mono);font-size:10px">' + wp.icao + '</span>';
     if (wp.rwyFt) {
-      var rwyCol = warn ? '#f59e0b' : 'var(--text-muted)';
-      subLine += (subLine ? ' &nbsp;' : '') + '<span style="color:' + rwyCol + ';font-family:var(--mono);font-size:9px">' + (warn ? '⚠ SHORT ' : '') + 'RWY ' + wp.rwyFt.toLocaleString() + 'ft</span>';
+      var rwyCol = rwyTooShort ? '#ff4444' : (warn ? '#f59e0b' : 'var(--text-muted)');
+      var rwyLabel = rwyTooShort ? '\u26A0 UNSUITABLE ' : (warn ? '\u26A0 SHORT ' : '');
+      subLine += (subLine ? ' &nbsp;' : '') + '<span style="color:' + rwyCol + ';font-family:var(--mono);font-size:9px">' + rwyLabel + 'RWY ' + wp.rwyFt.toLocaleString() + 'ft</span>';
     }
     if (isPlaced) subLine += (subLine ? '&nbsp; ' : '') + '<span style="color:var(--text-muted);font-family:var(--mono);font-size:9px">' + wp.lat.toFixed(3) + '° / ' + wp.lng.toFixed(3) + '°</span>';
 
