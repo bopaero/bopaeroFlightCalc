@@ -278,8 +278,8 @@ select option { background:var(--surface2); }
   /* Show mobile nav */
   .mobile-nav { display:flex; }
 
-  /* Map badge repositioned */
-  .map-badge { top:8px; right:10px; font-size:9px; padding:4px 8px; }
+  /* Map badge repositioned — top center */
+  .map-badge { top:8px; right:auto; left:50%; transform:translateX(-50%); font-size:9px; padding:4px 8px; white-space:nowrap; }
 
   /* Reposition map controls to top of container — avoids nav bar collision on all orientations */
   .map-layer-toggle { bottom:auto !important; top:48px; right:10px; }
@@ -356,7 +356,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-28.16</span>
+    <span style="color:var(--text-muted)">v2026-03-28.17</span>
   </div>
 </header>
 
