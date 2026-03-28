@@ -345,7 +345,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-28.7</span>
+    <span style="color:var(--text-muted)">v2026-03-28.8</span>
   </div>
 </header>
 
@@ -1862,6 +1862,18 @@ function makeWarnIcon(color, label) {
   });
 }
 
+function makeUnsuitableIcon(color, label) {
+  // Marker with red border and red warning badge for unsuitable runway
+  return L.divIcon({
+    className: '',
+    html: '<div style="position:relative;width:30px;height:30px">' +
+          '<div style="width:26px;height:26px;border-radius:50%;background:rgba(255,68,68,.15);border:3px solid #ff4444;display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:10px;font-weight:bold;color:'+color+';box-shadow:0 0 12px rgba(255,68,68,.5)">'+label+'</div>' +
+          '<div style="position:absolute;top:-6px;right:-6px;background:#ff4444;color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;line-height:1">!</div>' +
+          '</div>',
+    iconSize: [30,30], iconAnchor: [15,15], popupAnchor: [0,-18]
+  });
+}
+
 function makeSearchingIcon(color, label) {
   return L.divIcon({
     className: '',
@@ -2366,12 +2378,14 @@ function renderFBOInputs(placed) {
 }
 
 function refreshWarnIcons() {
+  var thresholds = getRwyThresholds();
   waypoints.forEach(function(w, idx) {
     if (w.marker && w.lat !== null) {
       var c    = wpColor(idx);
       var warn = w.rwyFt > 0 && wpNeedsWarn(w.rwyFt);
+      var unsuitable = warn && w.rwyFt < thresholds.minFt;
       w.warn   = warn;
-      w.marker.setIcon(warn ? makeWarnIcon(c, idx+1) : makeIcon(c, idx+1));
+      w.marker.setIcon(unsuitable ? makeUnsuitableIcon(c, idx+1) : (warn ? makeWarnIcon(c, idx+1) : makeIcon(c, idx+1)));
     }
   });
 }
