@@ -345,7 +345,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-28.9</span>
+    <span style="color:var(--text-muted)">v2026-03-28.10</span>
   </div>
 </header>
 
@@ -691,15 +691,15 @@ function renderWPList() {
       list.appendChild(div);
     }
 
-    var row = document.createElement('div');
-    row.className = 'wp-row' + (placingId === wp.id ? ' next-to-place' : '') + (rwyTooShort ? ' wp-rwy-unsuitable' : '');
-    row.setAttribute('draggable', 'true');
-    row.dataset.wpId = wp.id;
-
     var isPlaced  = wp.lat !== null;
     var isPending = placingId === wp.id;
     var warn = wp.rwyFt > 0 && wpNeedsWarn(wp.rwyFt);
     var rwyTooShort = warn && wp.rwyFt < getRwyThresholds().minFt;
+
+    var row = document.createElement('div');
+    row.className = 'wp-row' + (isPending ? ' next-to-place' : '') + (rwyTooShort ? ' wp-rwy-unsuitable' : '');
+    row.setAttribute('draggable', 'true');
+    row.dataset.wpId = wp.id;
 
     var subLine = '';
     if (wp.icao) subLine += '<span style="color:var(--accent);font-family:var(--mono);font-size:10px">' + wp.icao + '</span>';
