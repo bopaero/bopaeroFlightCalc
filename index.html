@@ -302,7 +302,7 @@ select option { background:var(--surface2); }
 }
 
 .map-badge {
-  position:absolute; top:12px; right:52px; z-index:1000;
+  position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:1000; white-space:nowrap;
   background:rgba(17,20,24,.92); border:1px solid var(--border); border-radius:3px;
   padding:6px 11px; font-family:var(--mono); font-size:10px; color:var(--text-muted);
   pointer-events:none; display:flex; align-items:center; gap:7px;
@@ -357,7 +357,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-28.21</span>
+    <span style="color:var(--text-muted)">v2026-03-28.22</span>
   </div>
 </header>
 
