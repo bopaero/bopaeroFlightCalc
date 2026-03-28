@@ -126,6 +126,7 @@ header {
 .leg-details { display:flex; gap:8px; width:100%; padding-left:20px; font-family:var(--mono); font-size:9px; }
 .leg-time { color:var(--accent2); }
 .leg-fuel { color:var(--warn); }
+.leg-range-warn { color:#ff4444; font-weight:bold; font-size:9px; }
 
 .add-wp-btn {
   width:100%; background:none; border:1px dashed var(--border-bright); color:var(--text-muted);
@@ -343,7 +344,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-27.2</span>
+    <span style="color:var(--text-muted)">v2026-03-28.1</span>
   </div>
 </header>
 
@@ -675,6 +676,10 @@ function renderWPList() {
           legTxt += '<span class="leg-time">' + fmtPlain(legHrs) + '</span>';
           if (acA.gph > 0) {
             legTxt += '<span class="leg-fuel">' + (legHrs * acA.gph).toFixed(1) + ' gal</span>';
+          }
+          var maxRange = AC_RANGE[String(Math.round(acA.speed))];
+          if (maxRange && mi > maxRange) {
+            legTxt += '<span class="leg-range-warn">&#9888; EXCEEDS FUEL RANGE (' + maxRange + ' mi max)</span>';
           }
           legTxt += '</div>';
         }
@@ -1337,6 +1342,12 @@ var AC_RWY = {
   '300': { minFt: 5000, warnFt: 5000 },   // SF50
 };
 var DEFAULT_RWY = { minFt: 2500, warnFt: 3000 };
+
+// Per-aircraft max fuel range in miles (mph speed value → miles)
+var AC_RANGE = {
+  '185': 800,    // SR22T
+  '300': 1000    // SF50
+};
 
 function getRwyThresholds() {
   // Return the most restrictive minFt across all active aircraft,
@@ -2007,6 +2018,10 @@ function updateReturnUI() {
       returnLegHtml += '<span class="leg-time">' + fmtPlain(retHrs) + '</span>';
       if (acA.gph > 0) {
         returnLegHtml += '<span class="leg-fuel">' + (retHrs * acA.gph).toFixed(1) + ' gal</span>';
+      }
+      var maxRange = AC_RANGE[String(Math.round(acA.speed))];
+      if (maxRange && closingMi > maxRange) {
+        returnLegHtml += '<span class="leg-range-warn">&#9888; EXCEEDS FUEL RANGE (' + maxRange + ' mi max)</span>';
       }
       returnLegHtml += '</div>';
     }
