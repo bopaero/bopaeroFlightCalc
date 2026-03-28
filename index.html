@@ -358,7 +358,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-28.26</span>
+    <span style="color:var(--text-muted)">v2026-03-28.27</span>
   </div>
 </header>
 
@@ -1693,14 +1693,30 @@ var FAA_PUBLIC_SET = null; // null = not yet loaded, Set when loaded
   var dataUrl = 'data/faa_public_use.csv';
   var cycleUrl = 'data/nasr_cycle.txt';
 
-  // Load cycle date for display
+  // Load cycle date for display with freshness indicator
   fetch(cycleUrl)
     .then(function(r) { return r.ok ? r.text() : ''; })
     .then(function(txt) {
       var dateStr = txt.trim();
       if (dateStr) {
         var el = document.getElementById('nasrCycle');
-        if (el) el.textContent = 'NASR: ' + dateStr;
+        if (el) {
+          el.textContent = 'NASR: ' + dateStr;
+          // Determine freshness: compare data cycle to current cycle
+          var anchor = new Date('2021-01-28');
+          var now = new Date();
+          var currentCycles = Math.floor((now - anchor) / (28 * 86400000));
+          var dataCycleDate = new Date(dateStr + 'T00:00:00');
+          var dataCycles = Math.round((dataCycleDate - anchor) / (28 * 86400000));
+          var cyclesOld = currentCycles - dataCycles;
+          if (cyclesOld <= 0) {
+            el.style.color = '#00d46a'; // green — current
+          } else if (cyclesOld === 1) {
+            el.style.color = '#f59e0b'; // amber — one cycle old
+          } else {
+            el.style.color = '#ff4444'; // red — two or more cycles old
+          }
+        }
       }
     })
     .catch(function() {});
