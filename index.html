@@ -345,7 +345,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-28.10</span>
+    <span style="color:var(--text-muted)">v2026-03-28.11</span>
   </div>
 </header>
 
@@ -2163,14 +2163,7 @@ window.onSel = function(s) {
     if(gphInp){ gphInp.value=acGph[sel.value]||''; } if(gphRow) gphRow.style.display='flex';
     // Update cost presets for primary aircraft
     if(s==='A') { applyCostPreset(sel.value); }
-    // Warn if switching to SF50 and any waypoint has runway < 5000ft
-    if(s==='A' && sel.value==='300') {
-      var short = waypoints.filter(function(w){ return w.rwyFt > 0 && w.rwyFt < 5000; });
-      if(short.length > 0) {
-        var names = short.map(function(w){ return (w.name||'Unknown') + ' (' + w.rwyFt.toLocaleString() + 'ft)'; }).join('\n  ');
-        alert('\u26A0 SF50 requires 5,000ft minimum runway.\n\nThe following waypoints have insufficient runway length:\n  ' + names);
-      }
-    }
+
   } else { row.style.display='none'; if(gphRow) gphRow.style.display='none'; }
   recalc();
 };
