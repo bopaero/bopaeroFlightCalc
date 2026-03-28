@@ -358,7 +358,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-28.25</span>
+    <span style="color:var(--text-muted)">v2026-03-28.26</span>
   </div>
 </header>
 
@@ -1689,17 +1689,24 @@ function applyRunwayData() {
 var FAA_PUBLIC_SET = null; // null = not yet loaded, Set when loaded
 
 (function loadFAAPublicSet() {
-  // Compute current NASR 28-day cycle date (cycles started 2021-01-28, every 28 days)
-  var anchor = new Date('2021-01-28');
-  var now = new Date();
-  var days = Math.floor((now - anchor) / 86400000);
-  var cycles = Math.floor(days / 28);
-  var cycleDate = new Date(anchor.getTime() + cycles * 28 * 86400000);
-  var pad = function(n){ return n < 10 ? '0' + n : '' + n; };
-  var dateStr = cycleDate.getFullYear() + '-' + pad(cycleDate.getMonth() + 1) + '-' + pad(cycleDate.getDate());
-  var url = 'https://nfdc.faa.gov/webContent/28DaySub/' + dateStr + '/CSV_Data/APT_BASE.csv';
+  // Fetch pre-extracted FAA public-use data (updated every 28-day NASR cycle via GitHub Action)
+  var dataUrl = 'data/faa_public_use.csv';
+  var cycleUrl = 'data/nasr_cycle.txt';
 
-  fetch(url)
+  // Load cycle date for display
+  fetch(cycleUrl)
+    .then(function(r) { return r.ok ? r.text() : ''; })
+    .then(function(txt) {
+      var dateStr = txt.trim();
+      if (dateStr) {
+        var el = document.getElementById('nasrCycle');
+        if (el) el.textContent = 'NASR: ' + dateStr;
+      }
+    })
+    .catch(function() {});
+
+  // Load airport public-use data
+  fetch(dataUrl)
     .then(function(r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.text();
@@ -1721,8 +1728,6 @@ var FAA_PUBLIC_SET = null; // null = not yet loaded, Set when loaded
       }
       FAA_PUBLIC_SET = set;
       console.log('FAA public-use airports loaded:', set.size);
-      var el = document.getElementById('nasrCycle');
-      if (el) el.textContent = 'NASR: ' + dateStr;
       // Re-filter OA_CACHE now that we have authoritative data
       if (OA_READY) applyFAAPublicFilter();
     })

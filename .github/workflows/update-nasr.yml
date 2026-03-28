@@ -1,0 +1,77 @@
+name: Update FAA NASR Data
+
+on:
+  schedule:
+    # Run every 14 days (twice per 28-day cycle to catch updates early)
+    - cron: '0 6 */14 * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-nasr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute NASR cycle date
+        id: cycle
+        run: |
+          python3 -c "
+          from datetime import datetime, timedelta
+          anchor = datetime(2021, 1, 28)
+          now = datetime.utcnow()
+          days = (now - anchor).days
+          cycles = days // 28
+          cycle_date = anchor + timedelta(days=cycles * 28)
+          # FAA uses 'DD_Mon_YYYY' format for the zip URL
+          months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+          mon = months[cycle_date.month - 1]
+          zip_date = f'{cycle_date.day}_{mon}_{cycle_date.year}'
+          iso_date = cycle_date.strftime('%Y-%m-%d')
+          print(f'ZIP_DATE={zip_date}')
+          print(f'ISO_DATE={iso_date}')
+          " >> "$GITHUB_OUTPUT"
+
+      - name: Download and extract FAA APT data
+        run: |
+          ZIP_DATE="${{ steps.cycle.outputs.ZIP_DATE }}"
+          ISO_DATE="${{ steps.cycle.outputs.ISO_DATE }}"
+          URL="https://nfdc.faa.gov/webContent/28DaySub/extra/${ZIP_DATE}_APT_CSV.zip"
+          echo "Fetching: $URL"
+          curl -sL -o apt_csv.zip "$URL"
+          unzip -o apt_csv.zip APT_BASE.csv
+
+          # Extract only ARPT_ID + FACILITY_USE_CODE, output as LOCATION_ID for app compatibility
+          python3 -c "
+          import csv, sys
+          with open('APT_BASE.csv') as f:
+              r = csv.DictReader(f)
+              rows = [(row['ARPT_ID'], row['FACILITY_USE_CODE']) for row in r]
+          with open('data/faa_public_use.csv', 'w', newline='') as f:
+              w = csv.writer(f)
+              w.writerow(['LOCATION_ID', 'FACILITY_USE_CODE'])
+              w.writerows(rows)
+          pu = sum(1 for _, u in rows if u == 'PU')
+          print(f'Extracted {len(rows)} airports ({pu} public-use)')
+          "
+
+          # Write cycle metadata
+          echo "$ISO_DATE" > data/nasr_cycle.txt
+
+          # Cleanup
+          rm -f apt_csv.zip APT_BASE.csv
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No changes to NASR data"
+          else
+            ISO_DATE="${{ steps.cycle.outputs.ISO_DATE }}"
+            git commit -m "Update FAA NASR data — cycle ${ISO_DATE}"
+            git push
+          fi
