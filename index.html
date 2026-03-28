@@ -31,7 +31,7 @@ header {
 .logo { display:flex; align-items:center; gap:10px; }
 .logo-diamond { width:22px; height:22px; border:2px solid var(--accent); transform:rotate(45deg); position:relative; flex-shrink:0; }
 .logo-diamond::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:7px; height:7px; background:var(--accent); }
-.logo-title { font-size:15px; font-weight:700; letter-spacing:2px; }
+.logo-title { font-size:15px; font-weight:700; letter-spacing:2px; align-self:flex-end; }
 .logo-title span { color:var(--accent); }
 .hdr-right { font-family:var(--mono); font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:16px; }
 .pulse { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent2); margin-right:6px; animation:blink 2s infinite; }
@@ -356,7 +356,7 @@ select option { background:var(--surface2); }
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
-    <span style="color:var(--text-muted)">v2026-03-28.19</span>
+    <span style="color:var(--text-muted)">v2026-03-28.20</span>
   </div>
 </header>
 
