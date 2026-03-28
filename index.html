@@ -685,6 +685,9 @@ function renderWPList() {
           }
           legTxt += '</div>';
         }
+        if (legNeedsRangeWarn(mi)) {
+          legTxt += '<div style="color:#f59e0b;font-size:11px;font-family:var(--mono);margin-top:2px">⚠ EXCEEDS SINGLE-TANK RANGE</div>';
+        }
       } else {
         legTxt = '<span style="color:var(--border-bright)">Leg ' + i + '</span>';
       }
@@ -1344,6 +1347,29 @@ var AC_RWY = {
   '300': { minFt: 5000, warnFt: 5000 },   // SF50
 };
 var DEFAULT_RWY = { minFt: 2500, warnFt: 3000 };
+
+// Per-aircraft single-tank range in statute miles (mph speed value → range)
+var AC_RANGE = {
+  '185': 800,    // SR22T
+  '300': 1000    // SF50
+};
+
+// Check if a leg distance exceeds single-tank range for a given aircraft speed
+function legExceedsRange(mi, spd) {
+  var range = AC_RANGE[String(Math.round(parseFloat(spd)))];
+  return range ? mi > range : false;
+}
+
+// Check if a leg exceeds range for any active aircraft
+function legNeedsRangeWarn(mi) {
+  var spdA = document.getElementById('spdA') ? parseFloat(document.getElementById('spdA').value) : 0;
+  if (spdA && legExceedsRange(mi, spdA)) return true;
+  if (comparisonActive) {
+    var spdB = document.getElementById('spdB') ? parseFloat(document.getElementById('spdB').value) : 0;
+    if (spdB && legExceedsRange(mi, spdB)) return true;
+  }
+  return false;
+}
 
 function getRwyThresholds() {
   // Return the most restrictive minFt across all active aircraft,
@@ -2023,6 +2049,9 @@ function updateReturnUI() {
       }
       returnLegHtml += '</div>';
     }
+    if (legNeedsRangeWarn(closingMi)) {
+      returnLegHtml += '<div style="color:#f59e0b;font-size:11px;font-family:var(--mono);margin-top:2px">⚠ EXCEEDS SINGLE-TANK RANGE</div>';
+    }
     document.getElementById('returnLegConnector').innerHTML = returnLegHtml;
 
     // WP1 echo
@@ -2247,7 +2276,9 @@ window.recalc = function() {
     var rows='<tr><th>#</th><th>From</th><th>To</th><th>Dist</th><th>Time</th>' + (hasFuel ? '<th>Fuel</th>' : '') + '</tr>';
     r.legs.forEach(function(leg,li){
       var legHrs=leg.mi/r.speed;
-      rows+='<tr><td class="dim">'+(li+1)+'</td><td>'+truncate(leg.from,14)+'</td><td>'+truncate(leg.to,14)+'</td><td>'+Math.round(leg.mi)+'<span style="color:var(--text-muted)"> mi</span></td><td>'+fmtPlain(legHrs)+'</td>';
+      var rangeWarn = legExceedsRange(leg.mi, r.speed);
+      var distStyle = rangeWarn ? 'color:#f59e0b' : '';
+      rows+='<tr><td class="dim">'+(li+1)+'</td><td>'+truncate(leg.from,14)+'</td><td>'+truncate(leg.to,14)+'</td><td style="'+distStyle+'">'+Math.round(leg.mi)+'<span style="color:var(--text-muted)"> mi</span>'+(rangeWarn?' ⚠':'')+'</td><td>'+fmtPlain(legHrs)+'</td>';
       if(hasFuel) rows+='<td>'+(legHrs*r.gph).toFixed(1)+'<span style="color:var(--text-muted)"> gal</span></td>';
       rows+='</tr>';
     });
