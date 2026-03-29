@@ -33,12 +33,14 @@
   --sans: 'Segoe UI', system-ui, sans-serif;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--sans); }
+html, body { height:100%; overflow:hidden; background:var(--surface); color:var(--text); font-family:var(--sans); }
+body { display:flex; flex-direction:column; }
 
 header {
-  height:50px; background:var(--surface); border-bottom:1px solid var(--border);
-  display:flex; align-items:center; justify-content:space-between; padding:0 20px; flex-shrink:0;
-  padding-top:env(safe-area-inset-top, 0px); height:calc(50px + env(safe-area-inset-top, 0px));
+  min-height:50px; background:var(--surface); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:env(safe-area-inset-top, 0px) 20px 0 20px; flex-shrink:0;
+  box-sizing:border-box;
 }
 .logo { display:flex; align-items:center; gap:10px; }
 .logo-diamond { width:22px; height:22px; border:2px solid var(--accent); transform:rotate(45deg); position:relative; flex-shrink:0; }
@@ -49,7 +51,7 @@ header {
 .pulse { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent2); margin-right:6px; animation:blink 2s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
-.layout { display:flex; height:calc(100vh - 50px - env(safe-area-inset-top, 0px)); }
+.layout { display:flex; flex:1; overflow:hidden; }
 
 /* SIDEBAR */
 .sidebar {
@@ -259,7 +261,7 @@ select option { background:var(--surface2); }
   .hdr-right .pulse { display:inline-block; }
   .hdr-right span:not(:first-child) { display:none; } /* hide clock on mobile */
 
-  .layout { flex-direction:column; height:calc(100vh - 46px - env(safe-area-inset-top, 0px)); position:relative; }
+  .layout { flex-direction:column; flex:1; position:relative; }
 
   /* Sidebar becomes a full-screen panel */
   .sidebar {
@@ -370,7 +372,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-29.31</span>
+    <span style="color:var(--text-muted)">v2026-03-29.32</span>
   </div>
 </header>
 
