@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180x180.png">
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="TripCalc">
 <meta name="theme-color" content="#111418">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -37,10 +37,9 @@ html, body { height:100%; overflow:hidden; background:var(--surface); color:var(
 body { display:flex; flex-direction:column; }
 
 header {
-  min-height:50px; background:var(--surface); border-bottom:1px solid var(--border);
+  height:50px; background:var(--surface); border-bottom:1px solid var(--border);
   display:flex; align-items:center; justify-content:space-between;
-  padding:env(safe-area-inset-top, 0px) 20px 0 20px; flex-shrink:0;
-  box-sizing:border-box;
+  padding:0 20px; flex-shrink:0;
 }
 .logo { display:flex; align-items:center; gap:10px; }
 .logo-diamond { width:22px; height:22px; border:2px solid var(--accent); transform:rotate(45deg); position:relative; flex-shrink:0; }
@@ -240,8 +239,8 @@ select option { background:var(--surface2); }
 .mobile-nav {
   display:none;
   position:fixed; bottom:0; left:0; right:0; z-index:2000;
-  height:calc(88px + env(safe-area-inset-bottom, 0px)); background:var(--surface); border-top:1px solid var(--border);
-  display:none; align-items:stretch; padding-bottom:env(safe-area-inset-bottom, 0px);
+  height:88px; background:var(--surface); border-top:1px solid var(--border);
+  display:none; align-items:stretch;
 }
 .mobile-nav-btn {
   flex:1; background:none; border:none; color:var(--text-muted);
@@ -268,7 +267,7 @@ select option { background:var(--surface2); }
     width:100%; height:100%;
     position:absolute; top:0; left:0; right:0; bottom:0;
     z-index:100; display:none; flex-direction:column;
-    padding-bottom:calc(88px + env(safe-area-inset-bottom, 0px)); /* room for nav bar */
+    padding-bottom:88px; /* room for nav bar */
   }
   .sidebar.mobile-active { display:flex; }
 
@@ -285,7 +284,7 @@ select option { background:var(--surface2); }
     position:absolute; top:0; left:0; right:0; bottom:0;
     z-index:200; display:none; flex-direction:column;
     background:var(--surface); overflow-y:auto; padding:14px 16px;
-    padding-bottom:calc(88px + env(safe-area-inset-bottom, 0px));
+    padding-bottom:88px;
   }
   .results-wrap.mobile-active { display:flex; }
 
@@ -372,7 +371,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-29.32</span>
+    <span style="color:var(--text-muted)">v2026-03-29.33</span>
   </div>
 </header>
 
