@@ -373,7 +373,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-29.36</span>
+    <span style="color:var(--text-muted)">v2026-03-29.37</span>
   </div>
 </header>
 
@@ -425,22 +425,22 @@ select option { background:var(--surface2); }
           <option value="300">Cirrus SF50 — 300 mph</option>
         </select>
         <div class="spd-row" id="spdRowA">
-          <input type="number" id="spdA" min="1" max="9999" value="185" oninput="recalc()">
+          <input inputmode="decimal" type="number" id="spdA" min="1" max="9999" value="185" oninput="recalc()">
           <span class="spd-unit">MPH</span>
         </div>
         <div class="spd-row" id="gphRowA">
-          <input type="number" id="gphA" min="0" max="9999" value="18" step="0.1" oninput="recalc()">
+          <input inputmode="decimal" type="number" id="gphA" min="0" max="9999" value="18" step="0.1" oninput="recalc()">
           <span class="spd-unit">GPH</span>
         </div>
         <button class="custom-btn" onclick="toggleCust('A')">+ Custom Aircraft</button>
         <div class="custom-fields" id="custA" style="display:none">
           <input type="text" id="custNameA" placeholder="Aircraft name" oninput="recalc()">
           <div class="spd-row">
-            <input type="number" id="custSpdA" min="1" max="9999" placeholder="Speed" oninput="recalc()">
+            <input inputmode="decimal" type="number" id="custSpdA" min="1" max="9999" placeholder="Speed" oninput="recalc()">
             <span class="spd-unit">MPH</span>
           </div>
           <div class="spd-row">
-            <input type="number" id="custGphA" min="0" max="9999" placeholder="Fuel burn" step="0.1" oninput="recalc()">
+            <input inputmode="decimal" type="number" id="custGphA" min="0" max="9999" placeholder="Fuel burn" step="0.1" oninput="recalc()">
             <span class="spd-unit">GPH</span>
           </div>
         </div>
@@ -457,22 +457,22 @@ select option { background:var(--surface2); }
             <option value="351">Cirrus SF50 G2+ Vision Jet — 351 mph</option>
           </select>
           <div class="spd-row" id="spdRowB" style="display:none">
-            <input type="number" id="spdB" min="1" max="9999" placeholder="Speed" oninput="recalc()">
+            <input inputmode="decimal" type="number" id="spdB" min="1" max="9999" placeholder="Speed" oninput="recalc()">
             <span class="spd-unit">MPH</span>
           </div>
           <div class="spd-row" id="gphRowB" style="display:none">
-            <input type="number" id="gphB" min="0" max="9999" placeholder="Fuel burn" step="0.1" oninput="recalc()">
+            <input inputmode="decimal" type="number" id="gphB" min="0" max="9999" placeholder="Fuel burn" step="0.1" oninput="recalc()">
             <span class="spd-unit">GPH</span>
           </div>
           <button class="custom-btn" onclick="toggleCust('B')">+ Custom Aircraft</button>
           <div class="custom-fields" id="custB" style="display:none">
             <input type="text" id="custNameB" placeholder="Aircraft name" oninput="recalc()">
             <div class="spd-row">
-              <input type="number" id="custSpdB" min="1" max="9999" placeholder="Speed" oninput="recalc()">
+              <input inputmode="decimal" type="number" id="custSpdB" min="1" max="9999" placeholder="Speed" oninput="recalc()">
               <span class="spd-unit">MPH</span>
             </div>
             <div class="spd-row">
-              <input type="number" id="custGphB" min="0" max="9999" placeholder="Fuel burn" step="0.1" oninput="recalc()">
+              <input inputmode="decimal" type="number" id="custGphB" min="0" max="9999" placeholder="Fuel burn" step="0.1" oninput="recalc()">
               <span class="spd-unit">GPH</span>
             </div>
           </div>
@@ -488,23 +488,23 @@ select option { background:var(--surface2); }
       <div class="sec-title">Trip Cost</div>
       <div class="cost-row">
         <label class="cost-lbl">Aircraft ($/hr)</label>
-        <input type="number" id="costAcPerHr" class="cost-input" value="372" min="0" oninput="recalc()">
+        <input inputmode="decimal" type="number" id="costAcPerHr" class="cost-input" value="372" min="0" oninput="recalc()">
       </div>
       <div class="cost-row">
         <label class="cost-lbl" id="consumablesLbl">Fuel/Oil/TKS ($/hr)</label>
-        <input type="number" id="costConsumables" class="cost-input" value="110" min="0" oninput="recalc()">
+        <input inputmode="decimal" type="number" id="costConsumables" class="cost-input" value="110" min="0" oninput="recalc()">
       </div>
       <div class="cost-row">
         <label class="cost-lbl">Pilot ($/day)</label>
         <div style="display:flex;gap:4px;align-items:center">
-          <input type="number" id="costPilotMin" class="cost-input" value="500" min="0" step="100" oninput="recalc()" style="width:60px">
+          <input inputmode="decimal" type="number" id="costPilotMin" class="cost-input" value="500" min="0" step="100" oninput="recalc()" style="width:60px">
           <span style="color:var(--text-muted);font-size:10px">–</span>
-          <input type="number" id="costPilotMax" class="cost-input" value="1500" min="0" step="100" oninput="recalc()" style="width:60px">
+          <input inputmode="decimal" type="number" id="costPilotMax" class="cost-input" value="1500" min="0" step="100" oninput="recalc()" style="width:60px">
         </div>
       </div>
       <div class="cost-row">
         <label class="cost-lbl">Trip days</label>
-        <input type="number" id="costDays" class="cost-input" value="1" min="1" max="30" oninput="recalc()">
+        <input inputmode="decimal" type="number" id="costDays" class="cost-input" value="1" min="1" max="30" oninput="recalc()">
       </div>
       <div id="fboList" style="margin-top:6px"></div>
     </div>
@@ -2424,7 +2424,7 @@ function renderFBOInputs(placed) {
     html += '<div class="fbo-row">' +
       '<span class="fbo-label" style="color:' + wpColor(idx) + '">' + (wp.icao || truncate(wp.name || ('WP'+(idx+1)), 18)) + links + '</span>' +
       '<span style="color:var(--text-muted);font-size:11px;margin-right:2px">$</span>' +
-      '<input type="number" id="fbo-' + wp.id + '" class="cost-input" style="width:70px" min="0" placeholder="0" value="' + val + '" oninput="recalc()">' +
+      '<input inputmode="decimal" type="number" id="fbo-' + wp.id + '" class="cost-input" style="width:70px" min="0" placeholder="0" value="' + val + '" oninput="recalc()">' +
     '</div>';
   });
   html += '<div style="color:var(--text-muted);font-size:9px;margin-top:4px;line-height:1.5">FBO fees vary by operator. Use ↗ AirNav<br>or ↗ AOPA links above to look up fees,<br>then enter them manually.</div>';
