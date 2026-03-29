@@ -38,6 +38,7 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 header {
   height:50px; background:var(--surface); border-bottom:1px solid var(--border);
   display:flex; align-items:center; justify-content:space-between; padding:0 20px; flex-shrink:0;
+  padding-top:env(safe-area-inset-top, 0px); height:calc(50px + env(safe-area-inset-top, 0px));
 }
 .logo { display:flex; align-items:center; gap:10px; }
 .logo-diamond { width:22px; height:22px; border:2px solid var(--accent); transform:rotate(45deg); position:relative; flex-shrink:0; }
@@ -48,7 +49,7 @@ header {
 .pulse { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent2); margin-right:6px; animation:blink 2s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
-.layout { display:flex; height:calc(100vh - 50px); }
+.layout { display:flex; height:calc(100vh - 50px - env(safe-area-inset-top, 0px)); }
 
 /* SIDEBAR */
 .sidebar {
@@ -237,8 +238,8 @@ select option { background:var(--surface2); }
 .mobile-nav {
   display:none;
   position:fixed; bottom:0; left:0; right:0; z-index:2000;
-  height:88px; background:var(--surface); border-top:1px solid var(--border);
-  display:none; align-items:stretch;
+  height:calc(88px + env(safe-area-inset-bottom, 0px)); background:var(--surface); border-top:1px solid var(--border);
+  display:none; align-items:stretch; padding-bottom:env(safe-area-inset-bottom, 0px);
 }
 .mobile-nav-btn {
   flex:1; background:none; border:none; color:var(--text-muted);
@@ -258,14 +259,14 @@ select option { background:var(--surface2); }
   .hdr-right .pulse { display:inline-block; }
   .hdr-right span:not(:first-child) { display:none; } /* hide clock on mobile */
 
-  .layout { flex-direction:column; height:calc(100vh - 46px); position:relative; }
+  .layout { flex-direction:column; height:calc(100vh - 46px - env(safe-area-inset-top, 0px)); position:relative; }
 
   /* Sidebar becomes a full-screen panel */
   .sidebar {
     width:100%; height:100%;
     position:absolute; top:0; left:0; right:0; bottom:0;
     z-index:100; display:none; flex-direction:column;
-    padding-bottom:88px; /* room for nav bar */
+    padding-bottom:calc(88px + env(safe-area-inset-bottom, 0px)); /* room for nav bar */
   }
   .sidebar.mobile-active { display:flex; }
 
@@ -282,7 +283,7 @@ select option { background:var(--surface2); }
     position:absolute; top:0; left:0; right:0; bottom:0;
     z-index:200; display:none; flex-direction:column;
     background:var(--surface); overflow-y:auto; padding:14px 16px;
-    padding-bottom:56px;
+    padding-bottom:calc(88px + env(safe-area-inset-bottom, 0px));
   }
   .results-wrap.mobile-active { display:flex; }
 
@@ -369,7 +370,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-29.30</span>
+    <span style="color:var(--text-muted)">v2026-03-29.31</span>
   </div>
 </header>
 
