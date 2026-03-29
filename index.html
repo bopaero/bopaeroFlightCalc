@@ -372,7 +372,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-29.42</span>
+    <span style="color:var(--text-muted)">v2026-03-29.43</span>
   </div>
 </header>
 
@@ -2385,7 +2385,17 @@ window.recalc = function() {
   var pilotMax      = parseFloat(document.getElementById('costPilotMax').value) || 0;
   var days          = parseFloat(document.getElementById('costDays').value) || 1;
 
+  // Break out fuel vs oil costs
+  var spdKey = String(Math.round(acA.speed));
+  var preset = acCostPresets[spdKey];
+  var oilPerHr = preset ? preset.oilPerHr : 0;
+  var fuelPerHr = consumPerHr - oilPerHr;
+  var gph = acGph[spdKey] || 0;
+  var fuelPriceGal = gph > 0 ? (fuelPerHr / gph) : 0;
+
   var acCost        = acPerHr * rA.hours;
+  var fuelCost      = fuelPerHr * rA.hours;
+  var oilCost       = oilPerHr * rA.hours;
   var consumCost    = consumPerHr * rA.hours;
   var pilotLow      = pilotMin * days;
   var pilotHigh     = pilotMax * days;
@@ -2406,7 +2416,8 @@ window.recalc = function() {
   var grid = document.getElementById('costGrid');
   grid.innerHTML =
     '<div><div class="res-item-lbl">Aircraft</div><div class="res-item-val" style="font-size:14px">' + fmt$(acCost) + '</div></div>' +
-    '<div><div class="res-item-lbl">' + getConsumablesLabel() + '</div><div class="res-item-val" style="font-size:14px">' + fmt$(consumCost) + '</div></div>' +
+    '<div><div class="res-item-lbl">Fuel</div><div class="res-item-val" style="font-size:14px">' + fmt$(fuelCost) + '</div></div>' +
+    '<div><div class="res-item-lbl">Oil</div><div class="res-item-val" style="font-size:14px">' + fmt$(oilCost) + '</div></div>' +
     '<div><div class="res-item-lbl">Pilot (' + days + 'd)</div><div class="res-item-val" style="font-size:14px">' + fmtRange(pilotLow, pilotHigh) + '</div></div>' +
     '<div><div class="res-item-lbl">FBO Fees</div><div class="res-item-val" style="font-size:14px">' + fmt$(fboTotal) + '</div></div>' +
     '<div><div class="res-item-lbl">Total</div><div class="res-item-val" style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</div></div>';
@@ -2415,7 +2426,8 @@ window.recalc = function() {
   var tbl = document.getElementById('legsTableCost');
   var rows = '<tr><th>Item</th><th>Detail</th><th>Cost</th></tr>';
   rows += '<tr><td>Aircraft</td><td>' + rA.hours.toFixed(2) + ' hr × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
-  rows += '<tr><td>' + getConsumablesLabel() + '</td><td>' + rA.hours.toFixed(2) + ' hr × $' + consumPerHr + '/hr</td><td>' + fmt$(consumCost) + '</td></tr>';
+  rows += '<tr><td>Fuel</td><td>' + rA.hours.toFixed(2) + ' hr × ' + gph + ' GPH × $' + fuelPriceGal.toFixed(2) + '/gal</td><td>' + fmt$(fuelCost) + '</td></tr>';
+  rows += '<tr><td>Oil</td><td>' + rA.hours.toFixed(2) + ' hr × $' + oilPerHr.toFixed(2) + '/hr</td><td>' + fmt$(oilCost) + '</td></tr>';
   rows += '<tr><td>Pilot</td><td>' + days + ' day' + (days>1?'s':'') + ' × $' + pilotMin + '–$' + pilotMax + '/day</td><td>' + fmtRange(pilotLow, pilotHigh) + '</td></tr>';
   placed.forEach(function(wp) {
     var inp = document.getElementById('fbo-' + wp.id);
