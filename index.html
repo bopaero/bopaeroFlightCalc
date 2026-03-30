@@ -372,7 +372,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-29.47</span>
+    <span style="color:var(--text-muted)">v2026-03-30.1</span>
   </div>
 </header>
 
@@ -1634,14 +1634,17 @@ var CITY_CACHE = null;
         var name = stripQ(cols[iName]);
         var ident = stripQ(cols[iIdent]);
         var localCode = iLocal >= 0 ? stripQ(cols[iLocal]) : '';
+        // Exclude military airfields (all types)
+        var nameLower = name.toLowerCase();
+        var keywords = iKeywords >= 0 ? stripQ(cols[iKeywords]).toLowerCase() : '';
+        if (/\bafb\b|\bair force\b|\bair national guard\b|\bang\b|\barmy\b|\bnaval\b|\bnas\b|\bnaas\b|\bnalf\b|\bmcas\b|\bjoint base\b|\bmilitary\b|\bjoint reserve\b/.test(nameLower)) continue;
+        if (/\bmilitary\b|\bair force\b|\bnaval\b|\barmy\b/.test(keywords)) continue;
         // Public-use airports always have an FAA local_code (e.g. I67, 60J, 1A5, KLUK).
         // Private/restricted fields that aren't in the FAA public database have no local_code.
         // Large and medium airports are always public — only filter small ones.
         if (type === 'small_airport') {
           if (!localCode) continue; // no FAA local code = not a public-use airport
-          var nameLower = name.toLowerCase();
           if (/\bprivate\b|\bpvt\b|\brestricted\b|\bpersonal\b|\bresidential\b/.test(nameLower)) continue;
-          var keywords = iKeywords >= 0 ? stripQ(cols[iKeywords]).toLowerCase() : '';
           if (/\bprivate\b|\bpvt\b/.test(keywords)) continue;
         }
         var lat = parseFloat(cols[iLat]);
