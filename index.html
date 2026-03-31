@@ -372,7 +372,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-30.7</span>
+    <span style="color:var(--text-muted)">v2026-03-30.8</span>
   </div>
 </header>
 
@@ -1659,16 +1659,15 @@ var CITY_CACHE = null;
         var name = stripQ(cols[iName]);
         var ident = stripQ(cols[iIdent]);
         var localCode = iLocal >= 0 ? stripQ(cols[iLocal]) : '';
-        // Exclude military airfields (all types)
-        var nameLower = name.toLowerCase();
-        var keywords = iKeywords >= 0 ? stripQ(cols[iKeywords]).toLowerCase() : '';
-        if (/\bafb\b|\bair force\b|\bair national guard\b|\bang\b|\barmy\b|\bnaval\b|\bnas\b|\bnaas\b|\bnalf\b|\bmcas\b|\bjoint base\b|\bmilitary\b|\bjoint reserve\b|\bspace force\b|\bsfs\b|\bskid strip\b|\bproving ground\b|\btest range\b|\barsenal\b|\bweapons station\b|\bdepot\b/.test(nameLower)) continue;
         // Public-use airports always have an FAA local_code (e.g. I67, 60J, 1A5, KLUK).
+        // Military-only bases are filtered by FAA FACILITY_USE_CODE (PR) in applyFAAPublicFilter().
         // Private/restricted fields that aren't in the FAA public database have no local_code.
         // Large and medium airports are always public — only filter small ones.
         if (type === 'small_airport') {
           if (!localCode) continue; // no FAA local code = not a public-use airport
+          var nameLower = name.toLowerCase();
           if (/\bprivate\b|\bpvt\b|\brestricted\b|\bpersonal\b|\bresidential\b/.test(nameLower)) continue;
+          var keywords = iKeywords >= 0 ? stripQ(cols[iKeywords]).toLowerCase() : '';
           if (/\bprivate\b|\bpvt\b/.test(keywords)) continue;
         }
         var lat = parseFloat(cols[iLat]);
@@ -1831,9 +1830,7 @@ function applyFAAPublicFilter() {
   if (!FAA_PUBLIC_SET || FAA_PUBLIC_SET.size === 0) return;
   var before = OA_CACHE.length;
   OA_CACHE = OA_CACHE.filter(function(a) {
-    // Large and medium airports are always kept
-    if (a.type !== 'small_airport') return true;
-    // For small airports, check FAA public-use set by local code
+    // Check FAA public-use set for ALL airport types (filters military-only bases)
     // OA_CACHE ident may be KLUK (ICAO) or I67 (FAA LID) — check both
     var lid = a.icao.replace(/^K/, ''); // strip K prefix to get FAA LID
     return FAA_PUBLIC_SET.has(a.icao) || FAA_PUBLIC_SET.has(lid) ||
