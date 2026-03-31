@@ -372,7 +372,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-30.4</span>
+    <span style="color:var(--text-muted)">v2026-03-30.5</span>
   </div>
 </header>
 
@@ -422,7 +422,7 @@ select option { background:var(--surface2); }
         <button class="layer-btn" id="btnLessee" onclick="setUserType('lessee')">LESSEE</button>
       </div>
       <div id="leaseHoursRow" class="cost-row" style="display:none;margin-bottom:8px">
-        <label class="cost-lbl">Included hrs/mo</label>
+        <label class="cost-lbl">Lease hrs remaining</label>
         <input enterkeyhint="done" inputmode="decimal" type="number" id="leaseHoursIncl" class="cost-input" value="14" min="0" oninput="recalc()">
       </div>
 
@@ -2484,9 +2484,9 @@ window.recalc = function() {
   var rows = '<tr><th>Item</th><th>Detail</th><th>Cost</th></tr>';
   if (userType === 'lessee') {
     if (billableHrs > 0) {
-      rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr over ' + leaseHrsIncl + ' incl × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
+      rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr over ' + leaseHrsIncl + ' remaining × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
     } else {
-      rows += '<tr><td>Aircraft</td><td>' + rA.hours.toFixed(2) + ' hr within ' + leaseHrsIncl + ' hr included</td><td>$0</td></tr>';
+      rows += '<tr><td>Aircraft</td><td>' + rA.hours.toFixed(2) + ' hr within ' + leaseHrsIncl + ' hr remaining</td><td>$0</td></tr>';
     }
   }
   rows += '<tr><td>Fuel</td><td>' + rA.hours.toFixed(2) + ' hr × ' + gph + ' GPH × $' + fuelPriceGal.toFixed(2) + '/gal</td><td>' + fmt$(fuelCost) + '</td></tr>';
