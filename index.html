@@ -434,7 +434,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-31.7</span>
+    <span style="color:var(--text-muted)">v2026-03-31.8</span>
   </div>
 </header>
 
@@ -2476,7 +2476,7 @@ window.recalc = function() {
     }
     var tbl=document.getElementById('legsTable'+id);
     var hasFuel = r.gph > 0;
-    var cols = '<colgroup><col style="width:7%"><col style="width:25%"><col style="width:25%"><col style="width:16%"><col style="width:15%">' + (hasFuel ? '<col style="width:12%">' : '') + '</colgroup>';
+    var cols = '<colgroup><col style="width:7%"><col style="width:16%"><col style="width:16%"><col style="width:20%"><col style="width:22%">' + (hasFuel ? '<col style="width:19%">' : '') + '</colgroup>';
     var rows=cols+'<tr><th>#</th><th>From</th><th>To</th><th>Dist</th><th>Time</th>' + (hasFuel ? '<th>Fuel</th>' : '') + '</tr>';
     r.legs.forEach(function(leg,li){
       var legHrs=leg.mi/r.speed;
