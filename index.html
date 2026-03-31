@@ -250,9 +250,9 @@ select option { background:var(--surface2); }
   padding:4px 8px; border-radius:3px; cursor:pointer; transition:all .15s; margin-bottom:6px;
 }
 .legs-toggle:hover { border-color:var(--border-bright); color:var(--text-dim,#b8c7d9); }
-.legs-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; table-layout:auto; }
-.legs-table th { color:var(--text-muted); font-weight:normal; letter-spacing:1px; text-transform:uppercase; padding:3px 4px; border-bottom:1px solid var(--border); text-align:left; font-size:10px; white-space:nowrap; }
-.legs-table td { padding:3px 4px; color:var(--text); border-bottom:1px solid var(--border); white-space:nowrap; }
+.legs-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:10px; table-layout:fixed; word-wrap:break-word; }
+.legs-table th { color:var(--text-muted); font-weight:normal; letter-spacing:1px; text-transform:uppercase; padding:3px 4px; border-bottom:1px solid var(--border); text-align:left; font-size:9px; overflow:hidden; text-overflow:ellipsis; }
+.legs-table td { padding:3px 4px; color:var(--text); border-bottom:1px solid var(--border); overflow:hidden; text-overflow:ellipsis; }
 .legs-table tr:last-child td { border-bottom:none; }
 .legs-table td.dim { color:var(--text-muted); }
 
@@ -434,7 +434,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-31.5</span>
+    <span style="color:var(--text-muted)">v2026-03-31.6</span>
   </div>
 </header>
 
@@ -596,7 +596,7 @@ select option { background:var(--surface2); }
             <div id="rFuelWrapA" style="display:none"><div class="res-item-lbl">Total Fuel</div><div class="res-item-val" id="rFuelA">—</div></div>
           </div>
           <button class="legs-toggle" onclick="toggleLegs('A')">&#x25BC; Leg Breakdown</button>
-          <div id="legsA" style="display:none;overflow-x:auto">
+          <div id="legsA" style="display:none">
             <table class="legs-table" id="legsTableA"></table>
           </div>
         </div>
@@ -611,7 +611,7 @@ select option { background:var(--surface2); }
             <div id="rFuelWrapB" style="display:none"><div class="res-item-lbl">Total Fuel</div><div class="res-item-val" id="rFuelB">—</div></div>
           </div>
           <button class="legs-toggle" onclick="toggleLegs('B')">&#x25BC; Leg Breakdown</button>
-          <div id="legsB" style="display:none;overflow-x:auto">
+          <div id="legsB" style="display:none">
             <table class="legs-table" id="legsTableB"></table>
           </div>
         </div>
@@ -626,7 +626,7 @@ select option { background:var(--surface2); }
           <div class="res-name" style="color:var(--accent2)">&#x24; Trip Cost Estimate</div>
           <div class="totals-grid" id="costGrid"></div>
           <button class="legs-toggle" onclick="toggleLegs('Cost')">&#x25BC; Cost Breakdown</button>
-          <div id="legsCost" style="display:none;overflow-x:auto">
+          <div id="legsCost" style="display:none">
             <table class="legs-table" id="legsTableCost"></table>
           </div>
         </div>
@@ -2476,7 +2476,8 @@ window.recalc = function() {
     }
     var tbl=document.getElementById('legsTable'+id);
     var hasFuel = r.gph > 0;
-    var rows='<tr><th>#</th><th>From</th><th>To</th><th>Dist</th><th>Time</th>' + (hasFuel ? '<th>Fuel</th>' : '') + '</tr>';
+    var cols = '<colgroup><col style="width:7%"><col style="width:25%"><col style="width:25%"><col style="width:16%"><col style="width:15%">' + (hasFuel ? '<col style="width:12%">' : '') + '</colgroup>';
+    var rows=cols+'<tr><th>#</th><th>From</th><th>To</th><th>Dist</th><th>Time</th>' + (hasFuel ? '<th>Fuel</th>' : '') + '</tr>';
     r.legs.forEach(function(leg,li){
       var legHrs=leg.mi/r.speed;
       rows+='<tr><td class="dim">'+(li+1)+'</td><td>'+truncate(leg.from,10)+'</td><td>'+truncate(leg.to,10)+'</td><td>'+Math.round(leg.mi)+'<span style="color:var(--text-muted)"> mi</span></td><td>'+fmtPlain(legHrs)+'</td>';
@@ -2565,7 +2566,7 @@ window.recalc = function() {
 
   // Cost breakdown table
   var tbl = document.getElementById('legsTableCost');
-  var rows = '<tr><th>Item</th><th>Detail</th><th>Cost</th></tr>';
+  var rows = '<colgroup><col style="width:20%"><col style="width:50%"><col style="width:30%"></colgroup><tr><th>Item</th><th>Detail</th><th>Cost</th></tr>';
   if (userType === 'lessee') {
     if (billableHrs > 0) {
       rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr over ' + leaseHrsIncl + ' remaining × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
