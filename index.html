@@ -31,7 +31,7 @@
   --text: #e2e8f0;
   --text-muted: #b8c7d9;
   --red: #ff4444;
-  --mono: 'Courier New', Courier, monospace;
+  --mono: 'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
   --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -429,7 +429,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-31.3</span>
+    <span style="color:var(--text-muted)">v2026-03-31.4</span>
   </div>
 </header>
 
@@ -2013,7 +2013,7 @@ function haversineM(la1, lo1, la2, lo2) {
 function makeIcon(color, label) {
   return L.divIcon({
     className: '',
-    html: '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px solid '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:10px;font-weight:bold;color:'+color+';box-shadow:0 0 8px '+color+'44">'+label+'</div>',
+    html: '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px solid '+color+';display:flex;align-items:center;justify-content:center;font-family:SF Mono,Menlo,Consolas,monospace;font-size:10px;font-weight:bold;color:'+color+';box-shadow:0 0 8px '+color+'44">'+label+'</div>',
     iconSize: [26,26], iconAnchor: [13,13], popupAnchor: [0,-16]
   });
 }
@@ -2023,7 +2023,7 @@ function makeWarnIcon(color, label) {
   return L.divIcon({
     className: '',
     html: '<div style="position:relative;width:26px;height:26px">' +
-          '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px solid '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:10px;font-weight:bold;color:'+color+';box-shadow:0 0 8px '+color+'44">'+label+'</div>' +
+          '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px solid '+color+';display:flex;align-items:center;justify-content:center;font-family:SF Mono,Menlo,Consolas,monospace;font-size:10px;font-weight:bold;color:'+color+';box-shadow:0 0 8px '+color+'44">'+label+'</div>' +
           '<div style="position:absolute;top:-6px;right:-6px;background:#f59e0b;color:#000;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;line-height:1">!</div>' +
           '</div>',
     iconSize: [26,26], iconAnchor: [13,13], popupAnchor: [0,-16]
@@ -2035,7 +2035,7 @@ function makeUnsuitableIcon(color, label) {
   return L.divIcon({
     className: '',
     html: '<div style="position:relative;width:30px;height:30px">' +
-          '<div style="width:26px;height:26px;border-radius:50%;background:rgba(255,68,68,.15);border:3px solid #ff4444;display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:10px;font-weight:bold;color:'+color+';box-shadow:0 0 12px rgba(255,68,68,.5)">'+label+'</div>' +
+          '<div style="width:26px;height:26px;border-radius:50%;background:rgba(255,68,68,.15);border:3px solid #ff4444;display:flex;align-items:center;justify-content:center;font-family:SF Mono,Menlo,Consolas,monospace;font-size:10px;font-weight:bold;color:'+color+';box-shadow:0 0 12px rgba(255,68,68,.5)">'+label+'</div>' +
           '<div style="position:absolute;top:-6px;right:-6px;background:#ff4444;color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;line-height:1">!</div>' +
           '</div>',
     iconSize: [30,30], iconAnchor: [15,15], popupAnchor: [0,-18]
@@ -2045,7 +2045,7 @@ function makeUnsuitableIcon(color, label) {
 function makeSearchingIcon(color, label) {
   return L.divIcon({
     className: '',
-    html: '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px dashed '+color+';display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:10px;font-weight:bold;color:'+color+';opacity:0.6;animation:spin 1s linear infinite">'+label+'</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>',
+    html: '<div style="width:26px;height:26px;border-radius:50%;background:'+color+'18;border:2px dashed '+color+';display:flex;align-items:center;justify-content:center;font-family:SF Mono,Menlo,Consolas,monospace;font-size:10px;font-weight:bold;color:'+color+';opacity:0.6;animation:spin 1s linear infinite">'+label+'</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>',
     iconSize: [26,26], iconAnchor: [13,13], popupAnchor: [0,-16]
   });
 }
