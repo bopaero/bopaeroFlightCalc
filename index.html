@@ -372,7 +372,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-30.3</span>
+    <span style="color:var(--text-muted)">v2026-03-30.4</span>
   </div>
 </header>
 
@@ -630,7 +630,15 @@ function setLayer(name) {
     btn.classList.toggle('active', k.toLowerCase() === name);
   });
 }
-setLayer('street');
+// Set initial map layer based on system color scheme
+setLayer(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'street');
+
+// Listen for system color scheme changes
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+    setLayer(e.matches ? 'dark' : 'street');
+  });
+}
 
 // ── WAYPOINT STATE ────────────────────────────────────────────────────────────
 // waypoints: array of { id, lat, lng, name, marker }
@@ -985,8 +993,7 @@ function lookupByIdentifier(id, code, input) {
   input.placeholder = '\uD83D\uDD0D ICAO code or address...';
 
   drawAllLines(); renderWPList(); updateMode(); recalc();
-  fitBoundsIfMultiple();
-  map.setView([match.lat, match.lng], 10);
+  fitRouteOrWaypoint();
   return true;
 }
 
@@ -1232,8 +1239,7 @@ function placeWaypointDirect(id, airport) {
   placingId = next;
 
   drawAllLines(); renderWPList(); updateMode(); recalc();
-  map.setView([airport.lat, airport.lng], 10);
-  fitBoundsIfMultiple();
+  fitRouteOrWaypoint();
 }
 
 // ── SHARED: place a waypoint from any lat/lng origin ─────────────────────────
@@ -1334,7 +1340,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
       wp2.driveMi = null;
     }
     drawAllLines(); renderWPList(); updateMode(); recalc();
-    fitBoundsIfMultiple();
+    fitRouteOrWaypoint();
   });
 }
 
@@ -1342,6 +1348,15 @@ function fitBoundsIfMultiple() {
   var placed = waypoints.filter(function(w){ return w.lat !== null; });
   if (placed.length >= 2) {
     map.fitBounds(L.latLngBounds(placed.map(function(w){ return [w.lat, w.lng]; })), { padding: [50, 50] });
+  }
+}
+
+function fitRouteOrWaypoint() {
+  var placed = waypoints.filter(function(w){ return w.lat !== null; });
+  if (placed.length >= 2) {
+    map.fitBounds(L.latLngBounds(placed.map(function(w){ return [w.lat, w.lng]; })), { padding: [50, 50] });
+  } else if (placed.length === 1) {
+    map.setView([placed[0].lat, placed[0].lng], 10);
   }
 }
 
@@ -2651,7 +2666,7 @@ window.addFavoriteWP = function(icao) {
   placingId = next;
 
   drawAllLines(); renderWPList(); updateMode(); recalc();
-  fitBoundsIfMultiple();
+  fitRouteOrWaypoint();
 };
 
 // Init
