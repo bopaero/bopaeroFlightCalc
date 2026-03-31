@@ -14,13 +14,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="TripCalc">
-<meta name="theme-color" content="#111418">
+<meta name="theme-color" content="#111418" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#e8e8e8" media="(prefers-color-scheme: light)">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 :root {
   --bg: #0a0c0f;
   --surface: #111418;
   --surface2: #161b22;
+  --bg-card: #1a1f27;
   --border: #1f2937;
   --border-bright: #2d3748;
   --accent: #00d4ff;
@@ -31,6 +33,29 @@
   --red: #ff4444;
   --mono: 'Courier New', Courier, monospace;
   --sans: 'Segoe UI', system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f5f5f5;
+    --surface: #e8e8e8;
+    --surface2: #ffffff;
+    --bg-card: #ffffff;
+    --border: #d0d0d0;
+    --border-bright: #b0b0b0;
+    --accent: #0077aa;
+    --accent2: #008855;
+    --warn: #d48400;
+    --text: #1a1a2e;
+    --text-muted: #5a6070;
+    --red: #cc2222;
+  }
+  /* Logo: invert white text to dark for light backgrounds */
+  .logo img { filter: brightness(0.7); }
+  /* Divider bar: dark instead of white */
+  .logo-divider { background:#333 !important; }
+  /* Title: dark text for "Trip" */
+  .logo-title { color:var(--text); }
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; background:var(--surface); color:var(--text); font-family:var(--sans); }
@@ -349,12 +374,12 @@ select option { background:var(--surface2); }
 
 .map-badge {
   position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:1000; white-space:nowrap;
-  background:rgba(17,20,24,.92); border:1px solid var(--border); border-radius:3px;
-  padding:6px 11px; font-family:var(--mono); font-size:10px; color:var(--text-muted);
+  background:var(--surface); border:1px solid var(--border); border-radius:3px;
+  padding:6px 11px; font-family:var(--mono); font-size:10px; color:var(--text-muted); opacity:0.95;
   pointer-events:none; display:flex; align-items:center; gap:7px;
 }
 .mode-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; animation:blink 1.5s infinite; }
-.mode-dot.placing { background:#00d4ff; }
+.mode-dot.placing { background:var(--accent); }
 .mode-dot.done    { background:var(--text-muted); animation:none; }
 
 .map-layer-toggle {
@@ -371,7 +396,7 @@ select option { background:var(--surface2); }
 /* Map lock toggle button */
 .map-lock-btn {
   position:absolute; bottom:12px; left:12px; z-index:1500;
-  background:rgba(17,20,24,.92); border:1px solid var(--border-bright);
+  background:var(--surface); opacity:0.95; border:1px solid var(--border-bright);
   color:var(--text-muted); font-family:var(--mono); font-size:10px;
   letter-spacing:1px; text-transform:uppercase;
   padding:6px 10px; border-radius:3px; cursor:pointer;
@@ -383,9 +408,9 @@ select option { background:var(--surface2); }
 /* Leaflet overrides */
 .leaflet-container { background:#0d1521; }
 .leaflet-control-zoom { border:1px solid var(--border) !important; }
-.leaflet-control-zoom a { background:var(--surface) !important; color:#b8c7d9 !important; border-bottom:1px solid var(--border) !important; }
+.leaflet-control-zoom a { background:var(--surface) !important; color:var(--text-muted) !important; border-bottom:1px solid var(--border) !important; }
 .leaflet-control-zoom a:hover { background:var(--surface2) !important; color:var(--accent) !important; }
-.leaflet-control-attribution { background:rgba(10,12,15,.8) !important; color:var(--text-muted) !important; font-size:9px !important; }
+.leaflet-control-attribution { background:var(--surface) !important; opacity:0.9; color:var(--text-muted) !important; font-size:9px !important; }
 .leaflet-control-attribution a { color:var(--text-muted) !important; }
 .leaflet-popup-content-wrapper { background:var(--surface); border:1px solid var(--border); border-radius:4px; color:var(--text); box-shadow:0 4px 20px rgba(0,0,0,.6); font-family:var(--mono); font-size:11px; }
 .leaflet-popup-tip { background:var(--surface); }
@@ -404,7 +429,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-30.13</span>
+    <span style="color:var(--text-muted)">v2026-03-31.1</span>
   </div>
 </header>
 
@@ -990,7 +1015,7 @@ function lookupByIdentifier(id, code, input) {
 
   var popupBody = '<b style="color:'+color+'">WP ' + num + '</b>&nbsp;' +
     '<span style="color:var(--accent)">' + match.icao + '</span><br>' + match.name +
-    '<br><span style="color:#b8c7d9">' + match.lat.toFixed(4) + '° / ' + match.lng.toFixed(4) + '°</span>';
+    '<br><span style="color:var(--text-muted)">' + match.lat.toFixed(4) + '° / ' + match.lng.toFixed(4) + '°</span>';
 
   var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp);
   if (wpIndex === 0 || (wpIndex === -1 && waypoints.filter(function(w){ return w.lat !== null; }).length === 0)) {
@@ -1238,7 +1263,7 @@ function placeWaypointDirect(id, airport) {
     var rc = warn ? '#f59e0b' : '#b8c7d9';
     popupBody += '<br><span style="color:'+rc+'">'+(warn?'⚠ SHORT ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
   }
-  popupBody += '<br><span style="color:#b8c7d9">'+airport.lat.toFixed(4)+'° / '+airport.lng.toFixed(4)+'°</span>';
+  popupBody += '<br><span style="color:var(--text-muted)">'+airport.lat.toFixed(4)+'° / '+airport.lng.toFixed(4)+'°</span>';
 
   var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp);
   if (wpIndex === 0) {
@@ -1322,7 +1347,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
       var rc = warn ? '#f59e0b' : '#b8c7d9';
       popupBody += '<br><span style="color:'+rc+'">'+(warn?'⚠ SHORT ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
     }
-    popupBody += '<br><span style="color:#b8c7d9">'+useLat.toFixed(4)+'° / '+useLng.toFixed(4)+'°</span>';
+    popupBody += '<br><span style="color:var(--text-muted)">'+useLat.toFixed(4)+'° / '+useLng.toFixed(4)+'°</span>';
     if (!airport) popupBody += '<br><span style="color:#f59e0b">⚠ No qualifying airport found nearby</span>';
 
     // For WP1, add a return button — shown/hidden dynamically when popup opens
@@ -2665,7 +2690,7 @@ window.addFavoriteWP = function(icao) {
 
   var popupBody = '<b style="color:'+color+'">WP ' + num + '</b>&nbsp;' +
     '<span style="color:var(--accent)">' + icao + '</span><br>' + name +
-    '<br><span style="color:#b8c7d9">' + fav.lat.toFixed(4) + '° / ' + fav.lng.toFixed(4) + '°</span>';
+    '<br><span style="color:var(--text-muted)">' + fav.lat.toFixed(4) + '° / ' + fav.lng.toFixed(4) + '°</span>';
 
   if (num === 1) {
     popupBody += '<br><button id="popupReturnBtn" style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none"></button>';
