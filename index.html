@@ -55,6 +55,11 @@
   .logo-light { display:block !important; }
   /* Divider bar: dark instead of white */
   .logo-divider { background:#333 !important; }
+  /* Drop shadow on accent-colored text for readability */
+  .leg-dist, .leg-time, .wp-drive-val, .wp-num.placed,
+  .res-card.a .res-name, .faster-tag,
+  .lbl-a, .lbl-b { text-shadow:0 0 3px rgba(0,0,0,.15); }
+  .fav-btn .fav-icao { text-shadow:0 0 2px rgba(0,0,0,.1); }
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; background:var(--surface); color:var(--text); font-family:var(--sans); }
@@ -429,7 +434,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-31.4</span>
+    <span style="color:var(--text-muted)">v2026-03-31.5</span>
   </div>
 </header>
 
@@ -694,6 +699,9 @@ setLayer(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').
 if (window.matchMedia) {
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
     setLayer(e.matches ? 'dark' : 'street');
+    drawAllLines();
+    refreshWarnIcons();
+    renderWPList();
   });
 }
 
@@ -707,8 +715,12 @@ var routeClosed = false; // whether last wp connects back to first
 var custAOpen = false, custBOpen = false;
 
 // Colour ramp for waypoint numbers
-var WP_COLORS = ['#00d4ff','#00ff9d','#f59e0b','#f472b6','#a78bfa','#fb923c','#34d399','#60a5fa'];
-function wpColor(idx) { return WP_COLORS[idx % WP_COLORS.length]; }
+var WP_COLORS_DARK  = ['#00d4ff','#00ff9d','#f59e0b','#f472b6','#a78bfa','#fb923c','#34d399','#60a5fa'];
+var WP_COLORS_LIGHT = ['#0077aa','#008855','#c47600','#c44080','#7050cc','#d06820','#1a8a5a','#3070cc'];
+function wpColor(idx) {
+  var colors = isLightMode() ? WP_COLORS_LIGHT : WP_COLORS_DARK;
+  return colors[idx % colors.length];
+}
 
 // ── WAYPOINT MANAGEMENT ───────────────────────────────────────────────────────
 function addWaypoint() {
@@ -2230,20 +2242,36 @@ function updateReturnUI() {
   }
 }
 
+function isLightMode() {
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+}
+
 function drawAllLines() {
   gcLines.forEach(function(l){ map.removeLayer(l); });
   gcLines = [];
+  var light = isLightMode();
+  var routeColor = light ? '#0077aa' : '#00d4ff';
   var placed = waypoints.filter(function(w){ return w.lat !== null; });
   for (var i = 1; i < placed.length; i++) {
     var pts = gcPoints(placed[i-1].lat, placed[i-1].lng, placed[i].lat, placed[i].lng, 80);
-    var line = L.polyline(pts, { color:'#00d4ff', weight:4, opacity:0.9, dashArray:'12 6' }).addTo(map);
+    // Shadow line for contrast in light mode
+    if (light) {
+      var shadow = L.polyline(pts, { color:'#000', weight:7, opacity:0.15, dashArray:'12 6' }).addTo(map);
+      gcLines.push(shadow);
+    }
+    var line = L.polyline(pts, { color:routeColor, weight:4, opacity:0.9, dashArray:'12 6' }).addTo(map);
     gcLines.push(line);
   }
   // Closing leg
   if (routeClosed && placed.length >= 2) {
     var first = placed[0], last = placed[placed.length - 1];
     var pts = gcPoints(last.lat, last.lng, first.lat, first.lng, 80);
-    var line = L.polyline(pts, { color: wpColor(0), weight:3, opacity:0.6, dashArray:'6 8' }).addTo(map);
+    var closingColor = light ? '#005577' : wpColor(0);
+    if (light) {
+      var shadow = L.polyline(pts, { color:'#000', weight:6, opacity:0.1, dashArray:'6 8' }).addTo(map);
+      gcLines.push(shadow);
+    }
+    var line = L.polyline(pts, { color: closingColor, weight:3, opacity:0.6, dashArray:'6 8' }).addTo(map);
     gcLines.push(line);
   }
 }
