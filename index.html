@@ -112,7 +112,7 @@ header {
 
 /* Address input area */
 .wp-addr-row {
-  display:flex; gap:5px; width:100%; margin-top:4px; padding-left:2px;
+  display:flex; gap:5px; width:100%; margin-top:4px; padding-left:2px; position:relative;
 }
 .wp-addr-input {
   flex:1; background:var(--bg); border:1px solid var(--border-bright); color:var(--text);
@@ -121,6 +121,22 @@ header {
 }
 .wp-addr-input:focus { border-color:var(--accent); }
 .wp-addr-input::placeholder { color:var(--text-muted); }
+.predict-dropdown {
+  position:absolute; left:2px; right:40px; top:100%; z-index:500;
+  background:var(--surface2); border:1px solid var(--border-bright); border-top:none;
+  border-radius:0 0 3px 3px; max-height:180px; overflow-y:auto;
+  box-shadow:0 4px 12px rgba(0,0,0,.3);
+}
+.predict-item {
+  padding:6px 8px; cursor:pointer; font-family:var(--sans); font-size:11px;
+  color:var(--text); display:flex; justify-content:space-between; align-items:center;
+  border-bottom:1px solid var(--border);
+}
+.predict-item:last-child { border-bottom:none; }
+.predict-item:hover, .predict-item.active { background:var(--surface); color:var(--accent); }
+.predict-item .predict-type { font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; }
+.predict-item .predict-icao { color:var(--accent); font-weight:bold; margin-right:6px; }
+
 .wp-addr-btn {
   background:none; border:1px solid var(--border-bright); color:var(--text-muted);
   font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase;
@@ -434,7 +450,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-31.9</span>
+    <span style="color:var(--text-muted)">v2026-03-31.10</span>
   </div>
 </header>
 
@@ -865,8 +881,9 @@ function renderWPList() {
     if (isPending) {
       innerHtml +=
         '<div class="wp-addr-row">' +
-          '<input class="wp-addr-input" id="addr-'+wp.id+'" type="text" enterkeyhint="search" placeholder="&#x1F50D; ICAO code or address..." value="' + (wp.addrInput || '') + '" onkeydown="if(event.key===\'Enter\')geocodeAddress('+wp.id+')">' +
-          '<button class="wp-addr-btn" onclick="geocodeAddress('+wp.id+')">GO</button>' +
+          '<input class="wp-addr-input" id="addr-'+wp.id+'" type="text" enterkeyhint="search" autocomplete="off" placeholder="&#x1F50D; ICAO code or address..." value="' + (wp.addrInput || '') + '" oninput="predictSearch('+wp.id+')" onkeydown="predictKeydown(event,'+wp.id+')">' +
+          '<button class="wp-addr-btn" onclick="closePredictions();geocodeAddress('+wp.id+')">GO</button>' +
+          '<div class="predict-dropdown" id="predict-'+wp.id+'" style="display:none"></div>' +
         '</div>';
     }
 
@@ -962,6 +979,126 @@ function rePlaceWP(id) {
   updateMode();
   recalc();
 }
+
+// ── PREDICTIVE SEARCH ─────────────────────────────────────────────────────────
+var predictActiveIdx = -1;
+
+window.predictSearch = function(wpId) {
+  var input = document.getElementById('addr-' + wpId);
+  var dropdown = document.getElementById('predict-' + wpId);
+  if (!input || !dropdown) return;
+  var q = input.value.trim();
+  predictActiveIdx = -1;
+
+  if (q.length < 2) { dropdown.style.display = 'none'; return; }
+
+  var results = [];
+  var qUpper = q.toUpperCase();
+  var qLower = q.toLowerCase();
+
+  if (q.length <= 4) {
+    // Short query: search airports by ICAO/local code
+    for (var i = 0; i < OA_CACHE.length && results.length < 5; i++) {
+      var a = OA_CACHE[i];
+      var icao = a.icao || '';
+      var lid = a.localCode || '';
+      if (icao.toUpperCase().indexOf(qUpper) === 0 || lid.toUpperCase().indexOf(qUpper) === 0) {
+        results.push({ label: icao + ' — ' + a.name, value: icao, type: 'airport' });
+      }
+    }
+  } else {
+    // Longer query: search airports by name, then cities
+    for (var i = 0; i < OA_CACHE.length && results.length < 3; i++) {
+      var a = OA_CACHE[i];
+      if (a.name.toLowerCase().indexOf(qLower) >= 0 || (a.icao && a.icao.toUpperCase().indexOf(qUpper) === 0)) {
+        results.push({ label: (a.icao || '') + ' — ' + a.name, value: a.icao || a.name, type: 'airport' });
+      }
+    }
+    // Search cities
+    if (CITY_CACHE && CITY_CACHE.length) {
+      for (var i = 0; i < CITY_CACHE.length && results.length < 5; i++) {
+        var c = CITY_CACHE[i];
+        if (c.city.toLowerCase().indexOf(qLower) === 0) {
+          var cityStr = c.city + ', ' + c.state_id;
+          // Avoid duplicates
+          var dup = false;
+          for (var r = 0; r < results.length; r++) { if (results[r].value === cityStr) { dup = true; break; } }
+          if (!dup) results.push({ label: cityStr, value: cityStr, type: 'city' });
+        }
+      }
+    }
+  }
+
+  if (results.length === 0) { dropdown.style.display = 'none'; return; }
+
+  var html = '';
+  for (var i = 0; i < results.length; i++) {
+    var r = results[i];
+    html += '<div class="predict-item" data-value="' + r.value.replace(/"/g, '&quot;') + '" onmousedown="selectPrediction(' + wpId + ',this)">';
+    if (r.type === 'airport') {
+      var parts = r.label.split(' — ');
+      html += '<span><span class="predict-icao">' + parts[0] + '</span>' + (parts[1] || '') + '</span>';
+    } else {
+      html += '<span>' + r.label + '</span>';
+    }
+    html += '<span class="predict-type">' + r.type + '</span></div>';
+  }
+  dropdown.innerHTML = html;
+  dropdown.style.display = 'block';
+};
+
+window.selectPrediction = function(wpId, el) {
+  var input = document.getElementById('addr-' + wpId);
+  var dropdown = document.getElementById('predict-' + wpId);
+  if (input) input.value = el.dataset.value;
+  if (dropdown) dropdown.style.display = 'none';
+  predictActiveIdx = -1;
+};
+
+window.predictKeydown = function(e, wpId) {
+  var dropdown = document.getElementById('predict-' + wpId);
+  if (!dropdown || dropdown.style.display === 'none') {
+    if (e.key === 'Enter') { closePredictions(); geocodeAddress(wpId); }
+    return;
+  }
+  var items = dropdown.querySelectorAll('.predict-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    predictActiveIdx = Math.min(predictActiveIdx + 1, items.length - 1);
+    updatePredictHighlight(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    predictActiveIdx = Math.max(predictActiveIdx - 1, -1);
+    updatePredictHighlight(items);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (predictActiveIdx >= 0 && items[predictActiveIdx]) {
+      selectPrediction(wpId, items[predictActiveIdx]);
+    } else {
+      closePredictions();
+      geocodeAddress(wpId);
+    }
+  } else if (e.key === 'Escape') {
+    closePredictions();
+  }
+};
+
+function updatePredictHighlight(items) {
+  for (var i = 0; i < items.length; i++) {
+    items[i].classList.toggle('active', i === predictActiveIdx);
+  }
+}
+
+window.closePredictions = function() {
+  var dropdowns = document.querySelectorAll('.predict-dropdown');
+  for (var i = 0; i < dropdowns.length; i++) dropdowns[i].style.display = 'none';
+  predictActiveIdx = -1;
+};
+
+// Close predictions when clicking elsewhere
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.wp-addr-row')) closePredictions();
+});
 
 // ── ADDRESS / CITY GEOCODE ────────────────────────────────────────────────────
 window.geocodeAddress = function(id) {
