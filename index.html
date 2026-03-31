@@ -372,7 +372,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-30.5</span>
+    <span style="color:var(--text-muted)">v2026-03-30.6</span>
   </div>
 </header>
 
@@ -2499,6 +2499,7 @@ window.recalc = function() {
   });
   if (fboTotal === 0) rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:10px">No FBO fees entered</td></tr>';
   rows += '<tr style="font-weight:bold;border-top:1px solid var(--border-bright)"><td colspan="2">Total</td><td style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</td></tr>';
+  rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:9px;font-style:italic;padding-top:6px">Fuel prices based on current national average (source: AirNav.com' + (fuelPrices.updated ? ', updated ' + fuelPrices.updated : '') + ')</td></tr>';
   tbl.innerHTML = rows;
 };
 
