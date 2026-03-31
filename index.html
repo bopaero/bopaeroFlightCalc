@@ -434,7 +434,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-31.8</span>
+    <span style="color:var(--text-muted)">v2026-03-31.9</span>
   </div>
 </header>
 
@@ -1725,27 +1725,27 @@ var CITY_CACHE = null;
         var cols = csvSplit(lines[i]);
         if (!cols || cols.length < 6) continue;
         var ctry = stripQ(cols[iCtry]);
-        if (ctry !== 'US') continue;
+        if (ctry !== 'US' && ctry !== 'CA') continue;
         var type = stripQ(cols[iType]);
         if (type !== 'small_airport' && type !== 'medium_airport' && type !== 'large_airport') continue;
         var name = stripQ(cols[iName]);
         var ident = stripQ(cols[iIdent]);
         var localCode = iLocal >= 0 ? stripQ(cols[iLocal]) : '';
-        // Public-use airports always have an FAA local_code (e.g. I67, 60J, 1A5, KLUK).
-        // Military-only bases are filtered by FAA FACILITY_USE_CODE (PR) in applyFAAPublicFilter().
-        // Private/restricted fields that aren't in the FAA public database have no local_code.
-        // Large and medium airports are always public — only filter small ones.
+        var nameLower = name.toLowerCase();
+        var keywords = iKeywords >= 0 ? stripQ(cols[iKeywords]).toLowerCase() : '';
+        // Filter private/restricted/military by name (both US and CA)
+        if (/\bprivate\b|\bpvt\b|\brestricted\b|\bpersonal\b|\bresidential\b|\bmilitary\b/.test(nameLower)) continue;
+        if (/\bprivate\b|\bpvt\b/.test(keywords)) continue;
+        // US: FAA local_code required for small airports; military filtered by FAA FACILITY_USE_CODE in applyFAAPublicFilter()
+        // CA: ICAO ident required for small airports (starts with C); no FAA data available
         if (type === 'small_airport') {
-          if (!localCode) continue; // no FAA local code = not a public-use airport
-          var nameLower = name.toLowerCase();
-          if (/\bprivate\b|\bpvt\b|\brestricted\b|\bpersonal\b|\bresidential\b/.test(nameLower)) continue;
-          var keywords = iKeywords >= 0 ? stripQ(cols[iKeywords]).toLowerCase() : '';
-          if (/\bprivate\b|\bpvt\b/.test(keywords)) continue;
+          if (ctry === 'US' && !localCode) continue;
+          if (ctry === 'CA' && !/^C[A-Z]{3}$/.test(ident)) continue;
         }
         var lat = parseFloat(cols[iLat]);
         var lng = parseFloat(cols[iLng]);
         if (isNaN(lat) || isNaN(lng)) continue;
-        arr.push({ icao: ident, name: name, lat: lat, lng: lng, type: type, localCode: localCode, municipality: stripQ(cols[iMuni] || '').toLowerCase(), region: stripQ(cols[iRegion] || '').toLowerCase() });
+        arr.push({ icao: ident, name: name, lat: lat, lng: lng, type: type, localCode: localCode, country: ctry, municipality: stripQ(cols[iMuni] || '').toLowerCase(), region: stripQ(cols[iRegion] || '').toLowerCase() });
       }
       OA_CACHE = arr;
       OA_READY = true;
@@ -1902,7 +1902,9 @@ function applyFAAPublicFilter() {
   if (!FAA_PUBLIC_SET || FAA_PUBLIC_SET.size === 0) return;
   var before = OA_CACHE.length;
   OA_CACHE = OA_CACHE.filter(function(a) {
-    // Check FAA public-use set for ALL airport types (filters military-only bases)
+    // Canadian airports skip FAA filter (no FAA data)
+    if (a.icao && /^C[A-Z]/.test(a.icao)) return true;
+    // Check FAA public-use set for US airports (filters military-only bases)
     // OA_CACHE ident may be KLUK (ICAO) or I67 (FAA LID) — check both
     var lid = a.icao.replace(/^K/, ''); // strip K prefix to get FAA LID
     return FAA_PUBLIC_SET.has(a.icao) || FAA_PUBLIC_SET.has(lid) ||
