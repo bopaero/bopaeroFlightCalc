@@ -50,12 +50,11 @@
     --text-muted: #5a6070;
     --red: #cc2222;
   }
-  /* Logo: invert white text to dark for light backgrounds */
-  .logo img { filter: brightness(0.7); }
+  /* Swap logo for light mode */
+  .logo-dark { display:none !important; }
+  .logo-light { display:block !important; }
   /* Divider bar: dark instead of white */
   .logo-divider { background:#333 !important; }
-  /* Title: dark text for "Trip" */
-  .logo-title { color:var(--text); }
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; background:var(--surface); color:var(--text); font-family:var(--sans); }
@@ -421,15 +420,16 @@ select option { background:var(--surface2); }
 
 <header>
   <div class="logo">
-    <img src="bopAeroLogo.png" height="32" style="flex-shrink:0;width:auto" alt="bop Aero logo">
-    <div style="width:1px;height:24px;background:#fff;margin:0 6px;flex-shrink:0;align-self:center"></div>
+    <img src="bopAeroLogo.png" height="32" class="logo-dark" style="flex-shrink:0;width:auto" alt="bop Aero logo">
+    <img src="bopAeroLogoLight.png" height="32" class="logo-light" style="flex-shrink:0;width:auto;display:none" alt="bop Aero logo">
+    <div class="logo-divider" style="width:1px;height:24px;background:#fff;margin:0 6px;flex-shrink:0;align-self:center"></div>
     <div class="logo-title">Trip<span>Calc</span></div>
   </div>
   <div class="hdr-right">
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-31.1</span>
+    <span style="color:var(--text-muted)">v2026-03-31.2</span>
   </div>
 </header>
 
