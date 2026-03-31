@@ -302,8 +302,40 @@ select option { background:var(--surface2); }
 
   /* Touch-friendly tap targets */
   .wp-btn { width:28px; height:28px; }
-  .fav-btn { padding:7px 6px; }
-  .add-wp-btn, .clear-all-btn { padding:9px 12px; font-size:10px; }
+  .fav-btn { padding:7px 6px; font-size:13px; }
+  .fav-btn .fav-icao { font-size:14px; }
+  .fav-btn .fav-name { font-size:12px; }
+  .add-wp-btn, .clear-all-btn { padding:9px 12px; font-size:13px; }
+  .custom-btn { font-size:13px; }
+
+  /* Increase font sizes on mobile for readability */
+  .sec-title { font-size:14px; }
+  .wp-name { font-size:16px; }
+  .wp-name.empty { font-size:15px; }
+  .wp-coords { font-size:13px; }
+  .wp-num { font-size:13px; width:24px; height:24px; }
+  .wp-drive { font-size:13px; }
+  .wp-drive-val { font-size:13px; }
+  .wp-addr-btn { font-size:13px; }
+  .leg-connector { font-size:13px; }
+  .leg-dist { font-size:13px; }
+  .leg-details { font-size:13px; }
+  .leg-range-warn { font-size:13px; }
+  .ac-slot-lbl { font-size:14px; }
+  .spd-unit { font-size:14px; }
+  .cost-lbl { font-size:13px; }
+  .cost-row { font-size:13px; }
+  .map-hint { font-size:13px; }
+  .res-name { font-size:16px; }
+  .res-item-lbl { font-size:13px; }
+  .res-item-val { font-size:20px; }
+  .res-item-val .u { font-size:13px; }
+  .empty-msg { font-size:14px; }
+  .legs-toggle { font-size:13px; }
+  .fbo-label { font-size:13px; }
+  .fbo-title { font-size:13px; }
+  .layer-btn { font-size:11px; }
+
   /* 16px minimum on mobile inputs prevents iOS auto-zoom */
   select, input[type=text], input[type=number], .cost-input, .wp-addr-input { font-size:16px !important; }
 }
@@ -372,7 +404,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-30.12</span>
+    <span style="color:var(--text-muted)">v2026-03-30.13</span>
   </div>
 </header>
 
@@ -789,7 +821,7 @@ function renderWPList() {
       var driveHrs = wp.driveMi / 35; // avg 35 mph
       var driveMins = Math.round(driveHrs * 60);
       var driveTimeStr = driveMins >= 60 ? Math.floor(driveMins / 60) + 'hr ' + (driveMins % 60) + 'min' : driveMins + 'min';
-      innerHtml += '<div class="wp-drive" style="gap:3px">&#x1F697; <span class="wp-drive-val">' + wp.driveMi.toFixed(1) + ' mi</span><span style="color:var(--accent2)">~' + driveTimeStr + '</span><span style="color:var(--text-muted)">' + driveLabel + '</span></div>';
+      innerHtml += '<div class="wp-drive" style="gap:5px">&#x1F697; <span class="wp-drive-val">' + wp.driveMi.toFixed(1) + ' mi</span><span style="color:var(--accent2)">~' + driveTimeStr + '</span><span style="color:var(--text-muted)">' + driveLabel + '</span></div>';
     }
 
     // Address input — shown only while this waypoint is pending (disappears once placed by either method)
