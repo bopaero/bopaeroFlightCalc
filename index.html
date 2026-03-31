@@ -450,7 +450,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-31.11</span>
+    <span style="color:var(--text-muted)">v2026-03-31.12</span>
   </div>
 </header>
 
@@ -1018,8 +1018,10 @@ window.predictSearch = function(wpId) {
     if (CITY_CACHE && CITY_CACHE.length) {
       for (var i = 0; i < CITY_CACHE.length && results.length < 5; i++) {
         var c = CITY_CACHE[i];
-        if (c.city.toLowerCase().indexOf(qLower) === 0) {
-          var cityStr = c.city + ', ' + c.state_id;
+        if (c.city.indexOf(qLower) === 0) {
+          var cityName = c.city.replace(/\b\w/g, function(ch){ return ch.toUpperCase(); });
+          var stateCode = c.state.toUpperCase();
+          var cityStr = cityName + ', ' + stateCode;
           var dup = false;
           for (var r = 0; r < results.length; r++) { if (results[r].value === cityStr) { dup = true; break; } }
           if (!dup) results.push({ label: cityStr, value: cityStr, type: 'city' });
