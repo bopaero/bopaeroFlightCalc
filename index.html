@@ -450,7 +450,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-03-31.10</span>
+    <span style="color:var(--text-muted)">v2026-03-31.11</span>
   </div>
 </header>
 
@@ -1014,18 +1014,31 @@ window.predictSearch = function(wpId) {
         results.push({ label: (a.icao || '') + ' — ' + a.name, value: a.icao || a.name, type: 'airport' });
       }
     }
-    // Search cities
+    // Search US cities
     if (CITY_CACHE && CITY_CACHE.length) {
       for (var i = 0; i < CITY_CACHE.length && results.length < 5; i++) {
         var c = CITY_CACHE[i];
         if (c.city.toLowerCase().indexOf(qLower) === 0) {
           var cityStr = c.city + ', ' + c.state_id;
-          // Avoid duplicates
           var dup = false;
           for (var r = 0; r < results.length; r++) { if (results[r].value === cityStr) { dup = true; break; } }
           if (!dup) results.push({ label: cityStr, value: cityStr, type: 'city' });
         }
       }
+    }
+    // Search Canadian cities from airport municipalities
+    var caSeen = {};
+    for (var i = 0; i < OA_CACHE.length && results.length < 5; i++) {
+      var a = OA_CACHE[i];
+      if (a.country !== 'CA' || !a.municipality) continue;
+      if (a.municipality.indexOf(qLower) !== 0) continue;
+      var prov = a.region ? a.region.replace('CA-', '') : '';
+      var cityStr = a.municipality.charAt(0).toUpperCase() + a.municipality.slice(1) + (prov ? ', ' + prov + ', Canada' : ', Canada');
+      if (caSeen[cityStr]) continue;
+      caSeen[cityStr] = true;
+      var dup = false;
+      for (var r = 0; r < results.length; r++) { if (results[r].value === cityStr) { dup = true; break; } }
+      if (!dup) results.push({ label: cityStr, value: cityStr, type: 'city' });
     }
   }
 
