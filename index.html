@@ -458,7 +458,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-01.13</span>
+    <span style="color:var(--text-muted)">v2026-04-01.14</span>
   </div>
 </header>
 
@@ -1207,7 +1207,7 @@ function lookupByIdentifier(id, code, input) {
   wp.originLng = match.lng;
   wp.driveMi   = null;
 
-  var popupBody = '<b style="color:'+color+'">WP ' + num + '</b>&nbsp;' +
+  var popupBody = '<b style="color:'+color+'">Stop ' + num + '</b>&nbsp;' +
     '<span style="color:var(--accent)">' + match.icao + '</span><br>' + match.name +
     '<br><span style="color:var(--text-muted)">' + match.lat.toFixed(4) + '° / ' + match.lng.toFixed(4) + '°</span>';
 
@@ -1466,7 +1466,7 @@ function placeWaypointDirect(id, airport) {
   wp.rwyFt = rwyFt;
   wp.warn  = warn;
 
-  var popupBody = '<b style="color:'+color+'">WP ' + num + '</b>&nbsp;';
+  var popupBody = '<b style="color:'+color+'">Stop ' + num + '</b>&nbsp;';
   if (airport.icao) popupBody += '<span style="color:var(--accent)">' + airport.icao + '</span><br>';
   popupBody += airport.name;
   if (rwyFt) {
@@ -1550,7 +1550,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
     wp2.rwyFt = rwyFt;
     wp2.warn  = warn;
 
-    var popupBody = '<b style="color:'+color+'">WP ' + num + '</b>&nbsp;';
+    var popupBody = '<b style="color:'+color+'">Stop ' + num + '</b>&nbsp;';
     if (icao) popupBody += '<span style="color:var(--accent)">' + icao + '</span><br>';
     popupBody += name;
     if (rwyFt) {
@@ -2956,7 +2956,7 @@ window.addFavoriteWP = function(icao) {
   wp.rwyFt = rwyFt;
   wp.warn  = warn;
 
-  var popupBody = '<b style="color:'+color+'">WP ' + num + '</b>&nbsp;' +
+  var popupBody = '<b style="color:'+color+'">Stop ' + num + '</b>&nbsp;' +
     '<span style="color:var(--accent)">' + icao + '</span><br>' + name +
     '<br><span style="color:var(--text-muted)">' + fav.lat.toFixed(4) + '° / ' + fav.lng.toFixed(4) + '°</span>';
 
