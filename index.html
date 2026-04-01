@@ -458,7 +458,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-01.9</span>
+    <span style="color:var(--text-muted)">v2026-04-01.10</span>
   </div>
 </header>
 
@@ -490,13 +490,13 @@ select option { background:var(--surface2); }
               <div class="wp-coords" id="returnCoords"></div>
             </div>
             <div class="wp-actions">
-              <button class="wp-btn" title="Remove return leg" onclick="toggleClosedRoute()">&#x2715;</button>
+              <button class="wp-btn" title="Remove return to Origin" onclick="toggleClosedRoute()">&#x2715;</button>
             </div>
           </div>
         </div>
       </div>
       <button class="add-wp-btn" id="addWpBtn" onclick="addWaypoint()">+ Add Stop</button>
-      <button class="add-wp-btn" id="returnBtn" onclick="toggleClosedRoute()" style="display:none;color:var(--accent);border-color:var(--accent)">&#x21BA; Return to Stop 1</button>
+      <button class="add-wp-btn" id="returnBtn" onclick="toggleClosedRoute()" style="display:none;color:var(--accent);border-color:var(--accent)">&#x21BA; Return to Origin</button>
       <button class="clear-all-btn" onclick="clearAll()">&#x2715; Clear All</button>
       <div class="map-hint" id="mapHint">Add a stop, then click the map to place it</div>
     </div>
@@ -1221,7 +1221,7 @@ function lookupByIdentifier(id, code, input) {
       var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
       if (placedNow.length >= 2) {
         btn.style.display = '';
-        btn.textContent = routeClosed ? '\u2715 Remove return leg' : '\u21BA Return to this airport';
+        btn.textContent = routeClosed ? '\u2715 Remove return to Origin' : '\u21BA Return to Origin';
         btn.onclick = function() { toggleClosedRoute(); wp.marker.closePopup(); };
       } else {
         btn.style.display = 'none';
@@ -1488,7 +1488,7 @@ function placeWaypointDirect(id, airport) {
       var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
       if (placedNow.length >= 2) {
         btn.style.display = '';
-        btn.textContent = routeClosed ? '\u2715 Remove return leg' : '\u21BA Return to this airport';
+        btn.textContent = routeClosed ? '\u2715 Remove return to Origin' : '\u21BA Return to Origin';
         btn.onclick = function() { toggleClosedRoute(); wp.marker.closePopup(); };
       } else { btn.style.display = 'none'; }
     });
@@ -1575,7 +1575,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
         var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
         if (placedNow.length >= 2) {
           btn.style.display = '';
-          btn.textContent = routeClosed ? '\u2715 Remove return leg' : '\u21BA Return to this airport';
+          btn.textContent = routeClosed ? '\u2715 Remove return to Origin' : '\u21BA Return to Origin';
           btn.onclick = function() {
             toggleClosedRoute();
             wp2.marker.closePopup();
@@ -2403,7 +2403,7 @@ function updateReturnUI() {
   var last  = canShow ? placed[placed.length - 1] : null;
   var color = wpColor(0);
 
-  // Show/hide the Return to Stop 1 button
+  // Show/hide the Return to Origin button
   var returnBtn = document.getElementById('returnBtn');
   if (returnBtn) returnBtn.style.display = (canShow && !routeClosed) ? '' : 'none';
 
@@ -2968,7 +2968,7 @@ window.addFavoriteWP = function(icao) {
       var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
       if (placedNow.length >= 2) {
         btn.style.display = '';
-        btn.textContent = routeClosed ? '\u2715 Remove return leg' : '\u21BA Return to this airport';
+        btn.textContent = routeClosed ? '\u2715 Remove return to Origin' : '\u21BA Return to Origin';
         btn.onclick = function() { toggleClosedRoute(); wp.marker.closePopup(); };
       } else {
         btn.style.display = 'none';
