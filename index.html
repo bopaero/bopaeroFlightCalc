@@ -457,7 +457,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-01.2</span>
+    <span style="color:var(--text-muted)">v2026-04-01.3</span>
   </div>
 </header>
 
@@ -1141,11 +1141,17 @@ window.geocodeAddress = function(id) {
   if (/^[A-Za-z0-9]{2,5}$/.test(addr)) {
     var found = lookupByIdentifier(id, addr.toUpperCase(), input);
     if (found) return;
-    // Short code with no match — show specific error
+    // Short code with no match — check if it was rejected and why
     if (addr.length <= 4) {
       input.disabled = false;
       input.value = addr;
-      showGeoError(input, 'no_identifier');
+      var code = addr.toUpperCase();
+      var rejected = OA_REJECTED[code] || OA_REJECTED['K' + code];
+      if (rejected) {
+        showGeoError(input, 'rejected', rejected);
+      } else {
+        showGeoError(input, 'no_identifier');
+      }
       return;
     }
   }
@@ -1383,26 +1389,31 @@ function geocodeCensus(id, addr, input, onCoords, onFail) {
   document.head.appendChild(script);
 }
 
-function showGeoError(input, type) {
-  var messages = {
-    'not_found': 'No airport or city found. Try including the full city name and state (e.g. "Highlands, NC").',
-    'no_airport_near': 'No suitable public airport found near this location. Try a nearby city instead.',
-    'no_identifier': 'Airport code not recognized. Check the ICAO or FAA identifier and try again.',
-    'network': 'Network error. Check your internet connection and try again.',
-    'no_results': 'No results found. Try a different search term.'
-  };
+function showGeoError(input, type, detail) {
+  var msg;
+  if (type === 'rejected' && detail) {
+    msg = '"' + detail.name + '" was found but is excluded: ' + detail.reason + '. Only public-use airports with paved runways are available.';
+  } else {
+    var messages = {
+      'not_found': 'No airport or city found. Try including the full city name and state (e.g. "Highlands, NC").',
+      'no_airport_near': 'No suitable public airport found near this location. Try a nearby city instead.',
+      'no_identifier': 'Airport code not recognized. Verify the ICAO or FAA identifier and try again.',
+      'network': 'Network error. Check your internet connection and try again.',
+      'no_results': 'No results found. Try a different search term.'
+    };
+    msg = messages[type] || messages['no_results'];
+  }
   input.classList.add('geo-error');
   input.value = input.dataset.lastQuery || '';
-  // Create popup
   var popup = document.createElement('div');
   popup.className = 'geo-error-popup';
-  popup.textContent = messages[type] || messages['no_results'];
+  popup.textContent = msg;
   var row = input.closest('.wp-addr-row');
   if (row) row.appendChild(popup);
   setTimeout(function() {
     input.classList.remove('geo-error');
     if (popup.parentNode) popup.parentNode.removeChild(popup);
-  }, 4000);
+  }, 5000);
 }
 // Find the best airport whose municipality matches the searched city
 function findAirportByMunicipality(city, state, originLat, originLng) {
@@ -1832,6 +1843,8 @@ var AIRPORT_DB_FALLBACK = [
 // Fetched once from OurAirports (GitHub Pages has CORS *), then cached.
 var OA_CACHE = AIRPORT_DB_FALLBACK.map(function(a){ return {icao:a[0],name:a[1],lat:a[2],lng:a[3]}; });
 var OA_READY = false;
+// Rejected airports: ident → { name, reason } for detailed error messages
+var OA_REJECTED = {};
 
 // Runway data from OurAirports runways.csv — airport_ident → { maxPavedFt }
 var RWY_MAP = {};
@@ -1911,14 +1924,17 @@ var CITY_CACHE = null;
         var localCode = iLocal >= 0 ? stripQ(cols[iLocal]) : '';
         var nameLower = name.toLowerCase();
         var keywords = iKeywords >= 0 ? stripQ(cols[iKeywords]).toLowerCase() : '';
-        // Filter private/restricted/military by name (both US and CA)
-        if (/\bprivate\b|\bpvt\b|\brestricted\b|\bpersonal\b|\bresidential\b|\bmilitary\b/.test(nameLower)) continue;
-        if (/\bprivate\b|\bpvt\b/.test(keywords)) continue;
+        // Filter private/restricted/military by name (both US and CA) — record reason
+        if (/\bprivate\b|\bpvt\b/.test(nameLower)) { OA_REJECTED[ident] = { name:name, reason:'private' }; continue; }
+        if (/\brestricted\b/.test(nameLower)) { OA_REJECTED[ident] = { name:name, reason:'restricted' }; continue; }
+        if (/\bpersonal\b|\bresidential\b/.test(nameLower)) { OA_REJECTED[ident] = { name:name, reason:'private/residential' }; continue; }
+        if (/\bmilitary\b/.test(nameLower)) { OA_REJECTED[ident] = { name:name, reason:'military' }; continue; }
+        if (/\bprivate\b|\bpvt\b/.test(keywords)) { OA_REJECTED[ident] = { name:name, reason:'private' }; continue; }
         // US: FAA local_code required for small airports; military filtered by FAA FACILITY_USE_CODE in applyFAAPublicFilter()
         // CA: ICAO ident required for small airports (starts with C); no FAA data available
         if (type === 'small_airport') {
-          if (ctry === 'US' && !localCode) continue;
-          if (ctry === 'CA' && !/^C[A-Z]{3}$/.test(ident)) continue;
+          if (ctry === 'US' && !localCode) { OA_REJECTED[ident] = { name:name, reason:'no FAA public-use designation' }; continue; }
+          if (ctry === 'CA' && !/^C[A-Z]{3}$/.test(ident)) { OA_REJECTED[ident] = { name:name, reason:'no valid ICAO identifier' }; continue; }
         }
         var lat = parseFloat(cols[iLat]);
         var lng = parseFloat(cols[iLng]);
@@ -1999,7 +2015,10 @@ function applyRunwayData() {
   OA_CACHE = OA_CACHE.filter(function(a) {
     if (a.type !== 'small_airport') return true;
     var rwy = RWY_MAP[a.icao];
-    if (rwy && rwy.maxPavedFt === 0) return false;
+    if (rwy && rwy.maxPavedFt === 0) {
+      OA_REJECTED[a.icao] = { name:a.name, reason:'no paved runway (grass/turf/gravel only)' };
+      return false;
+    }
     return true;
   });
   console.log('Runway paved filter: ' + before + ' → ' + OA_CACHE.length + ' airports');
@@ -2083,10 +2102,13 @@ function applyFAAPublicFilter() {
     // Canadian airports skip FAA filter (no FAA data)
     if (a.icao && /^C[A-Z]/.test(a.icao)) return true;
     // Check FAA public-use set for US airports (filters military-only bases)
-    // OA_CACHE ident may be KLUK (ICAO) or I67 (FAA LID) — check both
-    var lid = a.icao.replace(/^K/, ''); // strip K prefix to get FAA LID
-    return FAA_PUBLIC_SET.has(a.icao) || FAA_PUBLIC_SET.has(lid) ||
+    var lid = a.icao.replace(/^K/, '');
+    var isPublic = FAA_PUBLIC_SET.has(a.icao) || FAA_PUBLIC_SET.has(lid) ||
            (a.localCode && FAA_PUBLIC_SET.has(a.localCode));
+    if (!isPublic) {
+      OA_REJECTED[a.icao] = { name:a.name, reason:'not public-use (FAA classified as military or private)' };
+    }
+    return isPublic;
   });
   console.log('FAA filter applied: ' + before + ' → ' + OA_CACHE.length + ' airports');
 }
