@@ -458,7 +458,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-01.14</span>
+    <span style="color:var(--text-muted)">v2026-04-01.15</span>
   </div>
 </header>
 
@@ -484,7 +484,7 @@ select option { background:var(--surface2); }
         <div class="leg-connector" id="returnLegConnector"></div>
         <div class="wp-row" id="returnWpRow" style="opacity:0.6;border-style:dashed">
           <div class="wp-row-main">
-            <div class="wp-num placed" id="returnBadge" style="border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08)">1</div>
+            <div class="wp-num placed" id="returnBadge" style="border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08)">O</div>
             <div class="wp-info">
               <div class="wp-name" id="returnName">—</div>
               <div class="wp-coords" id="returnCoords"></div>
@@ -750,6 +750,10 @@ function wpColor(idx) {
   return colors[idx % colors.length];
 }
 
+// idx=0 → "Origin", idx=1 → "Stop 1", idx=2 → "Stop 2", etc.
+function wpLabel(idx) { return idx === 0 ? 'Origin' : 'Stop ' + idx; }
+function wpBadge(idx) { return idx === 0 ? 'O' : String(idx); }
+
 // ── WAYPOINT MANAGEMENT ───────────────────────────────────────────────────────
 function addWaypoint() {
   var id    = ++wpIdCounter;
@@ -861,7 +865,7 @@ function renderWPList() {
     var innerHtml =
       '<div class="wp-row-main">' +
         '<div class="drag-handle" title="Drag to reorder">&#x2630;</div>' +
-        '<div class="wp-num' + (isPlaced ? ' placed' : '') + '" style="' + (isPlaced ? 'border-color:'+color+';color:'+color+';background:'+color+'11' : '') + '">' + (i+1) + '</div>' +
+        '<div class="wp-num' + (isPlaced ? ' placed' : '') + '" style="' + (isPlaced ? 'border-color:'+color+';color:'+color+';background:'+color+'11' : '') + '" title="' + wpLabel(i) + '">' + wpBadge(i) + '</div>' +
         '<div class="wp-info">';
 
     if (isPlaced) {
@@ -967,7 +971,7 @@ function renderWPList() {
     hint.textContent = 'Click ADD STOP or go to the MAP and click on it to add your first stop';
   } else if (placingId !== null) {
     var pidx = waypoints.findIndex(function(w){return w.id===placingId;});
-    hint.textContent = 'Stop ' + (pidx+1) + ': click map \u2014 or enter address above';
+    hint.textContent = wpLabel(pidx) + ': click map \u2014 or enter address above';
   } else {
     var unplaced = waypoints.filter(function(w){return w.lat===null;});
     if (unplaced.length > 0) {
@@ -1193,7 +1197,7 @@ function lookupByIdentifier(id, code, input) {
   if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
 
   var color = wpColor(wp.idx);
-  var num   = wp.idx + 1;
+  var num = wpBadge(wp.idx);
   var rwyFt = getMaxPavedRwyFt(match);
   var warn  = wpNeedsWarn(rwyFt);
 
@@ -1455,7 +1459,7 @@ function placeWaypointDirect(id, airport) {
   if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
   // Reuse the same placement logic as placeWaypointFromCoords callback
   var color = wpColor(wp.idx);
-  var num   = wp.idx + 1;
+  var num = wpBadge(wp.idx);
   var rwyFt = airport.maxRwyFt || 0;
   var warn  = rwyFt > 0 && wpNeedsWarn(rwyFt);
 
@@ -1524,7 +1528,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
 
   if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
   var color = wpColor(wp.idx);
-  var num   = wp.idx + 1;
+  var num = wpBadge(wp.idx);
   wp.marker = L.marker([originLat, originLng], { icon: makeSearchingIcon(color, num) })
     .bindPopup('<span style="color:'+color+'">Searching for nearest airport...</span>')
     .addTo(map);
@@ -2522,7 +2526,7 @@ function updateMode(state) {
   } else if (placingId !== null) {
     dot.className = 'mode-dot placing';
     var pidx = waypoints.findIndex(function(w){return w.id===placingId;});
-    txt.textContent = pidx === 0 ? 'CLICK MAP \u2014 PLACING ORIGIN' : 'CLICK MAP \u2014 PLACING STOP ' + (pidx+1);
+    txt.textContent = 'CLICK MAP \u2014 PLACING ' + wpLabel(pidx).toUpperCase();
   } else if (waypoints.length === 0) {
     dot.className = 'mode-dot done';
     txt.textContent = 'ADD ORIGIN TO BEGIN';
@@ -2840,7 +2844,7 @@ function refreshWarnIcons() {
       var warn = w.rwyFt > 0 && wpNeedsWarn(w.rwyFt);
       var unsuitable = warn && w.rwyFt < thresholds.minFt;
       w.warn   = warn;
-      w.marker.setIcon(unsuitable ? makeUnsuitableIcon(c, idx+1) : (warn ? makeWarnIcon(c, idx+1) : makeIcon(c, idx+1)));
+      w.marker.setIcon(unsuitable ? makeUnsuitableIcon(c, wpBadge(idx)) : (warn ? makeWarnIcon(c, wpBadge(idx)) : makeIcon(c, wpBadge(idx))));
     }
   });
 }
