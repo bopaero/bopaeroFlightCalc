@@ -458,7 +458,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-01.10</span>
+    <span style="color:var(--text-muted)">v2026-04-01.11</span>
   </div>
 </header>
 
@@ -495,7 +495,7 @@ select option { background:var(--surface2); }
           </div>
         </div>
       </div>
-      <button class="add-wp-btn" id="addWpBtn" onclick="addWaypoint()">+ Add Stop</button>
+      <button class="add-wp-btn" id="addWpBtn" onclick="addWaypoint()">+ Add Origin</button>
       <button class="add-wp-btn" id="returnBtn" onclick="toggleClosedRoute()" style="display:none;color:var(--accent);border-color:var(--accent)">&#x21BA; Return to Origin</button>
       <button class="clear-all-btn" onclick="clearAll()">&#x2715; Clear All</button>
       <div class="map-hint" id="mapHint">Add a stop, then click the map to place it</div>
@@ -798,6 +798,8 @@ var dragSrcId = null;
 function renderWPList() {
   var list = document.getElementById('wp-list');
   list.innerHTML = '';
+  var addBtn = document.getElementById('addWpBtn');
+  if (addBtn) addBtn.textContent = waypoints.length === 0 ? '+ Add Origin' : '+ Add Stop';
 
   waypoints.forEach(function(wp, i) {
     var color = wpColor(i);
