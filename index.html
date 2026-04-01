@@ -458,7 +458,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-01.12</span>
+    <span style="color:var(--text-muted)">v2026-04-01.13</span>
   </div>
 </header>
 
@@ -2522,13 +2522,14 @@ function updateMode(state) {
   } else if (placingId !== null) {
     dot.className = 'mode-dot placing';
     var pidx = waypoints.findIndex(function(w){return w.id===placingId;});
-    txt.textContent = 'CLICK MAP — PLACING WP ' + (pidx+1);
+    txt.textContent = pidx === 0 ? 'CLICK MAP \u2014 PLACING ORIGIN' : 'CLICK MAP \u2014 PLACING STOP ' + (pidx+1);
   } else if (waypoints.length === 0) {
     dot.className = 'mode-dot done';
     txt.textContent = 'ADD ORIGIN TO BEGIN';
   } else {
     dot.className = 'mode-dot done';
-    txt.textContent = 'ROUTE SET — READY';
+    var placed = waypoints.filter(function(w){ return w.lat !== null; });
+    txt.textContent = placed.length <= 1 ? 'ORIGIN SET \u2014 READY' : 'ROUTE SET \u2014 READY';
   }
 }
 
