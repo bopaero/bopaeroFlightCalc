@@ -458,7 +458,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-02.2</span>
+    <span style="color:var(--text-muted)">v2026-04-02.3</span>
   </div>
 </header>
 
@@ -2621,7 +2621,11 @@ window.onSel = function(s) {
     if(s==='A') { applyCostPreset(sel.value); }
 
   } else { row.style.display='none'; if(gphRow) gphRow.style.display='none'; }
-  if(s==='A') updateAircraftToggleLabel();
+  if(s==='A') {
+    updateAircraftToggleLabel();
+    // Auto-collapse pane after aircraft selection
+    if(sel.value && acPaneOpen) toggleAircraftPane();
+  }
   recalc();
 };
 window.toggleCust = function(s) {
