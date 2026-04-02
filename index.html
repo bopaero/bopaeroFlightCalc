@@ -458,7 +458,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-02.1</span>
+    <span style="color:var(--text-muted)">v2026-04-02.2</span>
   </div>
 </header>
 
@@ -505,7 +505,7 @@ select option { background:var(--surface2); }
     <!-- AIRCRAFT -->
     <div class="sec">
       <button class="legs-toggle" id="acToggleBtn" onclick="toggleAircraftPane()" style="margin-bottom:6px">&#x25BC; <span id="acToggleLabel">Choose Aircraft</span></button>
-      <div id="acPaneContent">
+      <div id="acPaneContent" style="display:none">
 
       <!-- Owner / Lessee toggle -->
       <div style="display:flex;gap:4px;margin-bottom:8px">
@@ -521,15 +521,16 @@ select option { background:var(--surface2); }
       <div class="ac-slot">
         <span class="ac-slot-lbl lbl-a">// Primary Aircraft</span>
         <select id="selA" onchange="onSel('A')">
-          <option value="185" selected>Cirrus SR22T — 185 mph</option>
+          <option value="" selected>— Select aircraft —</option>
+          <option value="185">Cirrus SR22T — 185 mph</option>
           <option value="300">Cirrus SF50 — 300 mph</option>
         </select>
-        <div class="spd-row" id="spdRowA">
-          <input enterkeyhint="done" inputmode="decimal" type="number" id="spdA" min="1" max="9999" value="185" oninput="recalc()">
+        <div class="spd-row" id="spdRowA" style="display:none">
+          <input enterkeyhint="done" inputmode="decimal" type="number" id="spdA" min="1" max="9999" value="" oninput="recalc()">
           <span class="spd-unit">MPH</span>
         </div>
-        <div class="spd-row" id="gphRowA">
-          <input enterkeyhint="done" inputmode="decimal" type="number" id="gphA" min="0" max="9999" value="18" step="0.1" oninput="recalc()">
+        <div class="spd-row" id="gphRowA" style="display:none">
+          <input enterkeyhint="done" inputmode="decimal" type="number" id="gphA" min="0" max="9999" value="" step="0.1" oninput="recalc()">
           <span class="spd-unit">GPH</span>
         </div>
         <button class="custom-btn" onclick="toggleCust('A')">+ Custom Aircraft</button>
@@ -2543,7 +2544,7 @@ function updateMode(state) {
 var comparisonActive = false;
 var userType = 'owner'; // 'owner' or 'lessee'
 
-var acPaneOpen = true;
+var acPaneOpen = false;
 
 window.toggleAircraftPane = function() {
   acPaneOpen = !acPaneOpen;
@@ -2895,17 +2896,20 @@ setInterval(tick,1000); tick();
 
 // ── PROGRAM AREA FAVORITES ───────────────────────────────────────────────────
 var METRO_AREAS = {
-  'Cincinnati, OH': [
-    { icao:'KCVG', name:'Cincinnati/NKY Intl',   lat:39.0488,  lng:-84.6678 },
-    { icao:'KLUK', name:'Lunken Field',           lat:39.1033,  lng:-84.4186 },
-    { icao:'KHAO', name:'Hamilton Municipal',     lat:39.3638,  lng:-84.5220 },
-    { icao:'KI67', name:'Cincinnati West',        lat:39.2589,  lng:-84.7743 },
-    { icao:'KI69', name:'Clermont County',        lat:39.0757,  lng:-84.0855 },
-    { icao:'KMWO', name:'Middletown Regional',   lat:39.5310,  lng:-84.3953 },
-    { icao:'KI73', name:'Moraine Air Park',       lat:39.6828,  lng:-84.2224 },
-    { icao:'KDAY', name:'Dayton Intl',            lat:39.9024,  lng:-84.2194 },
-    { icao:'KMGY', name:'Dayton Wright Brothers', lat:39.5891,  lng:-84.2243 },
-  ]
+  'Cincinnati, OH': {
+    aircraft: ['185', '300'], // SR22T and SF50
+    airports: [
+      { icao:'KCVG', name:'Cincinnati/NKY Intl',   lat:39.0488,  lng:-84.6678 },
+      { icao:'KLUK', name:'Lunken Field',           lat:39.1033,  lng:-84.4186 },
+      { icao:'KHAO', name:'Hamilton Municipal',     lat:39.3638,  lng:-84.5220 },
+      { icao:'KI67', name:'Cincinnati West',        lat:39.2589,  lng:-84.7743 },
+      { icao:'KI69', name:'Clermont County',        lat:39.0757,  lng:-84.0855 },
+      { icao:'KMWO', name:'Middletown Regional',   lat:39.5310,  lng:-84.3953 },
+      { icao:'KI73', name:'Moraine Air Park',       lat:39.6828,  lng:-84.2224 },
+      { icao:'KDAY', name:'Dayton Intl',            lat:39.9024,  lng:-84.2194 },
+      { icao:'KMGY', name:'Dayton Wright Brothers', lat:39.5891,  lng:-84.2243 },
+    ]
+  }
 };
 
 var activeMetroArea = '';
@@ -2925,9 +2929,21 @@ window.onMetroAreaChange = function() {
   var sel = document.getElementById('metroAreaSelect');
   activeMetroArea = sel ? sel.value : '';
   renderFavorites();
-  // Collapse aircraft pane when a program area is selected
-  if (activeMetroArea && acPaneOpen) {
-    toggleAircraftPane();
+
+  var area = activeMetroArea ? METRO_AREAS[activeMetroArea] : null;
+  if (area && area.aircraft) {
+    if (area.aircraft.length === 1) {
+      // Single aircraft — auto-select and collapse
+      document.getElementById('selA').value = area.aircraft[0];
+      onSel('A');
+      if (acPaneOpen) toggleAircraftPane();
+    } else {
+      // Multiple aircraft — open pane to let user choose
+      if (!acPaneOpen) toggleAircraftPane();
+      // Reset to prompt if no aircraft chosen yet
+      var selA = document.getElementById('selA');
+      if (!selA.value) updateAircraftToggleLabel();
+    }
   }
   updateAircraftToggleLabel();
 };
@@ -2935,11 +2951,12 @@ window.onMetroAreaChange = function() {
 function renderFavorites() {
   var grid = document.getElementById('favGrid');
   if (!grid) return;
-  if (!activeMetroArea || !METRO_AREAS[activeMetroArea]) {
+  var area = activeMetroArea ? METRO_AREAS[activeMetroArea] : null;
+  if (!area) {
     grid.innerHTML = '';
     return;
   }
-  var airports = METRO_AREAS[activeMetroArea];
+  var airports = area.airports;
   var html = '<div class="fav-grid">';
   airports.forEach(function(fav) {
     var displayCode = fav.icao.charAt(0) === 'K' ? fav.icao.substring(1) : fav.icao;
@@ -2953,7 +2970,8 @@ function renderFavorites() {
 }
 
 window.addFavoriteWP = function(icao) {
-  var airports = activeMetroArea ? METRO_AREAS[activeMetroArea] : [];
+  var area = activeMetroArea ? METRO_AREAS[activeMetroArea] : null;
+  var airports = area ? area.airports : [];
   var fav = airports.find(function(f){ return f.icao === icao; });
   if (!fav) return;
 
