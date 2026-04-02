@@ -458,7 +458,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-01.16</span>
+    <span style="color:var(--text-muted)">v2026-04-02.1</span>
   </div>
 </header>
 
@@ -504,7 +504,8 @@ select option { background:var(--surface2); }
 
     <!-- AIRCRAFT -->
     <div class="sec">
-      <div class="sec-title">Aircraft</div>
+      <button class="legs-toggle" id="acToggleBtn" onclick="toggleAircraftPane()" style="margin-bottom:6px">&#x25BC; <span id="acToggleLabel">Choose Aircraft</span></button>
+      <div id="acPaneContent">
 
       <!-- Owner / Lessee toggle -->
       <div style="display:flex;gap:4px;margin-bottom:8px">
@@ -580,6 +581,7 @@ select option { background:var(--surface2); }
       </div>
 
       <button class="add-wp-btn" id="addCompBtn" onclick="addComparison()" style="margin-top:6px">+ Add Comparison Aircraft</button>
+      </div><!-- /acPaneContent -->
     </div>
 
     <!-- COST INPUTS -->
@@ -2541,6 +2543,29 @@ function updateMode(state) {
 var comparisonActive = false;
 var userType = 'owner'; // 'owner' or 'lessee'
 
+var acPaneOpen = true;
+
+window.toggleAircraftPane = function() {
+  acPaneOpen = !acPaneOpen;
+  var content = document.getElementById('acPaneContent');
+  var btn = document.getElementById('acToggleBtn');
+  var label = document.getElementById('acToggleLabel');
+  content.style.display = acPaneOpen ? '' : 'none';
+  btn.innerHTML = (acPaneOpen ? '&#x25B2; ' : '&#x25BC; ') + '<span id="acToggleLabel">' + label.textContent + '</span>';
+};
+
+function updateAircraftToggleLabel() {
+  var label = document.getElementById('acToggleLabel');
+  if (!label) return;
+  var selA = document.getElementById('selA');
+  var selectedText = selA ? selA.options[selA.selectedIndex].text : '';
+  if (selectedText) {
+    label.textContent = selectedText;
+  } else {
+    label.textContent = 'Choose Aircraft';
+  }
+}
+
 window.setUserType = function(type) {
   userType = type;
   document.getElementById('btnOwner').classList.toggle('active', type === 'owner');
@@ -2595,6 +2620,7 @@ window.onSel = function(s) {
     if(s==='A') { applyCostPreset(sel.value); }
 
   } else { row.style.display='none'; if(gphRow) gphRow.style.display='none'; }
+  if(s==='A') updateAircraftToggleLabel();
   recalc();
 };
 window.toggleCust = function(s) {
@@ -2899,6 +2925,11 @@ window.onMetroAreaChange = function() {
   var sel = document.getElementById('metroAreaSelect');
   activeMetroArea = sel ? sel.value : '';
   renderFavorites();
+  // Collapse aircraft pane when a program area is selected
+  if (activeMetroArea && acPaneOpen) {
+    toggleAircraftPane();
+  }
+  updateAircraftToggleLabel();
 };
 
 function renderFavorites() {
