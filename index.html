@@ -458,7 +458,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-03.3</span>
+    <span style="color:var(--text-muted)">v2026-04-03.4</span>
   </div>
 </header>
 
@@ -504,6 +504,8 @@ select option { background:var(--surface2); }
 
     <!-- AIRCRAFT -->
     <div class="sec">
+      <div class="sec-title">Aircraft</div>
+      <div class="map-hint" id="acHelperHint" style="text-align:center;margin-bottom:8px">Select an aircraft type below to get started</div>
       <!-- Owner / Lessee toggle — always visible -->
       <div style="display:flex;gap:4px;margin-bottom:8px">
         <button class="layer-btn active" id="btnOwner" onclick="setUserType('owner')">OWNER</button>
@@ -2557,11 +2559,14 @@ function updateAircraftToggleLabel() {
   var label = document.getElementById('acToggleLabel');
   if (!label) return;
   var selA = document.getElementById('selA');
-  var selectedText = selA ? selA.options[selA.selectedIndex].text : '';
+  var selectedText = selA && selA.value ? selA.options[selA.selectedIndex].text : '';
+  var hint = document.getElementById('acHelperHint');
   if (selectedText) {
     label.textContent = selectedText;
+    if (hint) hint.style.display = 'none';
   } else {
     label.textContent = 'Choose Aircraft';
+    if (hint) hint.style.display = '';
   }
 }
 
