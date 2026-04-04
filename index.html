@@ -476,7 +476,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-04.8</span>
+    <span style="color:var(--text-muted)">v2026-04-04.9</span>
   </div>
 </header>
 
@@ -2962,6 +2962,18 @@ function refreshWarnIcons() {
         });
       }
       w.marker.setIcon(icon);
+
+      // Update popup with overnight indicator
+      var popup = w.marker.getPopup();
+      if (popup) {
+        var content = popup.getContent();
+        // Remove any existing overnight line
+        content = content.replace(/<br><span class="popup-overnight">.*?<\/span>/g, '');
+        if (w.overnight) {
+          content += '<br><span class="popup-overnight" style="color:#f5c542;font-size:11px">☽ Overnight stop</span>';
+        }
+        popup.setContent(content);
+      }
     }
   });
 }
