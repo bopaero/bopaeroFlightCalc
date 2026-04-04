@@ -1138,6 +1138,13 @@ document.addEventListener('click', function(e) {
   if (!e.target.closest('.wp-addr-row')) closePredictions();
 });
 
+// Dismiss mobile keyboard when "Done" / Enter is tapped on numeric inputs
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && e.target.getAttribute('enterkeyhint') === 'done') {
+    e.target.blur();
+  }
+});
+
 // ── ADDRESS / CITY GEOCODE ────────────────────────────────────────────────────
 window.geocodeAddress = function(id) {
   var input = document.getElementById('addr-' + id);
