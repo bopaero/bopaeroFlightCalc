@@ -2841,14 +2841,22 @@ function renderFBOInputs(placed) {
   var container = document.getElementById('fboList');
   if (!container) return;
 
+  if (placed.length === 0) { container.innerHTML = ''; return; }
+
+  // Check if existing inputs already match the current waypoints
+  var existingIds = [];
+  var inputs = container.querySelectorAll('input[id^="fbo-"]');
+  for (var i = 0; i < inputs.length; i++) existingIds.push(inputs[i].id);
+  var neededIds = placed.map(function(wp) { return 'fbo-' + wp.id; });
+  var match = existingIds.length === neededIds.length && existingIds.every(function(id, i) { return id === neededIds[i]; });
+  if (match) return; // inputs already correct, skip rebuild to preserve focus/keyboard
+
   // Preserve existing values by id
   var saved = {};
   placed.forEach(function(wp) {
     var inp = document.getElementById('fbo-' + wp.id);
     if (inp) saved[wp.id] = inp.value;
   });
-
-  if (placed.length === 0) { container.innerHTML = ''; return; }
 
   var html = '<div class="fbo-title">FBO / Airport Fees <span style="color:var(--text-muted);font-weight:normal">(enter manually)</span></div>';
   placed.forEach(function(wp, idx) {
