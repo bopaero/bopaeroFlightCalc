@@ -476,7 +476,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-04.9</span>
+    <span style="color:var(--text-muted)">v2026-04-04.10</span>
   </div>
 </header>
 
@@ -2761,13 +2761,13 @@ window.recalc = function() {
   var legs=[], totalMi=0;
   for(var i=1;i<placed.length;i++){
     var mi = haversineNm(placed[i-1].lat,placed[i-1].lng,placed[i].lat,placed[i].lng) * 1.15078;
-    legs.push({ from:placed[i-1].icao||placed[i-1].name, to:placed[i].icao||placed[i].name, mi:mi });
+    legs.push({ from:placed[i-1].icao||placed[i-1].name, to:placed[i].icao||placed[i].name, mi:mi, overnight:placed[i].overnight });
     totalMi += mi;
   }
   // Closing leg
   if (routeClosed && placed.length >= 2) {
     var mi = haversineNm(placed[placed.length-1].lat,placed[placed.length-1].lng,placed[0].lat,placed[0].lng) * 1.15078;
-    legs.push({ from:placed[placed.length-1].icao||placed[placed.length-1].name, to:placed[0].icao||placed[0].name, mi:mi });
+    legs.push({ from:placed[placed.length-1].icao||placed[placed.length-1].name, to:placed[0].icao||placed[0].name, mi:mi, overnight:false });
     totalMi += mi;
   }
 
@@ -2791,12 +2791,20 @@ window.recalc = function() {
     var tbl=document.getElementById('legsTable'+id);
     var hasFuel = r.gph > 0;
     var cols = '<colgroup><col style="width:7%"><col style="width:16%"><col style="width:16%"><col style="width:20%"><col style="width:22%">' + (hasFuel ? '<col style="width:19%">' : '') + '</colgroup>';
+    var colCount = hasFuel ? 6 : 5;
+    var currentDay = 1;
+    var hasOvernights = r.legs.some(function(l){ return l.overnight; });
     var rows=cols+'<tr><th>#</th><th>From</th><th>To</th><th>Dist</th><th>Time</th>' + (hasFuel ? '<th>Fuel</th>' : '') + '</tr>';
+    if (hasOvernights) rows += '<tr><td colspan="' + colCount + '" style="text-align:center;padding:4px 0;color:#f5c542;font-size:10px;font-weight:bold;letter-spacing:1px">☽ DAY 1</td></tr>';
     r.legs.forEach(function(leg,li){
       var legHrs=leg.mi/r.speed;
       rows+='<tr><td class="dim">'+(li+1)+'</td><td>'+truncate(leg.from,6)+'</td><td>'+truncate(leg.to,6)+'</td><td>'+Math.round(leg.mi)+'<span style="color:var(--text-muted)"> mi</span></td><td>'+fmtPlain(legHrs)+'</td>';
       if(hasFuel) rows+='<td>'+(legHrs*r.gph).toFixed(1)+'<span style="color:var(--text-muted)"> gal</span></td>';
       rows+='</tr>';
+      if (leg.overnight) {
+        currentDay++;
+        rows += '<tr><td colspan="' + colCount + '" style="text-align:center;padding:4px 0;color:#f5c542;font-size:10px;font-weight:bold;letter-spacing:1px;border-top:1px dashed #f5c54255">☽ DAY ' + currentDay + '</td></tr>';
+      }
     });
     tbl.innerHTML=rows;
   }
