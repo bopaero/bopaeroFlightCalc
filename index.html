@@ -294,9 +294,9 @@ select option { background:var(--surface2); }
   padding:4px 8px; border-radius:3px; cursor:pointer; transition:all .15s; margin-bottom:6px;
 }
 .legs-toggle:hover { border-color:var(--border-bright); color:var(--text-dim,#b8c7d9); }
-.legs-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:10px; table-layout:fixed; word-wrap:break-word; }
-.legs-table th { color:var(--text-muted); font-weight:normal; letter-spacing:1px; text-transform:uppercase; padding:3px 4px; border-bottom:1px solid var(--border); text-align:left; font-size:9px; overflow:hidden; text-overflow:ellipsis; }
-.legs-table td { padding:3px 4px; color:var(--text); border-bottom:1px solid var(--border); overflow:hidden; text-overflow:ellipsis; }
+.legs-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:10px; table-layout:auto; }
+.legs-table th { color:var(--text-muted); font-weight:normal; letter-spacing:1px; text-transform:uppercase; padding:3px 4px; border-bottom:1px solid var(--border); text-align:left; font-size:9px; white-space:nowrap; }
+.legs-table td { padding:3px 4px; color:var(--text); border-bottom:1px solid var(--border); word-break:keep-all; overflow-wrap:break-word; }
 .legs-table tr:last-child td { border-bottom:none; }
 .legs-table td.dim { color:var(--text-muted); }
 
@@ -478,7 +478,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-05.4</span>
+    <span style="color:var(--text-muted)">v2026-04-05.5</span>
   </div>
 </header>
 
