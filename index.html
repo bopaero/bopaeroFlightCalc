@@ -478,7 +478,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-05.5</span>
+    <span style="color:var(--text-muted)">v2026-04-05.6</span>
   </div>
 </header>
 
@@ -1537,7 +1537,7 @@ function placeWaypointDirect(id, airport) {
   if (airport.icao) popupBody += '<span style="color:var(--accent)">' + airport.icao + '</span><br>';
   popupBody += airport.name;
   if (rwyFt) {
-    var rc = warn ? '#f59e0b' : '#b8c7d9';
+    var rc = warn ? '#f59e0b' : 'var(--text)';
     popupBody += '<br><span style="color:'+rc+'">'+(warn?'⚠ SHORT ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
   }
   popupBody += '<br><span style="color:var(--text-muted)">'+airport.lat.toFixed(4)+'° / '+airport.lng.toFixed(4)+'°</span>';
@@ -1621,7 +1621,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
     if (icao) popupBody += '<span style="color:var(--accent)">' + icao + '</span><br>';
     popupBody += name;
     if (rwyFt) {
-      var rc = warn ? '#f59e0b' : '#b8c7d9';
+      var rc = warn ? '#f59e0b' : 'var(--text)';
       popupBody += '<br><span style="color:'+rc+'">'+(warn?'⚠ SHORT ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
     }
     popupBody += '<br><span style="color:var(--text-muted)">'+useLat.toFixed(4)+'° / '+useLng.toFixed(4)+'°</span>';
