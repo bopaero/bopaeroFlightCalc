@@ -60,6 +60,9 @@
   .res-card.a .res-name, .faster-tag,
   .lbl-a, .lbl-b { text-shadow:0 0 3px rgba(0,0,0,.15); }
   .fav-btn .fav-icao { text-shadow:0 0 2px rgba(0,0,0,.1); }
+  /* Overnight labels & icons — subtle shadow for readability */
+  .wp-overnight.active, .overnight-day-tag, .day-separator,
+  .popup-overnight { text-shadow:1px 1px 0 rgba(0,0,0,.2); }
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; background:var(--surface); color:var(--text); font-family:var(--sans); }
@@ -476,7 +479,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-05.1</span>
+    <span style="color:var(--text-muted)">v2026-04-05.2</span>
   </div>
 </header>
 
