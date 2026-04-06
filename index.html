@@ -478,7 +478,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-05.8</span>
+    <span style="color:var(--text-muted)">v2026-04-06.1</span>
   </div>
 </header>
 
@@ -612,23 +612,23 @@ select option { background:var(--surface2); }
       <div class="sec-title">Trip Cost</div>
       <div class="cost-row" id="acCostRow" style="display:none">
         <label class="cost-lbl">Aircraft ($/hr)</label>
-        <input enterkeyhint="done" inputmode="decimal" type="number" id="costAcPerHr" class="cost-input" value="372" min="0" oninput="recalc()">
+        <input enterkeyhint="done" inputmode="decimal" type="number" id="costAcPerHr" class="cost-input" placeholder="—" min="0" oninput="recalc()">
       </div>
       <div class="cost-row">
         <label class="cost-lbl" id="consumablesLbl">Fuel/Oil/TKS ($/hr)</label>
-        <input enterkeyhint="done" inputmode="decimal" type="number" id="costConsumables" class="cost-input" value="110" min="0" oninput="recalc()">
+        <input enterkeyhint="done" inputmode="decimal" type="number" id="costConsumables" class="cost-input" placeholder="—" min="0" oninput="recalc()">
       </div>
       <div class="cost-row">
         <label class="cost-lbl">Pilot ($/day)</label>
         <div style="display:flex;gap:4px;align-items:center">
-          <input enterkeyhint="done" inputmode="decimal" type="number" id="costPilotMin" class="cost-input" value="500" min="0" step="100" oninput="recalc()" style="width:80px">
+          <input enterkeyhint="done" inputmode="decimal" type="number" id="costPilotMin" class="cost-input" placeholder="—" min="0" step="100" oninput="recalc()" style="width:80px">
           <span style="color:var(--text-muted);font-size:10px">–</span>
-          <input enterkeyhint="done" inputmode="decimal" type="number" id="costPilotMax" class="cost-input" value="1500" min="0" step="100" oninput="recalc()" style="width:80px">
+          <input enterkeyhint="done" inputmode="decimal" type="number" id="costPilotMax" class="cost-input" placeholder="—" min="0" step="100" oninput="recalc()" style="width:80px">
         </div>
       </div>
       <div class="cost-row">
         <label class="cost-lbl">Trip days</label>
-        <input enterkeyhint="done" inputmode="decimal" type="number" id="costDays" class="cost-input" value="1" min="1" max="30" oninput="recalc()">
+        <input enterkeyhint="done" inputmode="decimal" type="number" id="costDays" class="cost-input" placeholder="—" min="1" max="30" oninput="recalc()">
       </div>
       <div id="fboList" style="margin-top:6px"></div>
     </div>
@@ -2673,6 +2673,13 @@ function applyCostPreset(spdKey) {
   document.getElementById('costAcPerHr').value = preset.acPerHr;
   document.getElementById('costConsumables').value = computeConsumPerHr(spdKey);
   document.getElementById('consumablesLbl').textContent = preset.consumLabel + ' ($/hr)';
+  // Fill pilot/days defaults if still empty
+  var pilotMin = document.getElementById('costPilotMin');
+  var pilotMax = document.getElementById('costPilotMax');
+  var days = document.getElementById('costDays');
+  if (!pilotMin.value) pilotMin.value = 500;
+  if (!pilotMax.value) pilotMax.value = 1500;
+  if (!days.value) days.value = 1;
 }
 
 function getConsumablesLabel() {
