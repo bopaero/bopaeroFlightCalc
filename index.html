@@ -487,7 +487,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-06.6</span>
+    <span style="color:var(--text-muted)">v2026-04-06.7</span>
   </div>
 </header>
 
@@ -2015,7 +2015,7 @@ var CITY_CACHE = null;
         var nameLower = name.toLowerCase();
         var keywords = iKeywords >= 0 ? stripQ(cols[iKeywords]).toLowerCase() : '';
         // DC SFRA — restricted to general aviation
-        var DC_SFRA = { 'KDCA':1, 'KDAA':1, 'KVKX':1, 'KCGS':1 };
+        var DC_SFRA = { 'KDCA':1, 'KDAA':1, 'KVKX':1, 'VKX':1, 'KCGS':1 };
         if (DC_SFRA[ident]) { OA_REJECTED[ident] = { name:name, reason:'DC SFRA restricted' }; continue; }
         // Filter private/restricted/military by name (both US and CA) — record reason
         if (/\bprivate\b|\bpvt\b/.test(nameLower)) { OA_REJECTED[ident] = { name:name, reason:'private' }; continue; }
