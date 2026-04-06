@@ -234,6 +234,15 @@ header {
 /* AIRCRAFT */
 .ac-slot { background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:10px; margin-bottom:8px; }
 .ac-slot-lbl { font-family:var(--mono); font-size:12px; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; display:block; }
+.ac-btn-row { display:flex; gap:6px; margin-bottom:8px; }
+.ac-pick-btn {
+  flex:1; padding:8px 4px; font-family:var(--mono); font-size:13px; font-weight:600;
+  letter-spacing:1px; text-transform:uppercase; color:var(--text-muted);
+  background:var(--surface); border:1px solid var(--border); border-radius:4px;
+  cursor:pointer; transition:all .15s;
+}
+.ac-pick-btn:hover { border-color:var(--accent); color:var(--accent); }
+.ac-pick-btn.active { border-color:var(--accent); color:var(--accent); background:var(--bg-card); }
 .lbl-a { color:var(--accent); }
 .lbl-b { color:var(--accent2); }
 
@@ -478,7 +487,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-06.1</span>
+    <span style="color:var(--text-muted)">v2026-04-06.2</span>
   </div>
 </header>
 
@@ -539,14 +548,18 @@ select option { background:var(--surface2); }
       <button class="legs-toggle" id="acToggleBtn" onclick="toggleAircraftPane()" style="margin-bottom:6px">&#x25BC; <span id="acToggleLabel">Choose Aircraft</span></button>
       <div id="acPaneContent" style="display:none">
 
-      <!-- Primary aircraft — always shown, defaults to SR22T -->
+      <!-- Primary aircraft — always shown -->
       <div class="ac-slot">
         <span class="ac-slot-lbl lbl-a">// Primary Aircraft</span>
-        <select id="selA" onchange="onSel('A')">
+        <select id="selA" onchange="onSel('A')" style="display:none">
           <option value="" selected>— Select aircraft —</option>
           <option value="185">Cirrus SR22T — 185 mph</option>
           <option value="300">Cirrus SF50 — 300 mph</option>
         </select>
+        <div class="ac-btn-row">
+          <button class="ac-pick-btn" id="acBtnSR22T" onclick="pickAircraft('185','A')">SR22T</button>
+          <button class="ac-pick-btn" id="acBtnSF50" onclick="pickAircraft('300','A')">SF50</button>
+        </div>
         <div class="spd-row" id="spdRowA" style="display:none">
           <input enterkeyhint="done" inputmode="decimal" type="number" id="spdA" min="1" max="9999" value="" oninput="recalc()">
           <span class="spd-unit">MPH</span>
@@ -2688,6 +2701,18 @@ function getConsumablesLabel() {
   return text.replace(' ($/hr)', '');
 }
 
+window.pickAircraft = function(val, s) {
+  var sel = document.getElementById('sel' + s);
+  sel.value = val;
+  // Update button active states
+  var btns = sel.closest('.ac-slot').querySelectorAll('.ac-pick-btn');
+  btns.forEach(function(b) { b.classList.remove('active'); });
+  var map = { '185': 'acBtnSR22T', '300': 'acBtnSF50' };
+  var activeBtn = document.getElementById(map[val]);
+  if (activeBtn) activeBtn.classList.add('active');
+  onSel(s);
+};
+
 window.onSel = function(s) {
   var sel=document.getElementById('sel'+s), row=document.getElementById('spdRow'+s);
   var spd=document.getElementById('spd'+s), cust=document.getElementById('cust'+s);
@@ -3053,8 +3078,7 @@ window.onMetroAreaChange = function() {
   if (area && area.aircraft) {
     if (area.aircraft.length === 1) {
       // Single aircraft — auto-select and collapse
-      document.getElementById('selA').value = area.aircraft[0];
-      onSel('A');
+      pickAircraft(area.aircraft[0], 'A');
       if (acPaneOpen) toggleAircraftPane();
     } else {
       // Multiple aircraft — open pane to let user choose
