@@ -487,7 +487,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-07.5</span>
+    <span style="color:var(--text-muted)">v2026-04-07.6</span>
   </div>
 </header>
 
@@ -2698,8 +2698,8 @@ function applyCostPreset(spdKey) {
   document.getElementById('consumablesLbl').textContent = preset.consumLabel + ' ($/hr)';
   document.getElementById('costPilotMin').value = preset.pilotMin;
   document.getElementById('costPilotMax').value = preset.pilotMax;
-  var days = document.getElementById('costDays');
-  if (!days.value) days.value = 1;
+  var flyDays = document.getElementById('costFlyingDays');
+  if (!flyDays.value) flyDays.value = 1;
 }
 
 function getConsumablesLabel() {
