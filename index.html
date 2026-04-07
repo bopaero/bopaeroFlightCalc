@@ -487,7 +487,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-07.4</span>
+    <span style="color:var(--text-muted)">v2026-04-07.5</span>
   </div>
 </header>
 
@@ -3031,10 +3031,17 @@ function refreshWarnIcons() {
       }
       w.marker.setIcon(icon);
 
-      // Update popup with overnight indicator
+      // Update popup runway warning and overnight indicator
       var popup = w.marker.getPopup();
       if (popup) {
         var content = popup.getContent();
+        // Refresh runway warning text
+        if (w.rwyFt > 0) {
+          var rwColor = unsuitable ? '#ff4444' : (warn ? '#f59e0b' : 'var(--text)');
+          var rwLabel = unsuitable ? '⚠ UNSUITABLE ' : (warn ? '⚠ SHORT ' : '');
+          var newRwy = '<br><span style="color:' + rwColor + '">' + rwLabel + 'Longest paved rwy: ' + w.rwyFt.toLocaleString() + ' ft</span>';
+          content = content.replace(/<br><span style="color:[^"]*">(?:⚠ (?:SHORT|UNSUITABLE) )?Longest paved rwy:.*?<\/span>/, newRwy);
+        }
         // Remove any existing overnight line
         content = content.replace(/<br><span class="popup-overnight"[^>]*>.*?<\/span>/g, '');
         if (w.overnight) {
