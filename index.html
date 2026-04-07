@@ -487,7 +487,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-07.2</span>
+    <span style="color:var(--text-muted)">v2026-04-07.3</span>
   </div>
 </header>
 
@@ -2889,7 +2889,7 @@ window.recalc = function() {
   var flyingDays    = parseFloat(document.getElementById('costFlyingDays').value) || 1;
   var tripDaysVal   = document.getElementById('costTripDays').value;
   var tripDays      = tripDaysVal ? Math.max(parseFloat(tripDaysVal), flyingDays) : flyingDays;
-  var days          = tripDays;
+  var days          = flyingDays;
   var leaseHrsIncl  = parseFloat(document.getElementById('leaseHoursIncl').value) || 0;
 
   // Break out fuel vs oil costs
@@ -2939,7 +2939,7 @@ window.recalc = function() {
   gridHtml +=
     '<div><div class="res-item-lbl">Fuel</div><div class="res-item-val" style="font-size:14px">' + fmt$(fuelCost) + '</div></div>' +
     '<div><div class="res-item-lbl">Oil</div><div class="res-item-val" style="font-size:14px">' + fmt$(oilCost) + '</div></div>' +
-    '<div><div class="res-item-lbl">Pilot (' + days + 'd' + (tripDaysVal && tripDays > flyingDays ? ', ' + flyingDays + ' flying' : '') + ')</div><div class="res-item-val" style="font-size:14px">' + fmtRange(pilotLow, pilotHigh) + '</div></div>' +
+    '<div><div class="res-item-lbl">Pilot (' + flyingDays + ' flying d' + (tripDaysVal && tripDays > flyingDays ? ' / ' + tripDays + ' trip' : '') + ')</div><div class="res-item-val" style="font-size:14px">' + fmtRange(pilotLow, pilotHigh) + '</div></div>' +
     '<div><div class="res-item-lbl">FBO Fees</div><div class="res-item-val" style="font-size:14px">' + fmt$(fboTotal) + '</div></div>' +
     '<div><div class="res-item-lbl">Total</div><div class="res-item-val" style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</div></div>';
   grid.innerHTML = gridHtml;
@@ -2956,8 +2956,8 @@ window.recalc = function() {
   }
   rows += '<tr><td>Fuel</td><td>' + rA.hours.toFixed(2) + ' hr × ' + gph + ' GPH × $' + fuelPriceGal.toFixed(2) + '/gal</td><td>' + fmt$(fuelCost) + '</td></tr>';
   rows += '<tr><td>Oil</td><td>' + rA.hours.toFixed(2) + ' hr × $' + oilPerHr.toFixed(2) + '/hr</td><td>' + fmt$(oilCost) + '</td></tr>';
-  var pilotDetail = days + ' trip day' + (days>1?'s':'') + ' × $' + pilotMin + '–$' + pilotMax + '/day';
-  if (tripDaysVal && tripDays > flyingDays) pilotDetail += ' (' + flyingDays + ' flying, ' + (tripDays - flyingDays) + ' non-flying)';
+  var pilotDetail = flyingDays + ' flying day' + (flyingDays>1?'s':'') + ' × $' + pilotMin + '–$' + pilotMax + '/day';
+  if (tripDaysVal && tripDays > flyingDays) pilotDetail += ' (' + tripDays + ' day trip)';
   rows += '<tr><td>Pilot</td><td>' + pilotDetail + '</td><td>' + fmtRange(pilotLow, pilotHigh) + '</td></tr>';
   placed.forEach(function(wp) {
     var inp = document.getElementById('fbo-' + wp.id);
