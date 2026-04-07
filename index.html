@@ -487,7 +487,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-07.3</span>
+    <span style="color:var(--text-muted)">v2026-04-07.4</span>
   </div>
 </header>
 
@@ -2939,7 +2939,7 @@ window.recalc = function() {
   gridHtml +=
     '<div><div class="res-item-lbl">Fuel</div><div class="res-item-val" style="font-size:14px">' + fmt$(fuelCost) + '</div></div>' +
     '<div><div class="res-item-lbl">Oil</div><div class="res-item-val" style="font-size:14px">' + fmt$(oilCost) + '</div></div>' +
-    '<div><div class="res-item-lbl">Pilot (' + flyingDays + ' flying d' + (tripDaysVal && tripDays > flyingDays ? ' / ' + tripDays + ' trip' : '') + ')</div><div class="res-item-val" style="font-size:14px">' + fmtRange(pilotLow, pilotHigh) + '</div></div>' +
+    '<div><div class="res-item-lbl">Pilot (' + flyingDays + ' flying days' + (tripDaysVal && tripDays > flyingDays ? ' / ' + tripDays + ' trip' : '') + ')</div><div class="res-item-val" style="font-size:14px">' + fmtRange(pilotLow, pilotHigh) + '</div></div>' +
     '<div><div class="res-item-lbl">FBO Fees</div><div class="res-item-val" style="font-size:14px">' + fmt$(fboTotal) + '</div></div>' +
     '<div><div class="res-item-lbl">Total</div><div class="res-item-val" style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</div></div>';
   grid.innerHTML = gridHtml;
