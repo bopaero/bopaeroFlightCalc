@@ -539,7 +539,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.20</span>
+    <span style="color:var(--text-muted)">v2026-04-11.21</span>
   </div>
 </header>
 
@@ -3182,13 +3182,17 @@ window.applyPaxToPayload = function() {
 
 var paxPopupDismissed = false;
 
+var _showingPaxPopup = false;
 window.showPaxPopup = function() {
+  if (_showingPaxPopup) return;
+  _showingPaxPopup = true;
   // On mobile, switch to map tab first so popup is visible
   if (isMobile()) mobileTab('map');
   setTimeout(function() {
     var overlay = document.getElementById('paxOverlay');
     if (overlay) overlay.style.display = 'flex';
-  }, isMobile() ? 150 : 0);
+    _showingPaxPopup = false;
+  }, isMobile() ? 200 : 0);
 };
 
 window.dismissPaxPopup = function() {
@@ -3349,8 +3353,9 @@ function updateRangeCircle() {
   }
   drawRangeLabel();
 
-  // Show passenger popup on first range circle appearance
-  if (placed.length === 1 && !paxPopupDismissed) {
+  // Show passenger popup on first range circle appearance (desktop only)
+  // On mobile, the banner in the PLAN tab handles this
+  if (placed.length === 1 && !paxPopupDismissed && !isMobile()) {
     showPaxPopup();
   }
 }
