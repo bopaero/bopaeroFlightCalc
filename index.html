@@ -286,21 +286,22 @@ select option { background:var(--surface2); }
 .payload-summary .over { color:#ff4444; font-weight:bold; }
 .payload-std-btn { width:100%; background:none; border:1px solid var(--border); color:var(--text-muted); font-size:11px; padding:4px 8px; border-radius:3px; cursor:pointer; margin-top:6px; }
 .payload-std-btn:hover { border-color:var(--accent); color:var(--accent); }
-.pax-selector { background:var(--surface2); border:1px solid var(--accent); border-radius:6px; padding:12px; margin-bottom:8px; }
-.pax-selector.pax-pulse { animation: paxPulse 2s ease-in-out 3; }
-@keyframes paxPulse { 0%,100% { border-color:var(--accent); box-shadow:none; } 50% { border-color:var(--accent); box-shadow:0 0 12px var(--accent); } }
-.pax-title { font-size:14px; font-weight:bold; color:var(--text); margin-bottom:10px; }
-.pax-stepper { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-.pax-stepper label { flex:1; font-size:13px; color:var(--text-muted); }
+.pax-overlay { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; display:flex; align-items:center; justify-content:center; pointer-events:all; }
+.pax-popup { background:var(--surface2); border:2px solid var(--accent); border-radius:10px; padding:20px 24px; min-width:260px; max-width:320px; box-shadow:0 4px 24px rgba(0,0,0,0.5); z-index:1001; }
+.pax-title { font-size:16px; font-weight:bold; color:var(--text); margin-bottom:14px; text-align:center; }
+.pax-stepper { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.pax-stepper label { flex:1; font-size:14px; color:var(--text-muted); }
 .pax-stepper-btns { display:flex; align-items:center; gap:0; }
-.pax-stepper-btns button { width:32px; height:32px; background:var(--surface); border:1px solid var(--border-bright); color:var(--text); font-size:16px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-.pax-stepper-btns button:first-child { border-radius:4px 0 0 4px; }
-.pax-stepper-btns button:last-child { border-radius:0 4px 4px 0; }
+.pax-stepper-btns button { width:36px; height:36px; background:var(--surface); border:1px solid var(--border-bright); color:var(--text); font-size:18px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.pax-stepper-btns button:first-child { border-radius:6px 0 0 6px; }
+.pax-stepper-btns button:last-child { border-radius:0 6px 6px 0; }
 .pax-stepper-btns button:hover { background:var(--accent); color:#000; }
-.pax-stepper-btns span { width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:var(--surface); border-top:1px solid var(--border-bright); border-bottom:1px solid var(--border-bright); font-family:var(--mono); font-size:14px; font-weight:bold; }
-.luggage-toggle { display:flex; align-items:center; gap:8px; }
-.luggage-toggle label { font-size:13px; color:var(--text-muted); flex:1; }
-.luggage-toggle input[type="checkbox"] { width:18px; height:18px; accent-color:var(--accent); }
+.pax-stepper-btns span { width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:var(--surface); border-top:1px solid var(--border-bright); border-bottom:1px solid var(--border-bright); font-family:var(--mono); font-size:16px; font-weight:bold; }
+.luggage-toggle { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.luggage-toggle label { font-size:14px; color:var(--text-muted); flex:1; }
+.luggage-toggle input[type="checkbox"] { width:20px; height:20px; accent-color:var(--accent); }
+.pax-done-btn { width:100%; padding:10px; background:var(--accent); color:#000; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer; letter-spacing:0.5px; }
+.pax-done-btn:hover { opacity:0.9; }
 .payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:6px 0 0; text-align:center; }
 .payload-details-btn:hover { color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
@@ -532,7 +533,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.16</span>
+    <span style="color:var(--text-muted)">v2026-04-11.17</span>
   </div>
 </header>
 
@@ -615,21 +616,6 @@ select option { background:var(--surface2); }
           <span class="spd-unit">GPH</span>
         </div>
         <div id="payloadSection" style="display:none">
-          <div id="paxSelector" class="pax-selector pax-pulse">
-            <div class="pax-title">How many passengers?</div>
-            <div class="pax-stepper">
-              <label>Passengers</label>
-              <div class="pax-stepper-btns">
-                <button onclick="adjustPax(-1)">−</button>
-                <span id="paxCount">1</span>
-                <button onclick="adjustPax(1)">+</button>
-              </div>
-            </div>
-            <div class="luggage-toggle">
-              <label>Traveling with luggage?</label>
-              <input type="checkbox" id="luggageToggle" checked onchange="applyPaxToPayload()">
-            </div>
-          </div>
           <button class="payload-details-btn" id="payloadDetailsBtn" onclick="togglePayloadDetails()">▼ Weight details</button>
           <div id="payloadDetails" style="display:none">
             <div class="payload-header">
@@ -779,6 +765,24 @@ select option { background:var(--surface2); }
   <!-- MAP -->
   <div class="map-wrap mobile-active" id="mobileMapPanel">
     <div id="map"></div>
+    <div id="paxOverlay" class="pax-overlay" style="display:none">
+      <div class="pax-popup">
+        <div class="pax-title">How many passengers?</div>
+        <div class="pax-stepper">
+          <label>Passengers</label>
+          <div class="pax-stepper-btns">
+            <button onclick="adjustPax(-1)">−</button>
+            <span id="paxCount">1</span>
+            <button onclick="adjustPax(1)">+</button>
+          </div>
+        </div>
+        <div class="luggage-toggle">
+          <label>Traveling with luggage?</label>
+          <input type="checkbox" id="luggageToggle" checked onchange="applyPaxToPayload()">
+        </div>
+        <button class="pax-done-btn" onclick="dismissPaxPopup()">Done</button>
+      </div>
+    </div>
     <button class="map-lock-btn locked" id="mapLockBtn" onclick="toggleMapLock(event)" title="Lock map to scroll page">&#x1F512; MAP LOCKED</button>
     <div class="map-helper-btns">
       <button class="map-helper-btn" id="zoomRouteBtn" onclick="zoomToRoute()" disabled title="Zoom to fit entire route"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="2" cy="2" r="1.5" fill="currentColor" stroke="none"/><circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="5" cy="7" r="1.5" fill="currentColor" stroke="none"/><line x1="2" y1="2" x2="5" y2="7"/><line x1="5" y1="7" x2="12" y2="5"/><line x1="12" y1="5" x2="7" y2="12"/></svg> ROUTE</button>
@@ -3045,15 +3049,14 @@ function renderPayloadInputs(spdKey) {
   if (!w) { section.style.display = 'none'; return; }
   section.style.display = 'block';
 
-  // Set passenger count display
+  // Set passenger count display in map popup
   var countEl = document.getElementById('paxCount');
   if (countEl) countEl.textContent = w.defaultPax || 1;
   var luggageEl = document.getElementById('luggageToggle');
   if (luggageEl) luggageEl.checked = true;
 
-  // Reset pulse if switching aircraft
-  var paxSel = document.getElementById('paxSelector');
-  if (paxSel && !paxUserAdjusted) paxSel.classList.add('pax-pulse');
+  // Reset popup state when switching aircraft
+  paxPopupDismissed = false;
 
   // Build itemized weight inputs
   var html = '';
@@ -3085,10 +3088,7 @@ window.onPayloadInput = function() {
 };
 
 window.onPayloadDetailInput = function() {
-  // User is manually editing weights — stop pulse, mark adjusted
   paxUserAdjusted = true;
-  var paxSel = document.getElementById('paxSelector');
-  if (paxSel) paxSel.classList.remove('pax-pulse');
   onPayloadInput();
 };
 
@@ -3120,9 +3120,6 @@ window.adjustPax = function(delta) {
   var next = Math.max(0, Math.min(w.maxPax, current + delta));
   countEl.textContent = next;
   paxUserAdjusted = true;
-  // Stop pulse animation once user interacts
-  var paxSel = document.getElementById('paxSelector');
-  if (paxSel) paxSel.classList.remove('pax-pulse');
   applyPaxToPayload();
 };
 
@@ -3167,6 +3164,21 @@ window.applyPaxToPayload = function() {
   });
 
   onPayloadInput();
+};
+
+var paxPopupDismissed = false;
+
+window.showPaxPopup = function() {
+  var overlay = document.getElementById('paxOverlay');
+  if (overlay) overlay.style.display = 'flex';
+};
+
+window.dismissPaxPopup = function() {
+  var overlay = document.getElementById('paxOverlay');
+  if (overlay) overlay.style.display = 'none';
+  paxPopupDismissed = true;
+  paxUserAdjusted = true;
+  applyPaxToPayload();
 };
 
 window.togglePayloadDetails = function() {
@@ -3316,8 +3328,10 @@ function updateRangeCircle() {
   }
   drawRangeLabel();
 
-  // Open aircraft pane so user can see payload section
-  if (placed.length === 1 && !acPaneOpen) toggleAircraftPane();
+  // Show passenger popup on first range circle appearance
+  if (placed.length === 1 && !paxPopupDismissed) {
+    showPaxPopup();
+  }
 }
 
 // ── CALCULATION ───────────────────────────────────────────────────────────────
