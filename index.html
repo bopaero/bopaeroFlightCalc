@@ -536,7 +536,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.37</span>
+    <span style="color:var(--text-muted)">v2026-04-11.38</span>
   </div>
 </header>
 
@@ -2543,6 +2543,68 @@ function haversineM(la1, lo1, la2, lo2) {
 }
 
 // ── MARKERS ───────────────────────────────────────────────────────────────────
+// Compute optimal popup position based on neighboring leg angles
+// Returns { offset: L.point, anchor: 'top'|'bottom'|'left'|'right' }
+function getOptimalPopupOffset(wp) {
+  var placed = waypoints.filter(function(w){ return w.lat !== null; });
+  var idx = placed.indexOf(wp);
+  if (idx < 0) return { offset: L.point(0, -16), anchor: 'top' };
+
+  var p1 = map.latLngToLayerPoint([wp.lat, wp.lng]);
+  var legAngles = []; // angles from this waypoint to neighbors (radians)
+
+  function addLeg(other) {
+    if (!other) return;
+    var p2 = map.latLngToLayerPoint([other.lat, other.lng]);
+    legAngles.push(Math.atan2(p2.y - p1.y, p2.x - p1.x));
+  }
+
+  if (idx > 0) addLeg(placed[idx - 1]);
+  if (idx < placed.length - 1) addLeg(placed[idx + 1]);
+  if (routeClosed && placed.length >= 2) {
+    if (idx === 0) addLeg(placed[placed.length - 1]);
+    if (idx === placed.length - 1) addLeg(placed[0]);
+  }
+
+  // Candidates: top, bottom, left, right
+  // Direction: angle FROM marker TO popup center
+  var candidates = [
+    { dir: -Math.PI / 2, offset: L.point(0, -16), anchor: 'top' },     // above
+    { dir: Math.PI / 2,  offset: L.point(0, 16),  anchor: 'bottom' },  // below
+    { dir: Math.PI,      offset: L.point(-16, 0), anchor: 'left' },    // left
+    { dir: 0,            offset: L.point(16, 0),  anchor: 'right' }    // right
+  ];
+
+  // Pick candidate whose direction is furthest from any leg (max-min angle diff)
+  var best = candidates[0];
+  var bestMinDiff = -1;
+  candidates.forEach(function(c) {
+    var minDiff = Math.PI;
+    legAngles.forEach(function(a) {
+      var diff = Math.abs(((c.dir - a + 3 * Math.PI) % (2 * Math.PI)) - Math.PI);
+      if (diff < minDiff) minDiff = diff;
+    });
+    // Slight preference for above when ties
+    if (minDiff > bestMinDiff + 0.01) { bestMinDiff = minDiff; best = c; }
+  });
+
+  return best;
+}
+
+// Apply the optimal offset when a waypoint popup opens
+map.on('popupopen', function(e) {
+  var popup = e.popup;
+  var marker = popup._source;
+  if (!marker) return;
+  var wp = waypoints.find(function(w) { return w.marker === marker; });
+  if (!wp || wp.lat === null) return;
+  var opt = getOptimalPopupOffset(wp);
+  // Save original state once for restoration
+  popup.options.offset = opt.offset;
+  popup.options.autoPan = true;
+  popup.update();
+});
+
 function makeIcon(color, label) {
   return L.divIcon({
     className: '',
