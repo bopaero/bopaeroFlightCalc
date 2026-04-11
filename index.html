@@ -535,7 +535,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.27</span>
+    <span style="color:var(--text-muted)">v2026-04-11.28</span>
   </div>
 </header>
 
@@ -3755,9 +3755,9 @@ window.onMetroAreaChange = function() {
   var area = activeMetroArea ? METRO_AREAS[activeMetroArea] : null;
   if (area && area.aircraft) {
     if (area.aircraft.length === 1) {
-      // Single aircraft — auto-select and collapse
+      // Single aircraft — auto-select; collapse on desktop, keep open on mobile
       pickAircraft(area.aircraft[0], 'A');
-      if (acPaneOpen) toggleAircraftPane();
+      if (acPaneOpen && !isMobile()) toggleAircraftPane();
     } else {
       // Multiple aircraft — open pane to let user choose
       if (!acPaneOpen) toggleAircraftPane();
