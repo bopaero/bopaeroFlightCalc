@@ -535,7 +535,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.29</span>
+    <span style="color:var(--text-muted)">v2026-04-11.30</span>
   </div>
 </header>
 
@@ -2647,8 +2647,12 @@ window.mobileTab = function(tab) {
   if (tab === 'map') {
     mapPanel.classList.add('mobile-active');
     document.getElementById('mnavMap').classList.add('active');
-    // Trigger map resize so tiles load correctly
-    setTimeout(function(){ map.invalidateSize(); }, 100);
+    // Trigger map resize, fit bounds, and redraw range circle
+    setTimeout(function(){
+      map.invalidateSize();
+      fitRouteOrWaypoint();
+      drawRangeLabel();
+    }, 150);
   } else if (tab === 'plan') {
     sidebar.classList.add('mobile-active');
     document.getElementById('mnavPlan').classList.add('active');
