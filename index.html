@@ -286,6 +286,8 @@ select option { background:var(--surface2); }
 .payload-summary .over { color:#ff4444; font-weight:bold; }
 .payload-std-btn { width:100%; background:none; border:1px solid var(--border); color:var(--text-muted); font-size:11px; padding:4px 8px; border-radius:3px; cursor:pointer; margin-top:6px; }
 .payload-std-btn:hover { border-color:var(--accent); color:var(--accent); }
+.range-label { background:var(--surface2); border:1px solid #00d4ff; color:#00d4ff; font-family:var(--mono); font-size:11px; padding:2px 6px; border-radius:3px; white-space:nowrap; letter-spacing:0.5px; }
+@media (prefers-color-scheme: light) { .range-label { background:#fff; border-color:#0077aa; color:#0077aa; } }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
 
 /* RESULTS */
@@ -515,7 +517,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.7</span>
+    <span style="color:var(--text-muted)">v2026-04-11.8</span>
   </div>
 </header>
 
@@ -1893,6 +1895,7 @@ var AC_WEIGHT = {
 };
 
 var rangeCircle = null;
+var rangeLabel = null;
 
 function getRwyThresholds() {
   // Return the most restrictive minFt across all active aircraft,
@@ -2974,16 +2977,17 @@ window.fillStdWeights = function() {
 
 function updateRangeCircle() {
   var placed = waypoints.filter(function(w) { return w.lat !== null; });
-  if (!placed.length) { if (rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; } return; }
+  if (!placed.length) { if (rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; } if (rangeLabel) { map.removeLayer(rangeLabel); rangeLabel = null; } return; }
   var acA = getAC('A');
-  if (!acA) { if (rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; } return; }
+  if (!acA) { if (rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; } if (rangeLabel) { map.removeLayer(rangeLabel); rangeLabel = null; } return; }
   var spdKey = String(Math.round(acA.speed));
   var rangeMi = computePayloadRange(spdKey);
-  if (rangeMi === null || rangeMi <= 0) { if (rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; } return; }
+  if (rangeMi === null || rangeMi <= 0) { if (rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; } if (rangeLabel) { map.removeLayer(rangeLabel); rangeLabel = null; } return; }
   var rangeMeters = rangeMi * 1609.34;
   var light = isLightMode();
   var color = light ? '#0077aa' : '#00d4ff';
   if (rangeCircle) map.removeLayer(rangeCircle);
+  if (rangeLabel) map.removeLayer(rangeLabel);
   rangeCircle = L.circle([placed[0].lat, placed[0].lng], {
     radius: rangeMeters,
     color: color,
@@ -2991,6 +2995,17 @@ function updateRangeCircle() {
     dashArray: '10 6',
     fillColor: color,
     fillOpacity: 0.04,
+    interactive: false
+  }).addTo(map);
+  // Place label at top (north) edge of circle
+  var labelLat = placed[0].lat + (rangeMeters / 111320);
+  var labelLng = placed[0].lng;
+  rangeLabel = L.marker([labelLat, labelLng], {
+    icon: L.divIcon({
+      className: '',
+      html: '<div class="range-label">' + Math.round(rangeMi) + ' mi max</div>',
+      iconAnchor: [0, 12]
+    }),
     interactive: false
   }).addTo(map);
   // Open aircraft pane so user can see payload section
