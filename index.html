@@ -536,7 +536,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.35</span>
+    <span style="color:var(--text-muted)">v2026-04-11.36</span>
   </div>
 </header>
 
@@ -3316,8 +3316,10 @@ function drawRangeLabel() {
   if (!rangeLabelData || !rangeLabelSvg) return;
   var d = rangeLabelData;
   var center = map.latLngToLayerPoint(d.center);
-  var edgePt = map.latLngToLayerPoint([d.center[0] + d.radiusMeters / 111320, d.center[1]]);
-  var r = Math.abs(center.y - edgePt.y);
+  var northEdge = map.latLngToLayerPoint([d.center[0] + d.radiusMeters / 111320, d.center[1]]);
+  var southEdge = map.latLngToLayerPoint([d.center[0] - d.radiusMeters / 111320, d.center[1]]);
+  var r = Math.abs(center.y - northEdge.y);       // pixel radius to north
+  var rSouth = Math.abs(southEdge.y - center.y);   // pixel radius to south
 
   if (r < 40) { rangeLabelSvg.innerHTML = ''; rangeLabelSvg.style.display = 'none'; return; }
 
@@ -3338,8 +3340,9 @@ function drawRangeLabel() {
   var oR = r + bandH / 2, iR = r - bandH / 2, capR = bandH / 2;
 
   var maxBandH = Math.max(bandH, 34); // accommodate bottom label
-  var cx = r + maxBandH;
-  var cy = r + maxBandH;
+  var maxR = Math.max(r, rSouth);
+  var cx = maxR + maxBandH;
+  var cy = maxR + maxBandH;
 
   function px(radius, angle) {
     return (cx + radius * Math.cos(angle)).toFixed(1) + ',' + (cy + radius * Math.sin(angle)).toFixed(1);
@@ -3395,15 +3398,13 @@ function drawRangeLabel() {
 
     var btBandH = btTwoLines ? 34 : 20;
     var btHalfSpan = btTwoLines ? Math.min(0.30, 100 / r) : Math.min(0.28, 90 / r);
-    // Bottom: text path goes CCW (sweep=0) so text reads left-to-right and right-side up
-    var btStartA = Math.PI / 2 + btHalfSpan;  // right side at bottom
-    var btEndA = Math.PI / 2 - btHalfSpan;    // left side at bottom
-    // At bottom, "inner" (smaller r) is visually above the ring, "outer" (larger r) is below
-    // To straddle the ring: box goes from r-bandH/2 to r+bandH/2, same as top
-    var btOR = r + btBandH / 2, btIR = r - btBandH / 2, btCapR = btBandH / 2;
+    // Use rSouth for bottom label to account for Mercator distortion
+    var rb = rSouth;
+    var btStartA = Math.PI / 2 + btHalfSpan;
+    var btEndA = Math.PI / 2 - btHalfSpan;
+    var btOR = rb + btBandH / 2, btIR = rb - btBandH / 2, btCapR = btBandH / 2;
 
-    // Draw box: start at inner-left, CW inner arc to inner-right, cap down to outer-right,
-    // CCW outer arc to outer-left, cap up back to inner-left
+    // Box straddles the ring: inner arc (above ring) to outer arc (below ring)
     var btBoxPath = 'M' + px(btIR, btEndA) +
       ' A' + btIR + ',' + btIR + ' 0 0,1 ' + px(btIR, btStartA) +
       ' A' + btCapR + ',' + btCapR + ' 0 0,1 ' + px(btOR, btStartA) +
@@ -3411,8 +3412,7 @@ function drawRangeLabel() {
       ' A' + btCapR + ',' + btCapR + ' 0 0,1 ' + px(btIR, btEndA) + ' Z';
 
     if (btTwoLines) {
-      // Line 1 (top line at bottom = closer to center = smaller radius)
-      var bt1R = r - 7, bt2R = r + 7;
+      var bt1R = rb - 7, bt2R = rb + 7;
       var btp1 = 'M' + px(bt1R, btStartA) + ' A' + bt1R + ',' + bt1R + ' 0 0,0 ' + px(bt1R, btEndA);
       var btp2 = 'M' + px(bt2R, btStartA) + ' A' + bt2R + ',' + bt2R + ' 0 0,0 ' + px(bt2R, btEndA);
       textSvg +=
@@ -3423,7 +3423,7 @@ function drawRangeLabel() {
         '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
         '<textPath href="#rlArcBt2" startOffset="50%" text-anchor="middle">' + btLine2 + '</textPath></text>';
     } else {
-      var btTextPath = 'M' + px(r, btStartA) + ' A' + r + ',' + r + ' 0 0,0 ' + px(r, btEndA);
+      var btTextPath = 'M' + px(rb, btStartA) + ' A' + rb + ',' + rb + ' 0 0,0 ' + px(rb, btEndA);
       textSvg +=
         '<defs><path id="rlArcBt" d="' + btTextPath + '"/></defs>' +
         '<path d="' + btBoxPath + '" fill="' + fillColor + '"/>' +
