@@ -286,6 +286,23 @@ select option { background:var(--surface2); }
 .payload-summary .over { color:#ff4444; font-weight:bold; }
 .payload-std-btn { width:100%; background:none; border:1px solid var(--border); color:var(--text-muted); font-size:11px; padding:4px 8px; border-radius:3px; cursor:pointer; margin-top:6px; }
 .payload-std-btn:hover { border-color:var(--accent); color:var(--accent); }
+.pax-selector { background:var(--surface2); border:1px solid var(--accent); border-radius:6px; padding:12px; margin-bottom:8px; }
+.pax-selector.pax-pulse { animation: paxPulse 2s ease-in-out 3; }
+@keyframes paxPulse { 0%,100% { border-color:var(--accent); box-shadow:none; } 50% { border-color:var(--accent); box-shadow:0 0 12px var(--accent); } }
+.pax-title { font-size:14px; font-weight:bold; color:var(--text); margin-bottom:10px; }
+.pax-stepper { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.pax-stepper label { flex:1; font-size:13px; color:var(--text-muted); }
+.pax-stepper-btns { display:flex; align-items:center; gap:0; }
+.pax-stepper-btns button { width:32px; height:32px; background:var(--surface); border:1px solid var(--border-bright); color:var(--text); font-size:16px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.pax-stepper-btns button:first-child { border-radius:4px 0 0 4px; }
+.pax-stepper-btns button:last-child { border-radius:0 4px 4px 0; }
+.pax-stepper-btns button:hover { background:var(--accent); color:#000; }
+.pax-stepper-btns span { width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:var(--surface); border-top:1px solid var(--border-bright); border-bottom:1px solid var(--border-bright); font-family:var(--mono); font-size:14px; font-weight:bold; }
+.luggage-toggle { display:flex; align-items:center; gap:8px; }
+.luggage-toggle label { font-size:13px; color:var(--text-muted); flex:1; }
+.luggage-toggle input[type="checkbox"] { width:18px; height:18px; accent-color:var(--accent); }
+.payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:6px 0 0; text-align:center; }
+.payload-details-btn:hover { color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
 
 /* RESULTS */
@@ -515,7 +532,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.15</span>
+    <span style="color:var(--text-muted)">v2026-04-11.16</span>
   </div>
 </header>
 
@@ -598,13 +615,31 @@ select option { background:var(--surface2); }
           <span class="spd-unit">GPH</span>
         </div>
         <div id="payloadSection" style="display:none">
-          <div class="payload-header">
-            <span class="ac-slot-lbl" style="margin-bottom:0">Payload</span>
-            <span id="payloadStatus" class="payload-status"></span>
+          <div id="paxSelector" class="pax-selector pax-pulse">
+            <div class="pax-title">How many passengers?</div>
+            <div class="pax-stepper">
+              <label>Passengers</label>
+              <div class="pax-stepper-btns">
+                <button onclick="adjustPax(-1)">−</button>
+                <span id="paxCount">1</span>
+                <button onclick="adjustPax(1)">+</button>
+              </div>
+            </div>
+            <div class="luggage-toggle">
+              <label>Traveling with luggage?</label>
+              <input type="checkbox" id="luggageToggle" checked onchange="applyPaxToPayload()">
+            </div>
           </div>
-          <div id="payloadInputs"></div>
-          <button class="payload-std-btn" onclick="fillStdWeights()">Use Standard Weights</button>
-          <div class="payload-summary" id="payloadSummary"></div>
+          <button class="payload-details-btn" id="payloadDetailsBtn" onclick="togglePayloadDetails()">▼ Weight details</button>
+          <div id="payloadDetails" style="display:none">
+            <div class="payload-header">
+              <span class="ac-slot-lbl" style="margin-bottom:0">Payload</span>
+              <span id="payloadStatus" class="payload-status"></span>
+            </div>
+            <div id="payloadInputs"></div>
+            <button class="payload-std-btn" onclick="fillStdWeights()">Use Standard Weights</button>
+            <div class="payload-summary" id="payloadSummary"></div>
+          </div>
         </div>
         <button class="custom-btn" onclick="toggleCust('A')">+ Custom Aircraft</button>
         <div class="custom-fields" id="custA" style="display:none">
@@ -1894,28 +1929,32 @@ var AC_RANGE = {
 
 // Per-aircraft weight/payload data
 var AC_WEIGHT = {
-  '185': {  // SR22T
+  '185': {  // SR22T — 4 seats (pilot + 3 pax)
     mtow: 3600, emptyWt: 2520, maxFuelGal: 92, fuelDensity: 6.0, mrcGph: 14.5,
+    defaultPax: 1, stdPaxWt: 190, stdBagPerPax: 30, maxPax: 3,
+    paxOrder: [2, 1, 3], // fill order: rear left, front, rear right
     seats: [
-      { label: 'Pilot', default: 190, max: 300 },
+      { label: 'Pilot', default: 190, max: 300, isPilot: true },
       { label: 'Front Passenger', default: 0, std: 190, max: 300 },
-      { label: 'Rear Left', default: 0, std: 190, max: 300 },
+      { label: 'Rear Left', default: 190, std: 190, max: 300 },
       { label: 'Rear Right', default: 0, std: 190, max: 300 }
     ],
-    baggage: [{ label: 'Baggage', default: 0, std: 30, max: 130 }]
+    baggage: [{ label: 'Baggage', default: 30, std: 30, max: 130 }]
   },
-  '300': {  // SF50
+  '300': {  // SF50 — 7 seats (pilot + 4 adults + 2 children)
     mtow: 6000, emptyWt: 3900, maxFuelGal: 296, fuelDensity: 6.7, mrcGph: 46,
+    defaultPax: 1, stdPaxWt: 190, stdChildWt: 80, stdBagPerPax: 25, maxPax: 6,
+    paxOrder: [1, 2, 3, 4, 5], // fill order: front, mid L, mid R, rear L, rear R
     seats: [
-      { label: 'Pilot', default: 190, max: 300 },
-      { label: 'Front Passenger', default: 0, std: 190, max: 300 },
+      { label: 'Pilot', default: 190, max: 300, isPilot: true },
+      { label: 'Front Passenger', default: 190, std: 190, max: 300 },
       { label: 'Mid Left', default: 0, std: 190, max: 300 },
       { label: 'Mid Right', default: 0, std: 190, max: 300 },
-      { label: 'Rear Left (child)', default: 0, std: 80, max: 200 },
-      { label: 'Rear Right (child)', default: 0, std: 80, max: 200 }
+      { label: 'Rear Left (child)', default: 0, std: 80, max: 200, isChild: true },
+      { label: 'Rear Right (child)', default: 0, std: 80, max: 200, isChild: true }
     ],
     baggage: [
-      { label: 'Nose Baggage', default: 0, std: 20, max: 100 },
+      { label: 'Nose Baggage', default: 25, std: 20, max: 100 },
       { label: 'Aft Baggage', default: 0, std: 30, max: 150 }
     ]
   }
@@ -3005,18 +3044,37 @@ function renderPayloadInputs(spdKey) {
   var w = AC_WEIGHT[spdKey];
   if (!w) { section.style.display = 'none'; return; }
   section.style.display = 'block';
+
+  // Set passenger count display
+  var countEl = document.getElementById('paxCount');
+  if (countEl) countEl.textContent = w.defaultPax || 1;
+  var luggageEl = document.getElementById('luggageToggle');
+  if (luggageEl) luggageEl.checked = true;
+
+  // Reset pulse if switching aircraft
+  var paxSel = document.getElementById('paxSelector');
+  if (paxSel && !paxUserAdjusted) paxSel.classList.add('pax-pulse');
+
+  // Build itemized weight inputs
   var html = '';
   w.seats.forEach(function(s, i) {
     html += '<div class="payload-row"><label>' + s.label + '</label>' +
-      '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadSeat_' + i + '" min="0" max="' + s.max + '" value="' + s.default + '" oninput="onPayloadInput()">' +
+      '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadSeat_' + i + '" min="0" max="' + s.max + '" value="' + s.default + '" oninput="onPayloadDetailInput()">' +
       '<span class="spd-unit">lbs</span></div>';
   });
   w.baggage.forEach(function(b, i) {
     html += '<div class="payload-row"><label>' + b.label + '</label>' +
-      '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadBag_' + i + '" min="0" max="' + b.max + '" value="' + b.default + '" oninput="onPayloadInput()">' +
+      '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadBag_' + i + '" min="0" max="' + b.max + '" value="' + b.default + '" oninput="onPayloadDetailInput()">' +
       '<span class="spd-unit">lbs</span></div>';
   });
   container.innerHTML = html;
+
+  // Collapse details by default
+  var details = document.getElementById('payloadDetails');
+  var btn = document.getElementById('payloadDetailsBtn');
+  if (details) details.style.display = 'none';
+  if (btn) btn.textContent = '▼ Weight details';
+
   updatePayloadSummary(spdKey);
 }
 
@@ -3024,6 +3082,14 @@ window.onPayloadInput = function() {
   var sel = document.getElementById('selA');
   if (sel && sel.value) updatePayloadSummary(sel.value);
   updateRangeCircle();
+};
+
+window.onPayloadDetailInput = function() {
+  // User is manually editing weights — stop pulse, mark adjusted
+  paxUserAdjusted = true;
+  var paxSel = document.getElementById('paxSelector');
+  if (paxSel) paxSel.classList.remove('pax-pulse');
+  onPayloadInput();
 };
 
 window.fillStdWeights = function() {
@@ -3040,6 +3106,75 @@ window.fillStdWeights = function() {
     if (inp && (!inp.value || parseFloat(inp.value) === 0) && b.std !== undefined) inp.value = b.std;
   });
   onPayloadInput();
+};
+
+var paxUserAdjusted = false;
+
+window.adjustPax = function(delta) {
+  var sel = document.getElementById('selA');
+  if (!sel || !sel.value) return;
+  var w = AC_WEIGHT[sel.value];
+  if (!w) return;
+  var countEl = document.getElementById('paxCount');
+  var current = parseInt(countEl.textContent) || 0;
+  var next = Math.max(0, Math.min(w.maxPax, current + delta));
+  countEl.textContent = next;
+  paxUserAdjusted = true;
+  // Stop pulse animation once user interacts
+  var paxSel = document.getElementById('paxSelector');
+  if (paxSel) paxSel.classList.remove('pax-pulse');
+  applyPaxToPayload();
+};
+
+window.applyPaxToPayload = function() {
+  var sel = document.getElementById('selA');
+  if (!sel || !sel.value) return;
+  var w = AC_WEIGHT[sel.value];
+  if (!w) return;
+  var paxCount = parseInt(document.getElementById('paxCount').textContent) || 0;
+  var luggage = document.getElementById('luggageToggle').checked;
+
+  // Fill passenger seats based on paxOrder
+  var filled = 0;
+  w.paxOrder.forEach(function(seatIdx) {
+    var inp = document.getElementById('payloadSeat_' + seatIdx);
+    if (!inp) return;
+    if (filled < paxCount) {
+      var seat = w.seats[seatIdx];
+      inp.value = seat.isChild ? (w.stdChildWt || seat.std || 80) : (w.stdPaxWt || seat.std || 190);
+      filled++;
+    } else {
+      inp.value = 0;
+    }
+  });
+
+  // Luggage: distribute based on passenger count
+  w.baggage.forEach(function(b, i) {
+    var inp = document.getElementById('payloadBag_' + i);
+    if (!inp) return;
+    if (luggage && paxCount > 0) {
+      var perPax = w.stdBagPerPax || b.std || 25;
+      // First bag compartment gets most luggage
+      if (i === 0) {
+        inp.value = Math.min(perPax * Math.min(paxCount, 2), b.max);
+      } else {
+        var remaining = Math.max(0, paxCount - 2);
+        inp.value = remaining > 0 ? Math.min(perPax * remaining, b.max) : 0;
+      }
+    } else {
+      inp.value = 0;
+    }
+  });
+
+  onPayloadInput();
+};
+
+window.togglePayloadDetails = function() {
+  var details = document.getElementById('payloadDetails');
+  var btn = document.getElementById('payloadDetailsBtn');
+  var open = details.style.display !== 'none';
+  details.style.display = open ? 'none' : 'block';
+  btn.textContent = (open ? '▼' : '▲') + ' Weight details';
 };
 
 function clearRangeLabel() {
