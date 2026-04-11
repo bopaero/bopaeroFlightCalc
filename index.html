@@ -304,8 +304,7 @@ select option { background:var(--surface2); }
 .pax-done-btn:hover { opacity:0.9; }
 .pax-panel { background:var(--surface2); border:2px solid var(--accent); border-radius:8px; padding:14px 16px; margin-bottom:8px; animation: paxPanelPulse 2s ease-in-out 3; }
 @keyframes paxPanelPulse { 0%,100% { box-shadow:none; } 50% { box-shadow:0 0 14px var(--accent); } }
-.leg-label { background:#00d4ff; color:#111; font-family:SF Mono,Menlo,Consolas,monospace; font-size:10px; font-weight:bold; padding:3px 7px; border-radius:10px; white-space:nowrap; letter-spacing:0.5px; }
-@media (prefers-color-scheme: light) { .leg-label { background:#0077aa; color:#fff; } }
+.leg-label-svg { position:absolute; pointer-events:none; overflow:visible; }
 .payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:6px 0 0; text-align:center; }
 .payload-details-btn:hover { color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
@@ -537,7 +536,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.31</span>
+    <span style="color:var(--text-muted)">v2026-04-11.32</span>
   </div>
 </header>
 
@@ -879,7 +878,8 @@ if (window.matchMedia) {
 // waypoints: array of { id, lat, lng, name, marker }
 var waypoints = [];
 var gcLines   = [];
-var legLabels = [];
+var legLabels = []; // SVG elements in overlay pane
+var legLabelData = []; // { from, to, hours } for redraw on zoom
 var wpIdCounter = 0;
 var placingId = null;  // id of waypoint currently awaiting map click
 var routeClosed = false; // whether last wp connects back to first
@@ -2655,6 +2655,7 @@ window.mobileTab = function(tab) {
       map.invalidateSize();
       fitRouteOrWaypoint();
       drawRangeLabel();
+      drawLegLabels();
     }, 150);
   } else if (tab === 'plan') {
     sidebar.classList.add('mobile-active');
@@ -2781,34 +2782,24 @@ function isLightMode() {
 function drawAllLines() {
   gcLines.forEach(function(l){ map.removeLayer(l); });
   gcLines = [];
-  legLabels.forEach(function(l){ map.removeLayer(l); });
-  legLabels = [];
+  legLabelData = [];
   var light = isLightMode();
   var routeColor = light ? '#0077aa' : '#00d4ff';
   var placed = waypoints.filter(function(w){ return w.lat !== null; });
   var acA = getAC('A');
   for (var i = 1; i < placed.length; i++) {
     var pts = gcPoints(placed[i-1].lat, placed[i-1].lng, placed[i].lat, placed[i].lng, 80);
-    // Shadow line for contrast in light mode
     if (light) {
       var shadow = L.polyline(pts, { color:'#000', weight:7, opacity:0.15, dashArray:'12 6' }).addTo(map);
       gcLines.push(shadow);
     }
     var line = L.polyline(pts, { color:routeColor, weight:4, opacity:0.9, dashArray:'12 6' }).addTo(map);
     gcLines.push(line);
-    // Leg time label at midpoint
     if (acA && acA.speed > 0) {
-      var midPt = pts[Math.floor(pts.length / 2)];
       var mi = haversineNm(placed[i-1].lat, placed[i-1].lng, placed[i].lat, placed[i].lng) * 1.15078;
-      var legTime = fmtPlain(mi / acA.speed);
-      var legMarker = L.marker(midPt, {
-        icon: L.divIcon({ className: '', html: '<div class="leg-label">' + legTime + '</div>', iconAnchor: [0, -8] }),
-        interactive: false
-      }).addTo(map);
-      legLabels.push(legMarker);
+      legLabelData.push({ from: [placed[i-1].lat, placed[i-1].lng], to: [placed[i].lat, placed[i].lng], hours: mi / acA.speed });
     }
   }
-  // Closing leg
   if (routeClosed && placed.length >= 2) {
     var first = placed[0], last = placed[placed.length - 1];
     var pts = gcPoints(last.lat, last.lng, first.lat, first.lng, 80);
@@ -2819,18 +2810,69 @@ function drawAllLines() {
     }
     var line = L.polyline(pts, { color: closingColor, weight:3, opacity:0.6, dashArray:'6 8' }).addTo(map);
     gcLines.push(line);
-    // Closing leg time label
     if (acA && acA.speed > 0) {
-      var midPt = pts[Math.floor(pts.length / 2)];
       var mi = haversineNm(last.lat, last.lng, first.lat, first.lng) * 1.15078;
-      var legTime = fmtPlain(mi / acA.speed);
-      var legMarker = L.marker(midPt, {
-        icon: L.divIcon({ className: '', html: '<div class="leg-label">' + legTime + '</div>', iconAnchor: [0, -8] }),
-        interactive: false
-      }).addTo(map);
-      legLabels.push(legMarker);
+      legLabelData.push({ from: [last.lat, last.lng], to: [first.lat, first.lng], hours: mi / acA.speed });
     }
   }
+  drawLegLabels();
+}
+
+function drawLegLabels() {
+  legLabels.forEach(function(el) { el.parentNode && el.parentNode.removeChild(el); });
+  legLabels = [];
+  if (!legLabelData.length) return;
+  var pane = map.getPanes().overlayPane;
+  var light = isLightMode();
+  var fillColor = light ? '#0077aa' : '#00d4ff';
+  var textColor = light ? '#fff' : '#111';
+  var fontSize = 10;
+
+  legLabelData.forEach(function(d) {
+    var p1 = map.latLngToLayerPoint(d.from);
+    var p2 = map.latLngToLayerPoint(d.to);
+    var mx = (p1.x + p2.x) / 2;
+    var my = (p1.y + p2.y) / 2;
+    var dx = p2.x - p1.x;
+    var dy = p2.y - p1.y;
+    var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+    // Always read left-to-right: flip if text would be upside down
+    if (angle > 90) angle -= 180;
+    if (angle < -90) angle += 180;
+
+    // Format time as two lines
+    var hrs = Math.floor(d.hours);
+    var min = Math.round((d.hours - hrs) * 60);
+    if (min === 60) { hrs++; min = 0; }
+    var line1 = hrs > 0 ? hrs + ' hr' : '';
+    var line2 = min > 0 ? min + ' min' : '';
+    var twoLines = line1 && line2;
+
+    var boxW = 52, boxH = twoLines ? 28 : 16, boxR = 4;
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'leg-label-svg');
+    svg.setAttribute('width', boxW + 4);
+    svg.setAttribute('height', boxH + 4);
+    svg.style.left = (mx - (boxW + 4) / 2) + 'px';
+    svg.style.top = (my - (boxH + 4) / 2) + 'px';
+    svg.style.transformOrigin = '50% 50%';
+    svg.style.transform = 'rotate(' + angle.toFixed(1) + 'deg)';
+
+    var cx = (boxW + 4) / 2, cy = (boxH + 4) / 2;
+    var inner = '<rect x="2" y="2" width="' + boxW + '" height="' + boxH + '" rx="' + boxR + '" fill="' + fillColor + '"/>';
+
+    if (twoLines) {
+      inner += '<text x="' + cx + '" y="' + (cy - 5) + '" text-anchor="middle" dominant-baseline="central" fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="0.5">' + line1 + '</text>';
+      inner += '<text x="' + cx + '" y="' + (cy + 7) + '" text-anchor="middle" dominant-baseline="central" fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="0.5">' + line2 + '</text>';
+    } else {
+      inner += '<text x="' + cx + '" y="' + cy + '" text-anchor="middle" dominant-baseline="central" fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="0.5">' + (line1 || line2) + '</text>';
+    }
+
+    svg.innerHTML = inner;
+    pane.appendChild(svg);
+    legLabels.push(svg);
+  });
 }
 
 function gcPoints(la1,lo1,la2,lo2,n) {
@@ -3339,34 +3381,48 @@ function drawRangeLabel() {
       '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
       '<textPath href="#rlArc" startOffset="50%" text-anchor="middle">' + label + '</textPath></text>';
   }
-  // Bottom label: range time
+  // Bottom label: range time — format as two lines if hours + minutes
   var timeLabel = d.timeLabel || '';
   if (timeLabel && r >= 60) {
-    var btCharCount = timeLabel.length;
-    var btSingleW = fontSize * 0.62 * btCharCount;
-    var btArcLen = r * maxHalfSpan * 2;
-    var btWrap = false; // time labels are short, no wrapping needed
-    var btBandH = 20;
-    var btHalfSpan = Math.min(0.28, 90 / r);
-    // Bottom arc: centered at +90° (south)
-    var btStartA = Math.PI / 2 + btHalfSpan;
-    var btEndA = Math.PI / 2 - btHalfSpan;
+    var tHrs = Math.floor(d.rangeMi / d.speed);
+    var tMin = Math.round((d.rangeMi / d.speed - tHrs) * 60);
+    if (tMin === 60) { tHrs++; tMin = 0; }
+    var btLine1 = tHrs > 0 ? tHrs + ' HR' : '';
+    var btLine2 = tMin > 0 ? tMin + ' MIN' : '';
+    var btTwoLines = btLine1 && btLine2;
+
+    var btBandH = btTwoLines ? 34 : 20;
+    var btHalfSpan = btTwoLines ? Math.min(0.22, 65 / r) : Math.min(0.28, 90 / r);
+    // Bottom arc: left-to-right at south (so text reads normally)
+    var btStartA = Math.PI / 2 - btHalfSpan;
+    var btEndA = Math.PI / 2 + btHalfSpan;
     var btOR = r + btBandH / 2, btIR = r - btBandH / 2, btCapR = btBandH / 2;
 
     var btBoxPath = 'M' + px(btOR, btStartA) +
-      ' A' + btOR + ',' + btOR + ' 0 0,0 ' + px(btOR, btEndA) +
-      ' A' + btCapR + ',' + btCapR + ' 0 0,0 ' + px(btIR, btEndA) +
-      ' A' + btIR + ',' + btIR + ' 0 0,1 ' + px(btIR, btStartA) +
-      ' A' + btCapR + ',' + btCapR + ' 0 0,0 ' + px(btOR, btStartA) + ' Z';
+      ' A' + btOR + ',' + btOR + ' 0 0,1 ' + px(btOR, btEndA) +
+      ' A' + btCapR + ',' + btCapR + ' 0 0,1 ' + px(btIR, btEndA) +
+      ' A' + btIR + ',' + btIR + ' 0 0,0 ' + px(btIR, btStartA) +
+      ' A' + btCapR + ',' + btCapR + ' 0 0,1 ' + px(btOR, btStartA) + ' Z';
 
-    // Text path: arc from right to left so text reads correctly at bottom
-    var btTextPath = 'M' + px(r, btStartA) + ' A' + r + ',' + r + ' 0 0,0 ' + px(r, btEndA);
-
-    textSvg +=
-      '<defs><path id="rlArcBt" d="' + btTextPath + '"/></defs>' +
-      '<path d="' + btBoxPath + '" fill="' + fillColor + '"/>' +
-      '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
-      '<textPath href="#rlArcBt" startOffset="50%" text-anchor="middle">' + timeLabel + '</textPath></text>';
+    if (btTwoLines) {
+      var bt1R = r + 7, bt2R = r - 7;
+      var btp1 = 'M' + px(bt1R, btStartA) + ' A' + bt1R + ',' + bt1R + ' 0 0,1 ' + px(bt1R, btEndA);
+      var btp2 = 'M' + px(bt2R, btStartA) + ' A' + bt2R + ',' + bt2R + ' 0 0,1 ' + px(bt2R, btEndA);
+      textSvg +=
+        '<defs><path id="rlArcBt1" d="' + btp1 + '"/><path id="rlArcBt2" d="' + btp2 + '"/></defs>' +
+        '<path d="' + btBoxPath + '" fill="' + fillColor + '"/>' +
+        '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
+        '<textPath href="#rlArcBt1" startOffset="50%" text-anchor="middle">' + btLine1 + '</textPath></text>' +
+        '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
+        '<textPath href="#rlArcBt2" startOffset="50%" text-anchor="middle">' + btLine2 + '</textPath></text>';
+    } else {
+      var btTextPath = 'M' + px(r, btStartA) + ' A' + r + ',' + r + ' 0 0,1 ' + px(r, btEndA);
+      textSvg +=
+        '<defs><path id="rlArcBt" d="' + btTextPath + '"/></defs>' +
+        '<path d="' + btBoxPath + '" fill="' + fillColor + '"/>' +
+        '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
+        '<textPath href="#rlArcBt" startOffset="50%" text-anchor="middle">' + (btLine1 || btLine2) + '</textPath></text>';
+    }
   }
 
   rangeLabelSvg.innerHTML = textSvg;
@@ -3422,7 +3478,7 @@ function updateRangeCircle() {
     rangeLabelSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     rangeLabelSvg.style.cssText = 'position:absolute;pointer-events:none;overflow:visible;';
     map.getPanes().overlayPane.appendChild(rangeLabelSvg);
-    map.on('zoomend', drawRangeLabel);
+    map.on('zoomend', function() { drawRangeLabel(); drawLegLabels(); });
   }
   var labelText = placed.length > 1 ? 'FUEL RANGE' : 'NONSTOP RANGE';
   // Compute range time
@@ -3431,7 +3487,7 @@ function updateRangeCircle() {
     rangeTime = fmtPlain(rangeMi / acA.speed).toUpperCase();
   }
   if (rangeMi > 0) {
-    rangeLabelData = { center: [rangeCenter.lat, rangeCenter.lng], radiusMeters: rangeMeters, label: labelText, timeLabel: rangeTime };
+    rangeLabelData = { center: [rangeCenter.lat, rangeCenter.lng], radiusMeters: rangeMeters, label: labelText, timeLabel: rangeTime, rangeMi: rangeMi, speed: acA.speed };
   } else {
     rangeLabelData = null;
   }
