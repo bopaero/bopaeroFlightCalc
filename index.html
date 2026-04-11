@@ -535,7 +535,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.24</span>
+    <span style="color:var(--text-muted)">v2026-04-11.25</span>
   </div>
 </header>
 
@@ -1840,12 +1840,13 @@ function fitBoundsIfMultiple() {
 function fitRouteOrWaypoint() {
   var placed = waypoints.filter(function(w){ return w.lat !== null; });
   if (placed.length >= 2) {
-    // Include range circle bounds so the user can always see reachable area
-    var bounds = L.latLngBounds(placed.map(function(w){ return [w.lat, w.lng]; }));
-    if (rangeCircle) bounds.extend(rangeCircle.getBounds());
-    map.fitBounds(bounds, { padding: [50, 50] });
+    if (!isMobile() || document.getElementById('mobileMapPanel').classList.contains('mobile-active')) {
+      var bounds = L.latLngBounds(placed.map(function(w){ return [w.lat, w.lng]; }));
+      if (rangeCircle) bounds.extend(rangeCircle.getBounds());
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
   } else if (placed.length === 1) {
-    if (rangeCircle) {
+    if (rangeCircle && (!isMobile() || document.getElementById('mobileMapPanel').classList.contains('mobile-active'))) {
       map.fitBounds(rangeCircle.getBounds(), { padding: [30, 30] });
     } else {
       map.setView([placed[0].lat, placed[0].lng], 10);
