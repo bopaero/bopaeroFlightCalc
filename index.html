@@ -304,6 +304,8 @@ select option { background:var(--surface2); }
 .pax-done-btn:hover { opacity:0.9; }
 .pax-panel { background:var(--surface2); border:2px solid var(--accent); border-radius:8px; padding:14px 16px; margin-bottom:8px; animation: paxPanelPulse 2s ease-in-out 3; }
 @keyframes paxPanelPulse { 0%,100% { box-shadow:none; } 50% { box-shadow:0 0 14px var(--accent); } }
+.leg-label { background:#00d4ff; color:#111; font-family:SF Mono,Menlo,Consolas,monospace; font-size:10px; font-weight:bold; padding:3px 7px; border-radius:10px; white-space:nowrap; letter-spacing:0.5px; }
+@media (prefers-color-scheme: light) { .leg-label { background:#0077aa; color:#fff; } }
 .payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:6px 0 0; text-align:center; }
 .payload-details-btn:hover { color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
@@ -535,7 +537,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.30</span>
+    <span style="color:var(--text-muted)">v2026-04-11.31</span>
   </div>
 </header>
 
@@ -877,6 +879,7 @@ if (window.matchMedia) {
 // waypoints: array of { id, lat, lng, name, marker }
 var waypoints = [];
 var gcLines   = [];
+var legLabels = [];
 var wpIdCounter = 0;
 var placingId = null;  // id of waypoint currently awaiting map click
 var routeClosed = false; // whether last wp connects back to first
@@ -2778,9 +2781,12 @@ function isLightMode() {
 function drawAllLines() {
   gcLines.forEach(function(l){ map.removeLayer(l); });
   gcLines = [];
+  legLabels.forEach(function(l){ map.removeLayer(l); });
+  legLabels = [];
   var light = isLightMode();
   var routeColor = light ? '#0077aa' : '#00d4ff';
   var placed = waypoints.filter(function(w){ return w.lat !== null; });
+  var acA = getAC('A');
   for (var i = 1; i < placed.length; i++) {
     var pts = gcPoints(placed[i-1].lat, placed[i-1].lng, placed[i].lat, placed[i].lng, 80);
     // Shadow line for contrast in light mode
@@ -2790,6 +2796,17 @@ function drawAllLines() {
     }
     var line = L.polyline(pts, { color:routeColor, weight:4, opacity:0.9, dashArray:'12 6' }).addTo(map);
     gcLines.push(line);
+    // Leg time label at midpoint
+    if (acA && acA.speed > 0) {
+      var midPt = pts[Math.floor(pts.length / 2)];
+      var mi = haversineNm(placed[i-1].lat, placed[i-1].lng, placed[i].lat, placed[i].lng) * 1.15078;
+      var legTime = fmtPlain(mi / acA.speed);
+      var legMarker = L.marker(midPt, {
+        icon: L.divIcon({ className: '', html: '<div class="leg-label">' + legTime + '</div>', iconAnchor: [0, -8] }),
+        interactive: false
+      }).addTo(map);
+      legLabels.push(legMarker);
+    }
   }
   // Closing leg
   if (routeClosed && placed.length >= 2) {
@@ -2802,6 +2819,17 @@ function drawAllLines() {
     }
     var line = L.polyline(pts, { color: closingColor, weight:3, opacity:0.6, dashArray:'6 8' }).addTo(map);
     gcLines.push(line);
+    // Closing leg time label
+    if (acA && acA.speed > 0) {
+      var midPt = pts[Math.floor(pts.length / 2)];
+      var mi = haversineNm(last.lat, last.lng, first.lat, first.lng) * 1.15078;
+      var legTime = fmtPlain(mi / acA.speed);
+      var legMarker = L.marker(midPt, {
+        icon: L.divIcon({ className: '', html: '<div class="leg-label">' + legTime + '</div>', iconAnchor: [0, -8] }),
+        interactive: false
+      }).addTo(map);
+      legLabels.push(legMarker);
+    }
   }
 }
 
@@ -3311,6 +3339,36 @@ function drawRangeLabel() {
       '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
       '<textPath href="#rlArc" startOffset="50%" text-anchor="middle">' + label + '</textPath></text>';
   }
+  // Bottom label: range time
+  var timeLabel = d.timeLabel || '';
+  if (timeLabel && r >= 60) {
+    var btCharCount = timeLabel.length;
+    var btSingleW = fontSize * 0.62 * btCharCount;
+    var btArcLen = r * maxHalfSpan * 2;
+    var btWrap = false; // time labels are short, no wrapping needed
+    var btBandH = 20;
+    var btHalfSpan = Math.min(0.28, 90 / r);
+    // Bottom arc: centered at +90° (south)
+    var btStartA = Math.PI / 2 + btHalfSpan;
+    var btEndA = Math.PI / 2 - btHalfSpan;
+    var btOR = r + btBandH / 2, btIR = r - btBandH / 2, btCapR = btBandH / 2;
+
+    var btBoxPath = 'M' + px(btOR, btStartA) +
+      ' A' + btOR + ',' + btOR + ' 0 0,0 ' + px(btOR, btEndA) +
+      ' A' + btCapR + ',' + btCapR + ' 0 0,0 ' + px(btIR, btEndA) +
+      ' A' + btIR + ',' + btIR + ' 0 0,1 ' + px(btIR, btStartA) +
+      ' A' + btCapR + ',' + btCapR + ' 0 0,0 ' + px(btOR, btStartA) + ' Z';
+
+    // Text path: arc from right to left so text reads correctly at bottom
+    var btTextPath = 'M' + px(r, btStartA) + ' A' + r + ',' + r + ' 0 0,0 ' + px(r, btEndA);
+
+    textSvg +=
+      '<defs><path id="rlArcBt" d="' + btTextPath + '"/></defs>' +
+      '<path d="' + btBoxPath + '" fill="' + fillColor + '"/>' +
+      '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
+      '<textPath href="#rlArcBt" startOffset="50%" text-anchor="middle">' + timeLabel + '</textPath></text>';
+  }
+
   rangeLabelSvg.innerHTML = textSvg;
 }
 
@@ -3367,8 +3425,13 @@ function updateRangeCircle() {
     map.on('zoomend', drawRangeLabel);
   }
   var labelText = placed.length > 1 ? 'FUEL RANGE' : 'NONSTOP RANGE';
+  // Compute range time
+  var rangeTime = '';
+  if (rangeMi > 0 && acA.speed > 0) {
+    rangeTime = fmtPlain(rangeMi / acA.speed).toUpperCase();
+  }
   if (rangeMi > 0) {
-    rangeLabelData = { center: [rangeCenter.lat, rangeCenter.lng], radiusMeters: rangeMeters, label: labelText };
+    rangeLabelData = { center: [rangeCenter.lat, rangeCenter.lng], radiusMeters: rangeMeters, label: labelText, timeLabel: rangeTime };
   } else {
     rangeLabelData = null;
   }
