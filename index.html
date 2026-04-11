@@ -535,7 +535,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.25</span>
+    <span style="color:var(--text-muted)">v2026-04-11.26</span>
   </div>
 </header>
 
@@ -2958,8 +2958,15 @@ window.onSel = function(s) {
   } else { row.style.display='none'; if(gphRow) gphRow.style.display='none'; if(s==='A') { var ps=document.getElementById('payloadSection'); if(ps) ps.style.display='none'; } }
   if(s==='A') {
     updateAircraftToggleLabel();
-    // Auto-collapse pane after aircraft selection
-    if(sel.value && acPaneOpen) toggleAircraftPane();
+    // Auto-collapse pane after aircraft selection (desktop only)
+    // On mobile, keep open and scroll to passenger prompt
+    if(sel.value && acPaneOpen && !isMobile()) toggleAircraftPane();
+    if(sel.value && isMobile()) {
+      setTimeout(function() {
+        var paxPanel = document.getElementById('paxPanel');
+        if (paxPanel && paxPanel.style.display !== 'none') paxPanel.scrollIntoView({ behavior:'smooth', block:'center' });
+      }, 100);
+    }
   }
   recalc();
 };
