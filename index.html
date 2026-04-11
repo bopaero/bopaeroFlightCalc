@@ -515,7 +515,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.2</span>
+    <span style="color:var(--text-muted)">v2026-04-11.3</span>
   </div>
 </header>
 
@@ -1757,7 +1757,11 @@ function fitRouteOrWaypoint() {
   if (placed.length >= 2) {
     map.fitBounds(L.latLngBounds(placed.map(function(w){ return [w.lat, w.lng]; })), { padding: [50, 50] });
   } else if (placed.length === 1) {
-    map.setView([placed[0].lat, placed[0].lng], 10);
+    if (rangeCircle) {
+      map.fitBounds(rangeCircle.getBounds(), { padding: [30, 30] });
+    } else {
+      map.setView([placed[0].lat, placed[0].lng], 10);
+    }
   }
   updateHelperBtns();
 }
@@ -2971,7 +2975,6 @@ function updateRangeCircle() {
   var rangeMeters = rangeMi * 1609.34;
   var light = isLightMode();
   var color = light ? '#0077aa' : '#00d4ff';
-  var hadCircle = !!rangeCircle;
   if (rangeCircle) map.removeLayer(rangeCircle);
   rangeCircle = L.circle([placed[0].lat, placed[0].lng], {
     radius: rangeMeters,
@@ -2982,11 +2985,8 @@ function updateRangeCircle() {
     fillOpacity: 0.04,
     interactive: false
   }).addTo(map);
-  // When range circle first appears with only origin placed, zoom to show it and open aircraft pane
-  if (!hadCircle && placed.length === 1) {
-    map.fitBounds(rangeCircle.getBounds(), { padding: [30, 30] });
-    if (!acPaneOpen) toggleAircraftPane();
-  }
+  // Open aircraft pane so user can see payload section
+  if (placed.length === 1 && !acPaneOpen) toggleAircraftPane();
 }
 
 // ── CALCULATION ───────────────────────────────────────────────────────────────
