@@ -275,6 +275,17 @@ select option { background:var(--surface2); }
   padding:5px 9px; border-radius:3px; cursor:pointer; margin-top:6px; transition:all .15s;
 }
 .custom-btn:hover { border-color:var(--accent); color:var(--accent); }
+.payload-header { display:flex; justify-content:space-between; align-items:center; margin-top:10px; margin-bottom:6px; }
+.payload-status { font-size:11px; color:var(--text-muted); }
+.payload-status.over { color:#ff4444; font-weight:bold; }
+.payload-row { display:flex; align-items:center; gap:6px; margin:3px 0; }
+.payload-row label { flex:1; font-size:12px; color:var(--text-muted); }
+.payload-row input { width:56px; text-align:right; }
+.payload-row .spd-unit { min-width:22px; }
+.payload-summary { font-size:11px; color:var(--text-muted); margin-top:6px; padding-top:6px; border-top:1px solid var(--border); line-height:1.6; }
+.payload-summary .over { color:#ff4444; font-weight:bold; }
+.payload-std-btn { width:100%; background:none; border:1px solid var(--border); color:var(--text-muted); font-size:11px; padding:4px 8px; border-radius:3px; cursor:pointer; margin-top:6px; }
+.payload-std-btn:hover { border-color:var(--accent); color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
 
 /* RESULTS */
@@ -585,6 +596,15 @@ select option { background:var(--surface2); }
         <div class="spd-row" id="gphRowA" style="display:none">
           <input enterkeyhint="done" inputmode="decimal" type="number" id="gphA" min="0" max="9999" value="" step="0.1" oninput="recalc()">
           <span class="spd-unit">GPH</span>
+        </div>
+        <div id="payloadSection" style="display:none">
+          <div class="payload-header">
+            <span class="ac-slot-lbl" style="margin-bottom:0">Payload</span>
+            <span id="payloadStatus" class="payload-status"></span>
+          </div>
+          <div id="payloadInputs"></div>
+          <button class="payload-std-btn" onclick="fillStdWeights()">Use Standard Weights</button>
+          <div class="payload-summary" id="payloadSummary"></div>
         </div>
         <button class="custom-btn" onclick="toggleCust('A')">+ Custom Aircraft</button>
         <div class="custom-fields" id="custA" style="display:none">
@@ -1839,6 +1859,37 @@ var AC_RANGE = {
   '300': 1000    // SF50
 };
 
+// Per-aircraft weight/payload data
+var AC_WEIGHT = {
+  '185': {  // SR22T
+    mtow: 3600, emptyWt: 2623, maxFuelGal: 92, fuelDensity: 6.0,
+    seats: [
+      { label: 'Pilot', default: 190, max: 300 },
+      { label: 'Front Passenger', default: 0, std: 190, max: 300 },
+      { label: 'Rear Left', default: 0, std: 190, max: 300 },
+      { label: 'Rear Right', default: 0, std: 190, max: 300 }
+    ],
+    baggage: [{ label: 'Baggage', default: 0, std: 30, max: 130 }]
+  },
+  '300': {  // SF50
+    mtow: 6000, emptyWt: 3900, maxFuelGal: 296, fuelDensity: 6.7,
+    seats: [
+      { label: 'Pilot', default: 190, max: 300 },
+      { label: 'Front Passenger', default: 0, std: 190, max: 300 },
+      { label: 'Mid Left', default: 0, std: 190, max: 300 },
+      { label: 'Mid Right', default: 0, std: 190, max: 300 },
+      { label: 'Rear Left (child)', default: 0, std: 80, max: 200 },
+      { label: 'Rear Right (child)', default: 0, std: 80, max: 200 }
+    ],
+    baggage: [
+      { label: 'Nose Baggage', default: 0, std: 20, max: 100 },
+      { label: 'Aft Baggage', default: 0, std: 30, max: 150 }
+    ]
+  }
+};
+
+var rangeCircle = null;
+
 function getRwyThresholds() {
   // Return the most restrictive minFt across all active aircraft,
   // and collect all warnFt values so we can flag appropriately
@@ -2784,9 +2835,9 @@ window.onSel = function(s) {
   if(sel.value){ spd.value=sel.value; row.style.display='flex'; cust.style.display='none'; if(s==='A')custAOpen=false;else custBOpen=false;
     if(gphInp){ gphInp.value=acGph[sel.value]||''; } if(gphRow) gphRow.style.display='flex';
     // Update cost presets for primary aircraft
-    if(s==='A') { applyCostPreset(sel.value); }
+    if(s==='A') { applyCostPreset(sel.value); renderPayloadInputs(sel.value); }
 
-  } else { row.style.display='none'; if(gphRow) gphRow.style.display='none'; }
+  } else { row.style.display='none'; if(gphRow) gphRow.style.display='none'; if(s==='A') { var ps=document.getElementById('payloadSection'); if(ps) ps.style.display='none'; } }
   if(s==='A') {
     updateAircraftToggleLabel();
     // Auto-collapse pane after aircraft selection
@@ -2797,7 +2848,7 @@ window.onSel = function(s) {
 window.toggleCust = function(s) {
   var cust=document.getElementById('cust'+s), open=cust.style.display!=='none';
   if(open){ cust.style.display='none'; if(s==='A')custAOpen=false;else custBOpen=false; }
-  else { cust.style.display='flex'; document.getElementById('sel'+s).value=''; document.getElementById('spdRow'+s).style.display='none'; document.getElementById('gphRow'+s).style.display='none'; if(s==='A')custAOpen=true;else custBOpen=true; }
+  else { cust.style.display='flex'; document.getElementById('sel'+s).value=''; document.getElementById('spdRow'+s).style.display='none'; document.getElementById('gphRow'+s).style.display='none'; if(s==='A'){custAOpen=true; var ps=document.getElementById('payloadSection'); if(ps) ps.style.display='none';} else custBOpen=true; }
   recalc();
 };
 function getAC(s) {
@@ -2814,6 +2865,122 @@ function getAC(s) {
     if(!spd2||spd2<=0)return null;
     return{name:sel.options[sel.selectedIndex].text.split(' \u2014 ')[0],speed:spd2,gph:gph2};
   }
+}
+
+// ── PAYLOAD & RANGE CIRCLE ────────────────────────────────────────────────────
+function getPayloadTotal() {
+  var total = 0;
+  var inputs = document.querySelectorAll('#payloadInputs input[type="number"]');
+  for (var i = 0; i < inputs.length; i++) total += parseFloat(inputs[i].value) || 0;
+  return total;
+}
+
+function computePayloadRange(spdKey) {
+  var w = AC_WEIGHT[spdKey];
+  if (!w) return AC_RANGE[spdKey] || null;
+  var section = document.getElementById('payloadSection');
+  if (!section || section.style.display === 'none') return AC_RANGE[spdKey] || null;
+  var totalPayload = getPayloadTotal();
+  var availFuelLbs = w.mtow - w.emptyWt - totalPayload;
+  if (availFuelLbs <= 0) return 0;
+  var availFuelGal = Math.min(availFuelLbs / w.fuelDensity, w.maxFuelGal);
+  var gph = acGph[spdKey] || 0;
+  if (gph <= 0) return AC_RANGE[spdKey] || null;
+  var speed = parseFloat(spdKey);
+  var rangeMiles = (availFuelGal / gph) * speed;
+  var maxRange = AC_RANGE[spdKey] || Infinity;
+  return Math.min(rangeMiles, maxRange);
+}
+
+function updatePayloadSummary(spdKey) {
+  var w = AC_WEIGHT[spdKey];
+  if (!w) return;
+  var summary = document.getElementById('payloadSummary');
+  var status = document.getElementById('payloadStatus');
+  if (!summary) return;
+  var totalPayload = getPayloadTotal();
+  var totalWt = w.emptyWt + totalPayload;
+  var availFuelLbs = w.mtow - totalWt;
+  var overweight = availFuelLbs < 0;
+  var availFuelGal = overweight ? 0 : Math.min(availFuelLbs / w.fuelDensity, w.maxFuelGal);
+  var range = computePayloadRange(spdKey);
+
+  if (status) {
+    status.textContent = Math.round(totalWt) + ' / ' + w.mtow + ' lbs';
+    status.className = 'payload-status' + (overweight ? ' over' : '');
+  }
+
+  var html = 'Payload: ' + Math.round(totalPayload) + ' lbs<br>';
+  html += 'Avail fuel: ' + (overweight ? '<span class="over">OVERWEIGHT</span>' : Math.round(availFuelGal) + ' gal');
+  html += '<br>Range: ' + (overweight ? '<span class="over">0 mi</span>' : Math.round(range) + ' mi');
+  summary.innerHTML = html;
+}
+
+function renderPayloadInputs(spdKey) {
+  var section = document.getElementById('payloadSection');
+  var container = document.getElementById('payloadInputs');
+  if (!section || !container) return;
+  var w = AC_WEIGHT[spdKey];
+  if (!w) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  var html = '';
+  w.seats.forEach(function(s, i) {
+    html += '<div class="payload-row"><label>' + s.label + '</label>' +
+      '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadSeat_' + i + '" min="0" max="' + s.max + '" value="' + s.default + '" oninput="onPayloadInput()">' +
+      '<span class="spd-unit">lbs</span></div>';
+  });
+  w.baggage.forEach(function(b, i) {
+    html += '<div class="payload-row"><label>' + b.label + '</label>' +
+      '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadBag_' + i + '" min="0" max="' + b.max + '" value="' + b.default + '" oninput="onPayloadInput()">' +
+      '<span class="spd-unit">lbs</span></div>';
+  });
+  container.innerHTML = html;
+  updatePayloadSummary(spdKey);
+}
+
+window.onPayloadInput = function() {
+  var sel = document.getElementById('selA');
+  if (sel && sel.value) updatePayloadSummary(sel.value);
+  updateRangeCircle();
+};
+
+window.fillStdWeights = function() {
+  var sel = document.getElementById('selA');
+  if (!sel || !sel.value) return;
+  var w = AC_WEIGHT[sel.value];
+  if (!w) return;
+  w.seats.forEach(function(s, i) {
+    var inp = document.getElementById('payloadSeat_' + i);
+    if (inp && (!inp.value || parseFloat(inp.value) === 0) && s.std !== undefined) inp.value = s.std;
+  });
+  w.baggage.forEach(function(b, i) {
+    var inp = document.getElementById('payloadBag_' + i);
+    if (inp && (!inp.value || parseFloat(inp.value) === 0) && b.std !== undefined) inp.value = b.std;
+  });
+  onPayloadInput();
+};
+
+function updateRangeCircle() {
+  var placed = waypoints.filter(function(w) { return w.lat !== null; });
+  if (!placed.length) { if (rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; } return; }
+  var acA = getAC('A');
+  if (!acA) { if (rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; } return; }
+  var spdKey = String(Math.round(acA.speed));
+  var rangeMi = computePayloadRange(spdKey);
+  if (rangeMi === null || rangeMi <= 0) { if (rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; } return; }
+  var rangeMeters = rangeMi * 1609.34;
+  var light = isLightMode();
+  var color = light ? '#0077aa' : '#00d4ff';
+  if (rangeCircle) map.removeLayer(rangeCircle);
+  rangeCircle = L.circle([placed[0].lat, placed[0].lng], {
+    radius: rangeMeters,
+    color: color,
+    weight: 2,
+    dashArray: '10 6',
+    fillColor: color,
+    fillOpacity: 0.04,
+    interactive: false
+  }).addTo(map);
 }
 
 // ── CALCULATION ───────────────────────────────────────────────────────────────
@@ -2852,6 +3019,7 @@ window.recalc = function() {
   if(!ready){
     document.getElementById('emptyMsg').style.display='block';
     document.getElementById('resultsOut').style.display='none';
+    updateRangeCircle();
     return;
   }
 
@@ -3016,6 +3184,8 @@ window.recalc = function() {
   rows += '<tr style="font-weight:bold;border-top:1px solid var(--border-bright)"><td colspan="2">Total</td><td style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</td></tr>';
   rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:9px;font-style:italic;padding-top:6px">Fuel prices based on current national average (source: AirNav.com' + (fuelPrices.updated ? ', updated ' + fuelPrices.updated : '') + ')</td></tr>';
   tbl.innerHTML = rows;
+
+  updateRangeCircle();
 };
 
 function renderFBOInputs(placed) {
