@@ -515,7 +515,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.10</span>
+    <span style="color:var(--text-muted)">v2026-04-11.11</span>
   </div>
 </header>
 
@@ -2986,53 +2986,69 @@ function drawRangeLabel() {
   var edgePt = map.latLngToLayerPoint([d.center[0] + d.radiusMeters / 111320, d.center[1]]);
   var r = Math.abs(center.y - edgePt.y);
 
-  if (r < 60) { rangeLabelSvg.innerHTML = ''; rangeLabelSvg.style.display = 'none'; return; }
+  if (r < 40) { rangeLabelSvg.innerHTML = ''; rangeLabelSvg.style.display = 'none'; return; }
 
-  var bandH = 20;
-  var halfSpan = Math.min(0.28, 90 / r);
+  // Measure available arc length for text at a reasonable angular span
+  var maxHalfSpan = Math.min(0.28, 90 / r);
+  var arcLen = r * maxHalfSpan * 2; // arc length in pixels
+  var fontSize = 11;
+  var singleLineWidth = fontSize * 0.62 * 14; // ~14 chars "NONSTOP RANGE" approx width
+  var wrap = arcLen < singleLineWidth + 20; // need wrapping?
+
+  var bandH = wrap ? 34 : 20;
+  var halfSpan = wrap ? Math.min(0.22, 65 / r) : maxHalfSpan;
   var startA = -Math.PI / 2 - halfSpan;
   var endA = -Math.PI / 2 + halfSpan;
   var oR = r + bandH / 2, iR = r - bandH / 2, capR = bandH / 2;
 
-  // Work in local SVG coordinates centered on the arc area
-  var cx = r + bandH;  // local center x
-  var cy = r + bandH;  // local center y
+  var cx = r + bandH;
+  var cy = r + bandH;
 
   function px(radius, angle) {
     return (cx + radius * Math.cos(angle)).toFixed(1) + ',' + (cy + radius * Math.sin(angle)).toFixed(1);
   }
 
-  // Curved box with semicircular end caps
   var boxPath = 'M' + px(oR, startA) +
     ' A' + oR + ',' + oR + ' 0 0,1 ' + px(oR, endA) +
     ' A' + capR + ',' + capR + ' 0 0,1 ' + px(iR, endA) +
     ' A' + iR + ',' + iR + ' 0 0,0 ' + px(iR, startA) +
     ' A' + capR + ',' + capR + ' 0 0,1 ' + px(oR, startA) + ' Z';
 
-  // Text path along middle arc
-  var textPathD = 'M' + px(r, startA) + ' A' + r + ',' + r + ' 0 0,1 ' + px(r, endA);
-
   var light = isLightMode();
   var fillColor = light ? '#0077aa' : '#00d4ff';
   var textColor = light ? '#fff' : '#111';
 
-  // Size and position the SVG so its local center maps to the layer center
   var svgW = (r + bandH) * 2;
   var svgH = (r + bandH) * 2;
-  var svgLeft = center.x - cx;
-  var svgTop = center.y - cy;
-
   rangeLabelSvg.setAttribute('width', svgW);
   rangeLabelSvg.setAttribute('height', svgH);
-  rangeLabelSvg.style.left = svgLeft + 'px';
-  rangeLabelSvg.style.top = svgTop + 'px';
+  rangeLabelSvg.style.left = (center.x - cx) + 'px';
+  rangeLabelSvg.style.top = (center.y - cy) + 'px';
   rangeLabelSvg.style.display = '';
 
-  rangeLabelSvg.innerHTML =
-    '<defs><path id="rlArc" d="' + textPathD + '"/></defs>' +
-    '<path d="' + boxPath + '" fill="' + fillColor + '" opacity="0.85"/>' +
-    '<text fill="' + textColor + '" font-size="11" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
-    '<textPath href="#rlArc" startOffset="50%" text-anchor="middle">NONSTOP RANGE</textPath></text>';
+  var textSvg;
+  if (wrap) {
+    // Two lines: "NONSTOP" on outer arc, "RANGE" on inner arc
+    var line1R = r + 7;
+    var line2R = r - 7;
+    var tp1 = 'M' + px(line1R, startA) + ' A' + line1R + ',' + line1R + ' 0 0,1 ' + px(line1R, endA);
+    var tp2 = 'M' + px(line2R, startA) + ' A' + line2R + ',' + line2R + ' 0 0,1 ' + px(line2R, endA);
+    textSvg =
+      '<defs><path id="rlArc1" d="' + tp1 + '"/><path id="rlArc2" d="' + tp2 + '"/></defs>' +
+      '<path d="' + boxPath + '" fill="' + fillColor + '"/>' +
+      '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
+      '<textPath href="#rlArc1" startOffset="50%" text-anchor="middle">NONSTOP</textPath></text>' +
+      '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
+      '<textPath href="#rlArc2" startOffset="50%" text-anchor="middle">RANGE</textPath></text>';
+  } else {
+    var textPathD = 'M' + px(r, startA) + ' A' + r + ',' + r + ' 0 0,1 ' + px(r, endA);
+    textSvg =
+      '<defs><path id="rlArc" d="' + textPathD + '"/></defs>' +
+      '<path d="' + boxPath + '" fill="' + fillColor + '"/>' +
+      '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
+      '<textPath href="#rlArc" startOffset="50%" text-anchor="middle">NONSTOP RANGE</textPath></text>';
+  }
+  rangeLabelSvg.innerHTML = textSvg;
 }
 
 function updateRangeCircle() {
