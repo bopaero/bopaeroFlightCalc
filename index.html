@@ -515,7 +515,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.13</span>
+    <span style="color:var(--text-muted)">v2026-04-11.14</span>
   </div>
 </header>
 
@@ -1781,7 +1781,10 @@ function fitBoundsIfMultiple() {
 function fitRouteOrWaypoint() {
   var placed = waypoints.filter(function(w){ return w.lat !== null; });
   if (placed.length >= 2) {
-    map.fitBounds(L.latLngBounds(placed.map(function(w){ return [w.lat, w.lng]; })), { padding: [50, 50] });
+    // Include range circle bounds so the user can always see reachable area
+    var bounds = L.latLngBounds(placed.map(function(w){ return [w.lat, w.lng]; }));
+    if (rangeCircle) bounds.extend(rangeCircle.getBounds());
+    map.fitBounds(bounds, { padding: [50, 50] });
   } else if (placed.length === 1) {
     if (rangeCircle) {
       map.fitBounds(rangeCircle.getBounds(), { padding: [30, 30] });
@@ -3057,8 +3060,11 @@ function drawRangeLabel() {
   var maxHalfSpan = Math.min(0.28, 90 / r);
   var arcLen = r * maxHalfSpan * 2; // arc length in pixels
   var fontSize = 11;
-  var singleLineWidth = fontSize * 0.62 * 14; // ~14 chars "NONSTOP RANGE" approx width
+  var label = d.label || 'NONSTOP RANGE';
+  var charCount = label.length;
+  var singleLineWidth = fontSize * 0.62 * charCount;
   var wrap = arcLen < singleLineWidth + 20; // need wrapping?
+  var words = label.split(' ');
 
   var bandH = wrap ? 34 : 20;
   var halfSpan = wrap ? Math.min(0.22, 65 / r) : maxHalfSpan;
@@ -3092,8 +3098,7 @@ function drawRangeLabel() {
   rangeLabelSvg.style.display = '';
 
   var textSvg;
-  if (wrap) {
-    // Two lines: "NONSTOP" on outer arc, "RANGE" on inner arc
+  if (wrap && words.length >= 2) {
     var line1R = r + 7;
     var line2R = r - 7;
     var tp1 = 'M' + px(line1R, startA) + ' A' + line1R + ',' + line1R + ' 0 0,1 ' + px(line1R, endA);
@@ -3102,16 +3107,16 @@ function drawRangeLabel() {
       '<defs><path id="rlArc1" d="' + tp1 + '"/><path id="rlArc2" d="' + tp2 + '"/></defs>' +
       '<path d="' + boxPath + '" fill="' + fillColor + '"/>' +
       '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
-      '<textPath href="#rlArc1" startOffset="50%" text-anchor="middle">NONSTOP</textPath></text>' +
+      '<textPath href="#rlArc1" startOffset="50%" text-anchor="middle">' + words[0] + '</textPath></text>' +
       '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
-      '<textPath href="#rlArc2" startOffset="50%" text-anchor="middle">RANGE</textPath></text>';
+      '<textPath href="#rlArc2" startOffset="50%" text-anchor="middle">' + words.slice(1).join(' ') + '</textPath></text>';
   } else {
     var textPathD = 'M' + px(r, startA) + ' A' + r + ',' + r + ' 0 0,1 ' + px(r, endA);
     textSvg =
       '<defs><path id="rlArc" d="' + textPathD + '"/></defs>' +
       '<path d="' + boxPath + '" fill="' + fillColor + '"/>' +
       '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
-      '<textPath href="#rlArc" startOffset="50%" text-anchor="middle">NONSTOP RANGE</textPath></text>';
+      '<textPath href="#rlArc" startOffset="50%" text-anchor="middle">' + label + '</textPath></text>';
   }
   rangeLabelSvg.innerHTML = textSvg;
 }
@@ -3156,7 +3161,8 @@ function updateRangeCircle() {
     map.getPanes().overlayPane.appendChild(rangeLabelSvg);
     map.on('zoomend', drawRangeLabel);
   }
-  rangeLabelData = { center: [rangeCenter.lat, rangeCenter.lng], radiusMeters: rangeMeters };
+  var labelText = placed.length > 1 ? 'FUEL RANGE' : 'NONSTOP RANGE';
+  rangeLabelData = { center: [rangeCenter.lat, rangeCenter.lng], radiusMeters: rangeMeters, label: labelText };
   drawRangeLabel();
 
   // Open aircraft pane so user can see payload section
@@ -3426,7 +3432,7 @@ function refreshWarnIcons() {
           icon = L.divIcon({
             className: '',
             html: '<div style="position:relative">' + icon.options.html +
-              '<div style="position:absolute;top:-6px;left:-6px;background:#f59e0b;color:#000;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1" title="No fuel services">⛽</div></div>',
+              '<div style="position:absolute;top:-6px;left:-6px;background:#f59e0b;color:#000;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;line-height:1" title="No fuel services">!</div></div>',
             iconSize: [sz[0] + 4, sz[1] + 4],
             iconAnchor: [sz[0]/2 + 2, sz[1]/2 + 2],
             popupAnchor: icon.options.popupAnchor
