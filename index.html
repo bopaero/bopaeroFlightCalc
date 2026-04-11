@@ -302,12 +302,6 @@ select option { background:var(--surface2); }
 .luggage-toggle input[type="checkbox"] { width:20px; height:20px; accent-color:var(--accent); }
 .pax-done-btn { width:100%; padding:10px; background:var(--accent); color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer; letter-spacing:0.5px; }
 .pax-done-btn:hover { opacity:0.9; }
-.pax-banner { display:flex; align-items:center; gap:8px; background:var(--accent); color:#fff; padding:10px 12px; border-radius:6px; cursor:pointer; margin-bottom:8px; animation: paxBannerPulse 2s ease-in-out infinite; }
-.pax-banner:hover { opacity:0.9; }
-.pax-banner-icon { font-size:16px; }
-.pax-banner-text { flex:1; font-size:13px; font-weight:bold; }
-.pax-banner-arrow { font-size:14px; }
-@keyframes paxBannerPulse { 0%,100% { box-shadow:none; } 50% { box-shadow:0 0 14px var(--accent); } }
 .payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:6px 0 0; text-align:center; }
 .payload-details-btn:hover { color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
@@ -539,7 +533,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.21</span>
+    <span style="color:var(--text-muted)">v2026-04-11.19</span>
   </div>
 </header>
 
@@ -622,11 +616,6 @@ select option { background:var(--surface2); }
           <span class="spd-unit">GPH</span>
         </div>
         <div id="payloadSection" style="display:none">
-          <div id="paxBanner" class="pax-banner" onclick="showPaxPopup()">
-            <span class="pax-banner-icon">✈</span>
-            <span class="pax-banner-text">Set passengers to refine range</span>
-            <span class="pax-banner-arrow">→</span>
-          </div>
           <button class="payload-details-btn" id="payloadDetailsBtn" onclick="togglePayloadDetails()">▼ Weight details</button>
           <div id="payloadDetails" style="display:none">
             <div class="payload-header">
@@ -3069,8 +3058,6 @@ function renderPayloadInputs(spdKey) {
 
   // Reset popup state when switching aircraft
   paxPopupDismissed = false;
-  var banner = document.getElementById('paxBanner');
-  if (banner) banner.style.display = 'flex';
 
   // Build itemized weight inputs
   var html = '';
@@ -3182,17 +3169,9 @@ window.applyPaxToPayload = function() {
 
 var paxPopupDismissed = false;
 
-var _showingPaxPopup = false;
 window.showPaxPopup = function() {
-  if (_showingPaxPopup) return;
-  _showingPaxPopup = true;
-  // On mobile, switch to map tab first so popup is visible
-  if (isMobile()) mobileTab('map');
-  setTimeout(function() {
-    var overlay = document.getElementById('paxOverlay');
-    if (overlay) overlay.style.display = 'flex';
-    _showingPaxPopup = false;
-  }, isMobile() ? 200 : 0);
+  var overlay = document.getElementById('paxOverlay');
+  if (overlay) overlay.style.display = 'flex';
 };
 
 window.dismissPaxPopup = function() {
@@ -3200,9 +3179,6 @@ window.dismissPaxPopup = function() {
   if (overlay) overlay.style.display = 'none';
   paxPopupDismissed = true;
   paxUserAdjusted = true;
-  // Hide the banner in the panel
-  var banner = document.getElementById('paxBanner');
-  if (banner) banner.style.display = 'none';
   applyPaxToPayload();
 };
 
@@ -3353,9 +3329,8 @@ function updateRangeCircle() {
   }
   drawRangeLabel();
 
-  // Show passenger popup on first range circle appearance (desktop only)
-  // On mobile, the banner in the PLAN tab handles this
-  if (placed.length === 1 && !paxPopupDismissed && !isMobile()) {
+  // Show passenger popup on first range circle appearance
+  if (placed.length === 1 && !paxPopupDismissed) {
     showPaxPopup();
   }
 }
