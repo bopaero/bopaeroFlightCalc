@@ -536,7 +536,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.33</span>
+    <span style="color:var(--text-muted)">v2026-04-11.34</span>
   </div>
 </header>
 
@@ -3337,8 +3337,9 @@ function drawRangeLabel() {
   var endA = -Math.PI / 2 + halfSpan;
   var oR = r + bandH / 2, iR = r - bandH / 2, capR = bandH / 2;
 
-  var cx = r + bandH;
-  var cy = r + bandH;
+  var maxBandH = Math.max(bandH, 34); // accommodate bottom label
+  var cx = r + maxBandH;
+  var cy = r + maxBandH;
 
   function px(radius, angle) {
     return (cx + radius * Math.cos(angle)).toFixed(1) + ',' + (cy + radius * Math.sin(angle)).toFixed(1);
@@ -3354,8 +3355,8 @@ function drawRangeLabel() {
   var fillColor = light ? '#0077aa' : '#00d4ff';
   var textColor = light ? '#fff' : '#111';
 
-  var svgW = (r + bandH) * 2;
-  var svgH = (r + bandH) * 2;
+  var svgW = cx * 2;
+  var svgH = cy * 2;
   rangeLabelSvg.setAttribute('width', svgW);
   rangeLabelSvg.setAttribute('height', svgH);
   rangeLabelSvg.style.left = (center.x - cx) + 'px';
