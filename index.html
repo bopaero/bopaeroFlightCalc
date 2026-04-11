@@ -515,7 +515,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.3</span>
+    <span style="color:var(--text-muted)">v2026-04-11.4</span>
   </div>
 </header>
 
@@ -2891,7 +2891,9 @@ function computePayloadRange(spdKey) {
   var gph = acGph[spdKey] || 0;
   if (gph <= 0) return AC_RANGE[spdKey] || null;
   var speed = parseFloat(spdKey);
-  var rangeMiles = (availFuelGal / gph) * speed;
+  var reserveGal = gph; // 1-hour fuel reserve
+  var usableFuelGal = Math.max(0, availFuelGal - reserveGal);
+  var rangeMiles = (usableFuelGal / gph) * speed;
   var maxRange = AC_RANGE[spdKey] || Infinity;
   return Math.min(rangeMiles, maxRange);
 }
@@ -2914,8 +2916,10 @@ function updatePayloadSummary(spdKey) {
     status.className = 'payload-status' + (overweight ? ' over' : '');
   }
 
+  var gph = acGph[spdKey] || 0;
+  var usableFuelGal = overweight ? 0 : Math.max(0, availFuelGal - gph);
   var html = 'Payload: ' + Math.round(totalPayload) + ' lbs<br>';
-  html += 'Avail fuel: ' + (overweight ? '<span class="over">OVERWEIGHT</span>' : Math.round(availFuelGal) + ' gal');
+  html += 'Avail fuel: ' + (overweight ? '<span class="over">OVERWEIGHT</span>' : Math.round(availFuelGal) + ' gal (– ' + gph + ' reserve)');
   html += '<br>Range: ' + (overweight ? '<span class="over">0 mi</span>' : Math.round(range) + ' mi');
   summary.innerHTML = html;
 }
