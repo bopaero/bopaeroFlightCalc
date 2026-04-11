@@ -302,6 +302,8 @@ select option { background:var(--surface2); }
 .luggage-toggle input[type="checkbox"] { width:20px; height:20px; accent-color:var(--accent); }
 .pax-done-btn { width:100%; padding:10px; background:var(--accent); color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer; letter-spacing:0.5px; }
 .pax-done-btn:hover { opacity:0.9; }
+.pax-panel { background:var(--surface2); border:2px solid var(--accent); border-radius:8px; padding:14px 16px; margin-bottom:8px; animation: paxPanelPulse 2s ease-in-out 3; }
+@keyframes paxPanelPulse { 0%,100% { box-shadow:none; } 50% { box-shadow:0 0 14px var(--accent); } }
 .payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:6px 0 0; text-align:center; }
 .payload-details-btn:hover { color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
@@ -533,7 +535,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.19</span>
+    <span style="color:var(--text-muted)">v2026-04-11.22</span>
   </div>
 </header>
 
@@ -616,6 +618,23 @@ select option { background:var(--surface2); }
           <span class="spd-unit">GPH</span>
         </div>
         <div id="payloadSection" style="display:none">
+          <div id="paxPanel" class="pax-panel">
+            <div class="pax-title">How many passengers?</div>
+            <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:-10px;margin-bottom:10px">Pilot is already included</div>
+            <div class="pax-stepper">
+              <label>Passengers</label>
+              <div class="pax-stepper-btns">
+                <button onclick="adjustPax(-1)">−</button>
+                <span id="paxCountPanel">1</span>
+                <button onclick="adjustPax(1)">+</button>
+              </div>
+            </div>
+            <div class="luggage-toggle">
+              <label>Traveling with luggage?</label>
+              <input type="checkbox" id="luggageTogglePanel" checked onchange="applyPaxToPayload()">
+            </div>
+            <button class="pax-done-btn" onclick="dismissPaxPopup()" style="margin-top:10px">Done</button>
+          </div>
           <button class="payload-details-btn" id="payloadDetailsBtn" onclick="togglePayloadDetails()">▼ Weight details</button>
           <div id="payloadDetails" style="display:none">
             <div class="payload-header">
@@ -3050,14 +3069,21 @@ function renderPayloadInputs(spdKey) {
   if (!w) { section.style.display = 'none'; return; }
   section.style.display = 'block';
 
-  // Set passenger count display in map popup
-  var countEl = document.getElementById('paxCount');
-  if (countEl) countEl.textContent = w.defaultPax || 1;
-  var luggageEl = document.getElementById('luggageToggle');
-  if (luggageEl) luggageEl.checked = true;
+  // Set passenger count in both map popup and panel
+  var defPax = w.defaultPax || 1;
+  ['paxCount', 'paxCountPanel'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = defPax;
+  });
+  ['luggageToggle', 'luggageTogglePanel'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.checked = true;
+  });
 
   // Reset popup state when switching aircraft
   paxPopupDismissed = false;
+  var paxPanel = document.getElementById('paxPanel');
+  if (paxPanel) { paxPanel.style.display = ''; paxPanel.classList.add('pax-panel'); paxPanel.style.animation = ''; void paxPanel.offsetWidth; paxPanel.style.animation = null; }
 
   // Build itemized weight inputs
   var html = '';
@@ -3117,9 +3143,11 @@ window.adjustPax = function(delta) {
   var w = AC_WEIGHT[sel.value];
   if (!w) return;
   var countEl = document.getElementById('paxCount');
-  var current = parseInt(countEl.textContent) || 0;
+  var countElPanel = document.getElementById('paxCountPanel');
+  var current = parseInt((countEl || countElPanel).textContent) || 0;
   var next = Math.max(0, Math.min(w.maxPax, current + delta));
-  countEl.textContent = next;
+  if (countEl) countEl.textContent = next;
+  if (countElPanel) countElPanel.textContent = next;
   paxUserAdjusted = true;
   applyPaxToPayload();
 };
@@ -3129,8 +3157,14 @@ window.applyPaxToPayload = function() {
   if (!sel || !sel.value) return;
   var w = AC_WEIGHT[sel.value];
   if (!w) return;
-  var paxCount = parseInt(document.getElementById('paxCount').textContent) || 0;
-  var luggage = document.getElementById('luggageToggle').checked;
+  var countEl = document.getElementById('paxCount');
+  var countElPanel = document.getElementById('paxCountPanel');
+  var paxCount = parseInt((countEl || countElPanel).textContent) || 0;
+  var lugEl = document.getElementById('luggageToggle');
+  var lugElPanel = document.getElementById('luggageTogglePanel');
+  var luggage = (lugEl || lugElPanel).checked;
+  // Sync both toggles
+  if (lugEl && lugElPanel) { lugEl.checked = luggage; lugElPanel.checked = luggage; }
 
   // Fill passenger seats based on paxOrder
   var filled = 0;
@@ -3177,6 +3211,8 @@ window.showPaxPopup = function() {
 window.dismissPaxPopup = function() {
   var overlay = document.getElementById('paxOverlay');
   if (overlay) overlay.style.display = 'none';
+  var panel = document.getElementById('paxPanel');
+  if (panel) panel.style.display = 'none';
   paxPopupDismissed = true;
   paxUserAdjusted = true;
   applyPaxToPayload();
