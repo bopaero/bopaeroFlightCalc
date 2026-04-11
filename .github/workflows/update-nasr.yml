@@ -43,18 +43,28 @@ jobs:
           curl -sL -o apt_csv.zip "$URL"
           unzip -o apt_csv.zip APT_BASE.csv
 
-          # Extract only ARPT_ID + FACILITY_USE_CODE, output as LOCATION_ID for app compatibility
+          # Extract ARPT_ID + FACILITY_USE_CODE, and fuel types
           python3 -c "
           import csv, sys
           with open('APT_BASE.csv') as f:
               r = csv.DictReader(f)
-              rows = [(row['ARPT_ID'], row['FACILITY_USE_CODE']) for row in r]
+              rows = []
+              fuel_rows = []
+              for row in r:
+                  rows.append((row['ARPT_ID'], row['FACILITY_USE_CODE']))
+                  fuel = row.get('FUEL_TYPES','').strip()
+                  if fuel and row['FACILITY_USE_CODE'] == 'PU':
+                      fuel_rows.append((row['ARPT_ID'], fuel))
           with open('data/faa_public_use.csv', 'w', newline='') as f:
               w = csv.writer(f)
               w.writerow(['LOCATION_ID', 'FACILITY_USE_CODE'])
               w.writerows(rows)
+          with open('data/faa_fuel.csv', 'w', newline='') as f:
+              w = csv.writer(f)
+              w.writerow(['LOCATION_ID', 'FUEL_TYPES'])
+              w.writerows(fuel_rows)
           pu = sum(1 for _, u in rows if u == 'PU')
-          print(f'Extracted {len(rows)} airports ({pu} public-use)')
+          print(f'Extracted {len(rows)} airports ({pu} public-use, {len(fuel_rows)} with fuel)')
           "
 
           # Write cycle metadata
