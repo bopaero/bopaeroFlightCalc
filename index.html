@@ -536,7 +536,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.32</span>
+    <span style="color:var(--text-muted)">v2026-04-11.33</span>
   </div>
 </header>
 
@@ -2845,11 +2845,13 @@ function drawLegLabels() {
     var hrs = Math.floor(d.hours);
     var min = Math.round((d.hours - hrs) * 60);
     if (min === 60) { hrs++; min = 0; }
-    var line1 = hrs > 0 ? hrs + ' hr' : '';
-    var line2 = min > 0 ? min + ' min' : '';
+    var line1 = hrs > 0 ? hrs + (hrs === 1 ? ' hour' : ' hours') : '';
+    var line2 = min > 0 ? min + (min === 1 ? ' minute' : ' minutes') : '';
     var twoLines = line1 && line2;
 
-    var boxW = 52, boxH = twoLines ? 28 : 16, boxR = 4;
+    var longestLine = (line1.length > line2.length ? line1 : line2) || line1 || line2;
+    var boxW = Math.max(52, longestLine.length * 6.5 + 14);
+    var boxH = twoLines ? 28 : 16, boxR = 4;
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'leg-label-svg');
     svg.setAttribute('width', boxW + 4);
@@ -3381,33 +3383,34 @@ function drawRangeLabel() {
       '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
       '<textPath href="#rlArc" startOffset="50%" text-anchor="middle">' + label + '</textPath></text>';
   }
-  // Bottom label: range time — format as two lines if hours + minutes
-  var timeLabel = d.timeLabel || '';
-  if (timeLabel && r >= 60) {
+  // Bottom label: range time — identical curved box style, text right-side up
+  if (d.rangeMi && d.speed && r >= 60) {
     var tHrs = Math.floor(d.rangeMi / d.speed);
     var tMin = Math.round((d.rangeMi / d.speed - tHrs) * 60);
     if (tMin === 60) { tHrs++; tMin = 0; }
-    var btLine1 = tHrs > 0 ? tHrs + ' HR' : '';
-    var btLine2 = tMin > 0 ? tMin + ' MIN' : '';
+    var btLine1 = tHrs > 0 ? tHrs + (tHrs === 1 ? ' HOUR' : ' HOURS') : '';
+    var btLine2 = tMin > 0 ? tMin + (tMin === 1 ? ' MINUTE' : ' MINUTES') : '';
     var btTwoLines = btLine1 && btLine2;
 
     var btBandH = btTwoLines ? 34 : 20;
-    var btHalfSpan = btTwoLines ? Math.min(0.22, 65 / r) : Math.min(0.28, 90 / r);
-    // Bottom arc: left-to-right at south (so text reads normally)
-    var btStartA = Math.PI / 2 - btHalfSpan;
-    var btEndA = Math.PI / 2 + btHalfSpan;
+    var btHalfSpan = btTwoLines ? Math.min(0.30, 100 / r) : Math.min(0.28, 90 / r);
+    // Bottom: draw arc CCW (sweep=0) from right to left so text reads L-to-R and is right-side up
+    var btStartA = Math.PI / 2 + btHalfSpan;  // right side
+    var btEndA = Math.PI / 2 - btHalfSpan;    // left side
     var btOR = r + btBandH / 2, btIR = r - btBandH / 2, btCapR = btBandH / 2;
 
-    var btBoxPath = 'M' + px(btOR, btStartA) +
-      ' A' + btOR + ',' + btOR + ' 0 0,1 ' + px(btOR, btEndA) +
-      ' A' + btCapR + ',' + btCapR + ' 0 0,1 ' + px(btIR, btEndA) +
-      ' A' + btIR + ',' + btIR + ' 0 0,0 ' + px(btIR, btStartA) +
-      ' A' + btCapR + ',' + btCapR + ' 0 0,1 ' + px(btOR, btStartA) + ' Z';
+    // Box: CW outer arc, cap, CCW inner arc, cap (same winding as top but mirrored)
+    var btBoxPath = 'M' + px(btOR, btEndA) +
+      ' A' + btOR + ',' + btOR + ' 0 0,1 ' + px(btOR, btStartA) +
+      ' A' + btCapR + ',' + btCapR + ' 0 0,1 ' + px(btIR, btStartA) +
+      ' A' + btIR + ',' + btIR + ' 0 0,0 ' + px(btIR, btEndA) +
+      ' A' + btCapR + ',' + btCapR + ' 0 0,1 ' + px(btOR, btEndA) + ' Z';
 
     if (btTwoLines) {
-      var bt1R = r + 7, bt2R = r - 7;
-      var btp1 = 'M' + px(bt1R, btStartA) + ' A' + bt1R + ',' + bt1R + ' 0 0,1 ' + px(bt1R, btEndA);
-      var btp2 = 'M' + px(bt2R, btStartA) + ' A' + bt2R + ',' + bt2R + ' 0 0,1 ' + px(bt2R, btEndA);
+      // Text arcs: CCW (sweep=0) so text is right-side up; outer line closer to outside
+      var bt1R = r - 7, bt2R = r + 7;
+      var btp1 = 'M' + px(bt1R, btStartA) + ' A' + bt1R + ',' + bt1R + ' 0 0,0 ' + px(bt1R, btEndA);
+      var btp2 = 'M' + px(bt2R, btStartA) + ' A' + bt2R + ',' + bt2R + ' 0 0,0 ' + px(bt2R, btEndA);
       textSvg +=
         '<defs><path id="rlArcBt1" d="' + btp1 + '"/><path id="rlArcBt2" d="' + btp2 + '"/></defs>' +
         '<path d="' + btBoxPath + '" fill="' + fillColor + '"/>' +
@@ -3416,7 +3419,7 @@ function drawRangeLabel() {
         '<text fill="' + textColor + '" font-size="' + fontSize + '" font-family="monospace" font-weight="bold" letter-spacing="1.5" dy="4">' +
         '<textPath href="#rlArcBt2" startOffset="50%" text-anchor="middle">' + btLine2 + '</textPath></text>';
     } else {
-      var btTextPath = 'M' + px(r, btStartA) + ' A' + r + ',' + r + ' 0 0,1 ' + px(r, btEndA);
+      var btTextPath = 'M' + px(r, btStartA) + ' A' + r + ',' + r + ' 0 0,0 ' + px(r, btEndA);
       textSvg +=
         '<defs><path id="rlArcBt" d="' + btTextPath + '"/></defs>' +
         '<path d="' + btBoxPath + '" fill="' + fillColor + '"/>' +
