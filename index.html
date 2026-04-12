@@ -536,7 +536,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.45</span>
+    <span style="color:var(--text-muted)">v2026-04-11.46</span>
   </div>
 </header>
 
@@ -2601,27 +2601,36 @@ function getOptimalPopupOffset(wp) {
     if (c.offsetHeight > 0) popupH = c.offsetHeight;
   }
 
-  // Distance from marker center to popup edge (just clear of ~15px radius marker icon)
+  // Leaflet places popup tip at marker+offset, body extends UPWARD from tip.
+  // So body rect is always: (tipX - popupW/2, tipY - popupH) to (tipX + popupW/2, tipY)
   var pad = 18;
-  var dxOff = popupW / 2 + pad;
-  var dyOff = popupH / 2 + pad;
 
-  // Candidates: each defines popup center position relative to marker
-  // bbox = popup rectangle in layer coords (relative to marker p1)
+  // Each candidate: tip position relative to marker, computed so body sits in the desired side
+  // - 'top':    body above marker → tip just above marker → tip = (0, -pad)
+  //            body rect = (-popupW/2, -pad-popupH) to (popupW/2, -pad)
+  // - 'bottom': body below marker → tip below marker by popupH+pad → tip = (0, popupH+pad)
+  //            body rect = (-popupW/2, pad) to (popupW/2, popupH+pad)
+  // - 'left':   body left of marker, vertically centered on marker → tip = (-popupW/2-pad, popupH/2)
+  //            body rect = (-popupW-pad, -popupH/2) to (-pad, popupH/2)
+  // - 'right':  body right of marker, vertically centered on marker → tip = (popupW/2+pad, popupH/2)
+  //            body rect = (pad, -popupH/2) to (popupW+pad, popupH/2)
   var candidates = [
-    { name: 'top',    cx: 0,       cy: -dyOff, offset: L.point(0, -dyOff) },
-    { name: 'bottom', cx: 0,       cy: dyOff,  offset: L.point(0, dyOff) },
-    { name: 'left',   cx: -dxOff,  cy: 0,      offset: L.point(-dxOff, 0) },
-    { name: 'right',  cx: dxOff,   cy: 0,      offset: L.point(dxOff, 0) }
+    { name: 'top',    offset: L.point(0, -pad),
+      rect: { x1: -popupW/2, y1: -pad - popupH, x2: popupW/2, y2: -pad } },
+    { name: 'bottom', offset: L.point(0, popupH + pad),
+      rect: { x1: -popupW/2, y1: pad, x2: popupW/2, y2: popupH + pad } },
+    { name: 'left',   offset: L.point(-popupW/2 - pad, popupH/2),
+      rect: { x1: -popupW - pad, y1: -popupH/2, x2: -pad, y2: popupH/2 } },
+    { name: 'right',  offset: L.point(popupW/2 + pad, popupH/2),
+      rect: { x1: pad, y1: -popupH/2, x2: popupW + pad, y2: popupH/2 } }
   ];
 
-  // Test each candidate: pick first one with no leg intersecting its bbox
   for (var i = 0; i < candidates.length; i++) {
     var cand = candidates[i];
-    var rx1 = p1.x + cand.cx - popupW / 2;
-    var ry1 = p1.y + cand.cy - popupH / 2;
-    var rx2 = p1.x + cand.cx + popupW / 2;
-    var ry2 = p1.y + cand.cy + popupH / 2;
+    var rx1 = p1.x + cand.rect.x1;
+    var ry1 = p1.y + cand.rect.y1;
+    var rx2 = p1.x + cand.rect.x2;
+    var ry2 = p1.y + cand.rect.y2;
     var collides = legSegs.some(function(seg) {
       return segIntersectsRect(seg.from, seg.to, rx1, ry1, rx2, ry2);
     }) || labelRects.some(function(lr) {
@@ -2629,7 +2638,6 @@ function getOptimalPopupOffset(wp) {
     });
     if (!collides) return { offset: cand.offset, anchor: cand.name };
   }
-  // All overlap — pick top as default
   return { offset: candidates[0].offset, anchor: candidates[0].name };
 }
 
