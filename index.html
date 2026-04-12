@@ -536,7 +536,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.39</span>
+    <span style="color:var(--text-muted)">v2026-04-11.40</span>
   </div>
 </header>
 
@@ -2543,20 +2543,37 @@ function haversineM(la1, lo1, la2, lo2) {
 }
 
 // ── MARKERS ───────────────────────────────────────────────────────────────────
-// Compute optimal popup position based on neighboring leg angles
-// Returns { offset: L.point, anchor: 'top'|'bottom'|'left'|'right' }
+// Line-segment to rectangle intersection test
+function segIntersectsRect(p1, p2, rx1, ry1, rx2, ry2) {
+  // Liang-Barsky clipping
+  var dx = p2.x - p1.x, dy = p2.y - p1.y;
+  var p = [-dx, dx, -dy, dy];
+  var q = [p1.x - rx1, rx2 - p1.x, p1.y - ry1, ry2 - p1.y];
+  var u1 = 0, u2 = 1;
+  for (var i = 0; i < 4; i++) {
+    if (p[i] === 0) { if (q[i] < 0) return false; }
+    else {
+      var t = q[i] / p[i];
+      if (p[i] < 0) { if (t > u2) return false; if (t > u1) u1 = t; }
+      else { if (t < u1) return false; if (t < u2) u2 = t; }
+    }
+  }
+  return u1 <= u2;
+}
+
+// Compute optimal popup position by testing rectangle intersection with leg segments
 function getOptimalPopupOffset(wp) {
   var placed = waypoints.filter(function(w){ return w.lat !== null; });
   var idx = placed.indexOf(wp);
   if (idx < 0) return { offset: L.point(0, -16), anchor: 'top' };
 
   var p1 = map.latLngToLayerPoint([wp.lat, wp.lng]);
-  var legAngles = []; // angles from this waypoint to neighbors (radians)
+  var legSegs = []; // each: { from: {x,y}, to: {x,y} }
 
   function addLeg(other) {
     if (!other) return;
     var p2 = map.latLngToLayerPoint([other.lat, other.lng]);
-    legAngles.push(Math.atan2(p2.y - p1.y, p2.x - p1.x));
+    legSegs.push({ from: p1, to: p2 });
   }
 
   if (idx > 0) addLeg(placed[idx - 1]);
@@ -2566,7 +2583,7 @@ function getOptimalPopupOffset(wp) {
     if (idx === placed.length - 1) addLeg(placed[0]);
   }
 
-  // Estimate popup dimensions (default fallback if not yet rendered)
+  // Estimate popup dimensions
   var popupW = 250, popupH = 90;
   var marker = wp.marker;
   if (marker && marker.getPopup() && marker.getPopup()._container) {
@@ -2575,32 +2592,34 @@ function getOptimalPopupOffset(wp) {
     if (c.offsetHeight > 0) popupH = c.offsetHeight;
   }
 
-  // Offsets must push the popup body clear of the marker
-  // For Leaflet, popup offset is from anchor; positive y = down, positive x = right
-  // Default popup tip points down at marker, so above-anchor needs negative y
-  var halfW = popupW / 2 + 20;
-  var halfH = popupH / 2 + 20;
+  // Distance from marker center to popup center (clear of marker icon)
+  var pad = 30;
+  var dxOff = popupW / 2 + pad;
+  var dyOff = popupH / 2 + pad;
+
+  // Candidates: each defines popup center position relative to marker
+  // bbox = popup rectangle in layer coords (relative to marker p1)
   var candidates = [
-    { dir: -Math.PI / 2, offset: L.point(0, -halfH), anchor: 'top' },     // above
-    { dir: Math.PI / 2,  offset: L.point(0, halfH),  anchor: 'bottom' },  // below
-    { dir: Math.PI,      offset: L.point(-halfW, 0), anchor: 'left' },    // left
-    { dir: 0,            offset: L.point(halfW, 0),  anchor: 'right' }    // right
+    { name: 'top',    cx: 0,       cy: -dyOff, offset: L.point(0, -dyOff) },
+    { name: 'bottom', cx: 0,       cy: dyOff,  offset: L.point(0, dyOff) },
+    { name: 'left',   cx: -dxOff,  cy: 0,      offset: L.point(-dxOff, 0) },
+    { name: 'right',  cx: dxOff,   cy: 0,      offset: L.point(dxOff, 0) }
   ];
 
-  // Pick candidate whose direction is furthest from any leg (max-min angle diff)
-  var best = candidates[0];
-  var bestMinDiff = -1;
-  candidates.forEach(function(c) {
-    var minDiff = Math.PI;
-    legAngles.forEach(function(a) {
-      var diff = Math.abs(((c.dir - a + 3 * Math.PI) % (2 * Math.PI)) - Math.PI);
-      if (diff < minDiff) minDiff = diff;
+  // Test each candidate: pick first one with no leg intersecting its bbox
+  for (var i = 0; i < candidates.length; i++) {
+    var cand = candidates[i];
+    var rx1 = p1.x + cand.cx - popupW / 2;
+    var ry1 = p1.y + cand.cy - popupH / 2;
+    var rx2 = p1.x + cand.cx + popupW / 2;
+    var ry2 = p1.y + cand.cy + popupH / 2;
+    var collides = legSegs.some(function(seg) {
+      return segIntersectsRect(seg.from, seg.to, rx1, ry1, rx2, ry2);
     });
-    // Slight preference for above when ties
-    if (minDiff > bestMinDiff + 0.01) { bestMinDiff = minDiff; best = c; }
-  });
-
-  return best;
+    if (!collides) return { offset: cand.offset, anchor: cand.name };
+  }
+  // All overlap — pick top as default
+  return { offset: candidates[0].offset, anchor: candidates[0].name };
 }
 
 // Apply the optimal offset when a waypoint popup opens
