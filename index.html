@@ -536,7 +536,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.40</span>
+    <span style="color:var(--text-muted)">v2026-04-11.41</span>
   </div>
 </header>
 
@@ -2583,6 +2583,15 @@ function getOptimalPopupOffset(wp) {
     if (idx === placed.length - 1) addLeg(placed[0]);
   }
 
+  // Also include leg label rectangles as obstacles (each at midpoint of leg)
+  var labelRects = [];
+  legSegs.forEach(function(seg) {
+    var mx = (seg.from.x + seg.to.x) / 2;
+    var my = (seg.from.y + seg.to.y) / 2;
+    var lw = 70, lh = 32; // approximate leg label size
+    labelRects.push({ x1: mx - lw/2, y1: my - lh/2, x2: mx + lw/2, y2: my + lh/2 });
+  });
+
   // Estimate popup dimensions
   var popupW = 250, popupH = 90;
   var marker = wp.marker;
@@ -2615,6 +2624,8 @@ function getOptimalPopupOffset(wp) {
     var ry2 = p1.y + cand.cy + popupH / 2;
     var collides = legSegs.some(function(seg) {
       return segIntersectsRect(seg.from, seg.to, rx1, ry1, rx2, ry2);
+    }) || labelRects.some(function(lr) {
+      return !(lr.x2 < rx1 || lr.x1 > rx2 || lr.y2 < ry1 || lr.y1 > ry2);
     });
     if (!collides) return { offset: cand.offset, anchor: cand.name };
   }
@@ -2639,11 +2650,21 @@ function applyPopupPosition(popup) {
   }
 }
 
+var _openPopup = null;
+function _repositionOpenPopup() { if (_openPopup) applyPopupPosition(_openPopup); }
+
 map.on('popupopen', function(e) {
+  _openPopup = e.popup;
   applyPopupPosition(e.popup);
   // Re-apply once popup is fully rendered with real dimensions
   setTimeout(function() { applyPopupPosition(e.popup); }, 50);
 });
+
+map.on('popupclose', function(e) {
+  if (_openPopup === e.popup) _openPopup = null;
+});
+
+map.on('moveend zoomend', _repositionOpenPopup);
 
 function makeIcon(color, label) {
   return L.divIcon({
