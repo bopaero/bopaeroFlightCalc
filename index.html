@@ -308,6 +308,7 @@ select option { background:var(--surface2); }
 .drive-time-label { background:transparent; border:0; }
 .drive-time-label span { display:inline-block; padding:2px 6px; border-radius:4px; background:#d946ef; color:#fff; font:bold 11px monospace; white-space:nowrap; transform:translate(-50%,-50%); box-shadow:0 1px 3px rgba(0,0,0,0.4); }
 .house-icon { background:transparent; border:0; }
+.airport-icon { background:transparent; border:0; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
 .payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:6px 0 0; text-align:center; }
 .payload-details-btn:hover { color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
@@ -539,7 +540,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-13.3</span>
+    <span style="color:var(--text-muted)">v2026-04-13.4</span>
   </div>
 </header>
 
@@ -915,7 +916,7 @@ function addWaypoint() {
 function removeWaypoint(id) {
   var entry = wpById(id);
   if (entry && entry.marker) map.removeLayer(entry.marker);
-  if (entry) ['driveLine','driveTimeLabel','homeMarker'].forEach(function(k){ if (entry[k]) { map.removeLayer(entry[k]); entry[k] = null; } });
+  if (entry) ['driveLine','driveTimeLabel','homeMarker','airportIcon'].forEach(function(k){ if (entry[k]) { map.removeLayer(entry[k]); entry[k] = null; } });
   waypoints = waypoints.filter(function(w) { return w.id !== id; });
   waypoints.forEach(function(w, i) { w.idx = i; });
   if (placingId === id) placingId = null;
@@ -929,7 +930,7 @@ function removeWaypoint(id) {
 function clearAll() {
   waypoints.forEach(function(w) {
     if (w.marker) map.removeLayer(w.marker);
-    ['driveLine','driveTimeLabel','homeMarker'].forEach(function(k){ if (w[k]) map.removeLayer(w[k]); });
+    ['driveLine','driveTimeLabel','homeMarker','airportIcon'].forEach(function(k){ if (w[k]) map.removeLayer(w[k]); });
   });
   waypoints = [];
   wpIdCounter = 0;
@@ -1795,6 +1796,9 @@ function placeWaypointFromCoords(id, originLat, originLng) {
         '</button>';
     }
 
+    if (airport) {
+      wp2.airportIcon = L.marker([useLat, useLng], { icon: makeAirportIcon(), interactive: false, zIndexOffset: -100 });
+    }
     wp2.marker = L.marker([useLat, useLng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
       .bindPopup(popupBody).addTo(map);
 
@@ -1836,12 +1840,18 @@ function placeWaypointFromCoords(id, originLat, originLng) {
       wp2.driveMi = null;
     }
     drawAllLines(); renderWPList(); updateMode(); recalc();
+    updateDriveRoutesVisibility();
     fitRouteOrWaypoint();
   });
 }
 
 var DRIVE_ROUTE_MIN_ZOOM = 11;
 function driveRouteColor() { return isLightMode() ? '#d946ef' : '#f0abfc'; }
+function makeAirportIcon() {
+  var c = isLightMode() ? '#0077aa' : '#00d4ff';
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="'+c+'" stroke="#fff" stroke-width="0.8" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>';
+  return L.divIcon({ className:'airport-icon', html:svg, iconSize:[32,32], iconAnchor:[16,32] });
+}
 function makeHouseIcon() {
   var c = driveRouteColor();
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="'+c+'" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>';
@@ -1885,7 +1895,7 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
 function updateDriveRoutesVisibility() {
   var show = map.getZoom() >= DRIVE_ROUTE_MIN_ZOOM;
   waypoints.forEach(function(w) {
-    ['driveLine','driveTimeLabel','homeMarker'].forEach(function(k){
+    ['driveLine','driveTimeLabel','homeMarker','airportIcon'].forEach(function(k){
       if (!w[k]) return;
       if (show && !map.hasLayer(w[k])) w[k].addTo(map);
       else if (!show && map.hasLayer(w[k])) map.removeLayer(w[k]);
