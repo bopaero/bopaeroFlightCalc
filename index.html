@@ -536,7 +536,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-13.1</span>
+    <span style="color:var(--text-muted)">v2026-04-13.2</span>
   </div>
 </header>
 
@@ -912,6 +912,7 @@ function addWaypoint() {
 function removeWaypoint(id) {
   var entry = wpById(id);
   if (entry && entry.marker) map.removeLayer(entry.marker);
+  if (entry && entry.driveLine) { map.removeLayer(entry.driveLine); entry.driveLine = null; }
   waypoints = waypoints.filter(function(w) { return w.id !== id; });
   waypoints.forEach(function(w, i) { w.idx = i; });
   if (placingId === id) placingId = null;
@@ -923,7 +924,10 @@ function removeWaypoint(id) {
 }
 
 function clearAll() {
-  waypoints.forEach(function(w) { if (w.marker) map.removeLayer(w.marker); });
+  waypoints.forEach(function(w) {
+    if (w.marker) map.removeLayer(w.marker);
+    if (w.driveLine) map.removeLayer(w.driveLine);
+  });
   waypoints = [];
   wpIdCounter = 0;
   placingId = null;
@@ -1820,11 +1824,11 @@ function placeWaypointFromCoords(id, originLat, originLng) {
     }
     placingId = next;
 
-    // Drive distance — use straight-line as an approximation (OSRM blocked from file://)
+    // Drive distance — fall back to straight-line * 1.3 until OSRM responds
     var distM = haversineM(originLat, originLng, useLat, useLng);
     if (airport && distM > 200) {
-      // Straight-line distance with a 1.3x road factor approximation
       wp2.driveMi = (distM / 1609.344) * 1.3;
+      fetchDriveRoute(wp2, originLat, originLng, useLat, useLng);
     } else {
       wp2.driveMi = null;
     }
@@ -1833,6 +1837,31 @@ function placeWaypointFromCoords(id, originLat, originLng) {
   });
 }
 
+var DRIVE_ROUTE_MIN_ZOOM = 11;
+function driveRouteColor() { return isLightMode() ? '#d946ef' : '#f0abfc'; }
+function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
+  if (wp.driveLine) { map.removeLayer(wp.driveLine); wp.driveLine = null; }
+  var url = 'https://router.project-osrm.org/route/v1/driving/' +
+    oLng + ',' + oLat + ';' + aLng + ',' + aLat + '?overview=full&geometries=geojson';
+  fetch(url).then(function(r){ return r.json(); }).then(function(j){
+    if (!j || !j.routes || !j.routes.length) return;
+    var coords = j.routes[0].geometry.coordinates.map(function(c){ return [c[1], c[0]]; });
+    wp.driveMi = j.routes[0].distance / 1609.344;
+    wp.driveLine = L.polyline(coords, {
+      color: driveRouteColor(), weight: 4, opacity: 0.85, dashArray: '6,6', interactive: false
+    });
+    if (map.getZoom() >= DRIVE_ROUTE_MIN_ZOOM) wp.driveLine.addTo(map);
+    renderWPList(); recalc();
+  }).catch(function(){});
+}
+function updateDriveRoutesVisibility() {
+  var show = map.getZoom() >= DRIVE_ROUTE_MIN_ZOOM;
+  waypoints.forEach(function(w) {
+    if (!w.driveLine) return;
+    if (show && !map.hasLayer(w.driveLine)) w.driveLine.addTo(map);
+    else if (!show && map.hasLayer(w.driveLine)) map.removeLayer(w.driveLine);
+  });
+}
 function fitBoundsIfMultiple() {
   var placed = waypoints.filter(function(w){ return w.lat !== null; });
   if (placed.length >= 2) {
@@ -3626,7 +3655,7 @@ function updateRangeCircle() {
     rangeLabelSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     rangeLabelSvg.style.cssText = 'position:absolute;pointer-events:none;overflow:visible;';
     map.getPanes().overlayPane.appendChild(rangeLabelSvg);
-    map.on('zoomend', function() { drawRangeLabel(); drawLegLabels(); });
+    map.on('zoomend', function() { drawRangeLabel(); drawLegLabels(); updateDriveRoutesVisibility(); });
   }
   var labelText = placed.length > 1 ? 'FUEL RANGE' : 'NONSTOP RANGE';
   // Compute range time
