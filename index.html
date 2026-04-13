@@ -540,7 +540,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-13.7</span>
+    <span style="color:var(--text-muted)">v2026-04-13.8</span>
   </div>
 </header>
 
@@ -552,7 +552,9 @@ select option { background:var(--surface2); }
     <!-- WAYPOINTS -->
     <div class="sec">
       <div class="sec-title">Trip Routing</div>
-      <div class="map-hint" id="routingIntro" style="text-align:center;margin:0 0 8px">To start, pick a Program Area below, tap the map, or use + Add Origin</div>
+      <div id="routingIntro">
+        <div class="fbo-title" style="text-align:center;margin:4px 0 8px;letter-spacing:1px">CHOOSE ORIGIN</div>
+      </div>
 
       <!-- Program Area Shortcuts -->
       <div style="margin-bottom:8px">
@@ -577,6 +579,11 @@ select option { background:var(--surface2); }
             </div>
           </div>
         </div>
+      </div>
+      <div id="orDivider" style="display:flex;align-items:center;gap:8px;margin:6px 0;color:var(--text-muted);font-size:11px;letter-spacing:1px">
+        <div style="flex:1;height:1px;background:var(--text-muted);opacity:.3"></div>
+        <span>OR</span>
+        <div style="flex:1;height:1px;background:var(--text-muted);opacity:.3"></div>
       </div>
       <button class="add-wp-btn" id="addWpBtn" onclick="addWaypoint()">+ Add Origin</button>
       <div class="map-hint" id="originHint" style="display:none"></div>
@@ -963,6 +970,8 @@ function renderWPList() {
   if (originHint) originHint.style.display = 'none';
   var routingIntro = document.getElementById('routingIntro');
   if (routingIntro) routingIntro.style.display = waypoints.length === 0 ? '' : 'none';
+  var orDivider = document.getElementById('orDivider');
+  if (orDivider) orDivider.style.display = waypoints.length === 0 ? '' : 'none';
 
   var currentDay = 1;
   waypoints.forEach(function(wp, i) {
