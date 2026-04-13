@@ -305,6 +305,9 @@ select option { background:var(--surface2); }
 .pax-panel { background:var(--surface2); border:2px solid var(--accent); border-radius:8px; padding:14px 16px; margin-bottom:8px; animation: paxPanelPulse 2s ease-in-out 3; }
 @keyframes paxPanelPulse { 0%,100% { box-shadow:none; } 50% { box-shadow:0 0 14px var(--accent); } }
 .leg-label-svg { position:absolute; pointer-events:none; overflow:visible; }
+.drive-time-label { background:transparent; border:0; }
+.drive-time-label span { display:inline-block; padding:2px 6px; border-radius:4px; background:#d946ef; color:#fff; font:bold 11px monospace; white-space:nowrap; transform:translate(-50%,-50%); box-shadow:0 1px 3px rgba(0,0,0,0.4); }
+.house-icon { background:transparent; border:0; }
 .payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:6px 0 0; text-align:center; }
 .payload-details-btn:hover { color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
@@ -536,7 +539,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-13.2</span>
+    <span style="color:var(--text-muted)">v2026-04-13.3</span>
   </div>
 </header>
 
@@ -912,7 +915,7 @@ function addWaypoint() {
 function removeWaypoint(id) {
   var entry = wpById(id);
   if (entry && entry.marker) map.removeLayer(entry.marker);
-  if (entry && entry.driveLine) { map.removeLayer(entry.driveLine); entry.driveLine = null; }
+  if (entry) ['driveLine','driveTimeLabel','homeMarker'].forEach(function(k){ if (entry[k]) { map.removeLayer(entry[k]); entry[k] = null; } });
   waypoints = waypoints.filter(function(w) { return w.id !== id; });
   waypoints.forEach(function(w, i) { w.idx = i; });
   if (placingId === id) placingId = null;
@@ -926,7 +929,7 @@ function removeWaypoint(id) {
 function clearAll() {
   waypoints.forEach(function(w) {
     if (w.marker) map.removeLayer(w.marker);
-    if (w.driveLine) map.removeLayer(w.driveLine);
+    ['driveLine','driveTimeLabel','homeMarker'].forEach(function(k){ if (w[k]) map.removeLayer(w[k]); });
   });
   waypoints = [];
   wpIdCounter = 0;
@@ -1839,27 +1842,54 @@ function placeWaypointFromCoords(id, originLat, originLng) {
 
 var DRIVE_ROUTE_MIN_ZOOM = 11;
 function driveRouteColor() { return isLightMode() ? '#d946ef' : '#f0abfc'; }
+function makeHouseIcon() {
+  var c = driveRouteColor();
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="'+c+'" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>';
+  return L.divIcon({ className:'house-icon', html:svg, iconSize:[26,26], iconAnchor:[13,13] });
+}
+function formatDriveTime(sec) {
+  var m = Math.round(sec / 60);
+  if (m < 60) return m + ' min';
+  var h = Math.floor(m / 60), mm = m % 60;
+  return mm ? h + 'h ' + mm + 'm' : h + 'h';
+}
 function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
   if (wp.driveLine) { map.removeLayer(wp.driveLine); wp.driveLine = null; }
+  if (wp.driveTimeLabel) { map.removeLayer(wp.driveTimeLabel); wp.driveTimeLabel = null; }
+  if (wp.homeMarker) { map.removeLayer(wp.homeMarker); wp.homeMarker = null; }
   var url = 'https://router.project-osrm.org/route/v1/driving/' +
     oLng + ',' + oLat + ';' + aLng + ',' + aLat + '?overview=full&geometries=geojson';
   fetch(url).then(function(r){ return r.json(); }).then(function(j){
     if (!j || !j.routes || !j.routes.length) return;
-    var coords = j.routes[0].geometry.coordinates.map(function(c){ return [c[1], c[0]]; });
-    wp.driveMi = j.routes[0].distance / 1609.344;
+    var route = j.routes[0];
+    var coords = route.geometry.coordinates.map(function(c){ return [c[1], c[0]]; });
+    wp.driveMi = route.distance / 1609.344;
+    wp.driveSec = route.duration;
     wp.driveLine = L.polyline(coords, {
       color: driveRouteColor(), weight: 4, opacity: 0.85, dashArray: '6,6', interactive: false
     });
-    if (map.getZoom() >= DRIVE_ROUTE_MIN_ZOOM) wp.driveLine.addTo(map);
+    var mid = coords[Math.floor(coords.length / 2)];
+    wp.driveTimeLabel = L.marker(mid, {
+      interactive: false,
+      icon: L.divIcon({
+        className: 'drive-time-label',
+        html: '<span>' + formatDriveTime(route.duration) + '</span>',
+        iconSize: null
+      })
+    });
+    wp.homeMarker = L.marker([oLat, oLng], { icon: makeHouseIcon(), interactive: false });
+    updateDriveRoutesVisibility();
     renderWPList(); recalc();
   }).catch(function(){});
 }
 function updateDriveRoutesVisibility() {
   var show = map.getZoom() >= DRIVE_ROUTE_MIN_ZOOM;
   waypoints.forEach(function(w) {
-    if (!w.driveLine) return;
-    if (show && !map.hasLayer(w.driveLine)) w.driveLine.addTo(map);
-    else if (!show && map.hasLayer(w.driveLine)) map.removeLayer(w.driveLine);
+    ['driveLine','driveTimeLabel','homeMarker'].forEach(function(k){
+      if (!w[k]) return;
+      if (show && !map.hasLayer(w[k])) w[k].addTo(map);
+      else if (!show && map.hasLayer(w[k])) map.removeLayer(w[k]);
+    });
   });
 }
 function fitBoundsIfMultiple() {
