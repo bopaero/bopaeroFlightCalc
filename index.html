@@ -536,7 +536,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-11.46</span>
+    <span style="color:var(--text-muted)">v2026-04-13.1</span>
   </div>
 </header>
 
@@ -2974,6 +2974,7 @@ function drawLegLabels() {
     var my = (p1.y + p2.y) / 2;
     var dx = p2.x - p1.x;
     var dy = p2.y - p1.y;
+    var legPx = Math.sqrt(dx * dx + dy * dy);
     var angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
     // Always read left-to-right: flip if text would be upside down
@@ -2991,6 +2992,7 @@ function drawLegLabels() {
     var longestLine = (line1.length > line2.length ? line1 : line2) || line1 || line2;
     var boxW = Math.max(52, longestLine.length * 6.5 + 14);
     var boxH = twoLines ? 28 : 16, boxR = 4;
+    if (legPx < boxW + 12) return;
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'leg-label-svg');
     svg.setAttribute('width', boxW + 4);
