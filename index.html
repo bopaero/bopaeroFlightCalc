@@ -545,7 +545,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-14.8</span>
+    <span style="color:var(--text-muted)">v2026-04-14.9</span>
   </div>
 </header>
 
@@ -937,6 +937,8 @@ function removeWaypoint(id) {
 }
 
 function clearAll() {
+  var hasPayload = paxUserAdjusted || (function(){ var s=document.getElementById('selA'); return s && s.value; })();
+  var clearPayload = hasPayload ? confirm('Clear payload and passenger count as well?') : false;
   waypoints.forEach(function(w) {
     if (w.marker) map.removeLayer(w.marker);
     ['driveLine','driveTimeLabel','homeMarker','airportIcon'].forEach(function(k){ if (w[k]) map.removeLayer(w[k]); });
@@ -945,12 +947,30 @@ function clearAll() {
   wpIdCounter = 0;
   placingId = null;
   routeClosed = false;
+  if (clearPayload) resetPayloadState();
   drawAllLines();
   renderWPList();
   updateReturnUI();
   updateMode();
   recalc();
   updateHelperBtns();
+}
+
+function resetPayloadState() {
+  paxUserAdjusted = false;
+  paxPopupDismissed = false;
+  var selA = document.getElementById('selA');
+  if (selA) selA.value = '';
+  document.querySelectorAll('.ac-pick-btn').forEach(function(b){ b.classList.remove('active'); });
+  var userTypeRow = document.getElementById('userTypeRow');
+  if (userTypeRow) userTypeRow.style.display = 'none';
+  var payloadSection = document.getElementById('payloadSection');
+  if (payloadSection) payloadSection.style.display = 'none';
+  ['paxCount','paxCountPanel'].forEach(function(id){ var el=document.getElementById(id); if (el) el.textContent = 1; });
+  ['luggageToggle','luggageTogglePanel'].forEach(function(id){ var el=document.getElementById(id); if (el) el.checked = true; });
+  var spdRowA = document.getElementById('spdRowA');
+  if (spdRowA) spdRowA.style.display = 'none';
+  updateAircraftToggleLabel && updateAircraftToggleLabel();
 }
 
 function wpById(id) {
