@@ -555,7 +555,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-14.18</span>
+    <span style="color:var(--text-muted)">v2026-04-14.19</span>
   </div>
 </header>
 
@@ -1019,8 +1019,8 @@ function promptAircraft() {
     if (o) o.style.display = 'flex';
   } else {
     if (!acPaneOpen) toggleAircraftPane();
-    var ac = document.getElementById('aircraftSection') || document.getElementById('acSection');
-    if (ac && ac.scrollIntoView) setTimeout(function(){ ac.scrollIntoView({behavior:'smooth',block:'center'}); }, 150);
+    var btn = document.getElementById('acToggleBtn');
+    if (btn && btn.scrollIntoView) setTimeout(function(){ btn.scrollIntoView({behavior:'smooth',block:'center'}); }, 150);
   }
 }
 window.pickAircraftFromPrompt = function(val) {
