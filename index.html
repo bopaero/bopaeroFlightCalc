@@ -288,6 +288,11 @@ select option { background:var(--surface2); }
 .payload-std-btn:hover { border-color:var(--accent); color:var(--accent); }
 .pax-overlay { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; display:flex; align-items:center; justify-content:center; pointer-events:all; }
 .pax-popup { background:var(--surface2); border:2px solid var(--accent); border-radius:10px; padding:20px 24px; min-width:260px; max-width:320px; box-shadow:0 4px 24px rgba(0,0,0,0.5); z-index:1001; }
+@media (max-width: 900px) {
+  .pax-overlay { align-items:flex-end; justify-content:stretch; background:rgba(0,0,0,0.35); }
+  .pax-popup { width:100%; max-width:100%; min-width:0; border-radius:14px 14px 0 0; border-width:2px 0 0 0; padding:18px 20px 24px; box-shadow:0 -6px 24px rgba(0,0,0,0.5); animation:paxSheetUp .25s ease-out; }
+  @keyframes paxSheetUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+}
 .pax-title { font-size:16px; font-weight:bold; color:var(--text); margin-bottom:14px; text-align:center; }
 .pax-stepper { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
 .pax-stepper label { flex:1; font-size:14px; color:var(--text-muted); }
@@ -540,7 +545,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-13.11</span>
+    <span style="color:var(--text-muted)">v2026-04-14.1</span>
   </div>
 </header>
 
@@ -3502,7 +3507,6 @@ window.applyPaxToPayload = function() {
 var paxPopupDismissed = false;
 
 window.showPaxPopup = function() {
-  if (isMobile()) return; // mobile uses panel only
   var overlay = document.getElementById('paxOverlay');
   if (overlay) overlay.style.display = 'flex';
 };
@@ -3719,19 +3723,7 @@ function updateRangeCircle() {
   drawRangeLabel();
 
   // Show passenger prompt when range circle first appears
-  if (!paxPopupDismissed) {
-    if (!isMobile()) {
-      showPaxPopup();
-    } else {
-      // On mobile, show the panel card and scroll to it
-      var paxPanel = document.getElementById('paxPanel');
-      if (paxPanel) {
-        paxPanel.style.display = '';
-        if (!acPaneOpen) toggleAircraftPane();
-        setTimeout(function() { paxPanel.scrollIntoView({ behavior:'smooth', block:'center' }); }, 150);
-      }
-    }
-  }
+  if (!paxPopupDismissed) showPaxPopup();
 }
 
 // ── CALCULATION ───────────────────────────────────────────────────────────────
