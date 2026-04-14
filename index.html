@@ -314,6 +314,16 @@ select option { background:var(--surface2); }
 .drive-time-label span { display:inline-block; padding:2px 6px; border-radius:4px; background:#d946ef; color:#fff; font:bold 11px monospace; white-space:nowrap; transform:translate(-50%,-50%); box-shadow:0 1px 3px rgba(0,0,0,0.4); }
 .house-icon { background:transparent; border:0; }
 .airport-icon { background:transparent; border:0; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+.confirm-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:3000; display:none; align-items:center; justify-content:center; }
+.confirm-box { background:var(--surface2); border:2px solid var(--accent); border-radius:10px; padding:22px 24px; min-width:280px; max-width:360px; box-shadow:0 4px 24px rgba(0,0,0,0.5); color:var(--text); }
+.confirm-msg { font-size:15px; font-weight:bold; margin-bottom:16px; text-align:center; }
+.confirm-btns { display:flex; gap:10px; }
+.confirm-btns button { flex:1; padding:10px 14px; border-radius:6px; font-family:inherit; font-size:13px; font-weight:bold; cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--text); }
+.confirm-btns button.primary { background:var(--accent); color:#000; border-color:var(--accent); }
+@media (max-width: 900px) {
+  .confirm-overlay { align-items:flex-end; padding-bottom:88px; }
+  .confirm-box { width:100%; max-width:100%; border-radius:14px 14px 0 0; border-width:2px 0 0 0; }
+}
 .payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:6px 0 0; text-align:center; }
 .payload-details-btn:hover { color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
@@ -545,7 +555,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-14.9</span>
+    <span style="color:var(--text-muted)">v2026-04-14.10</span>
   </div>
 </header>
 
@@ -795,6 +805,17 @@ select option { background:var(--surface2); }
 
   </div>
 
+  <!-- CONFIRM DIALOG -->
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <div class="confirm-msg" id="confirmMsg"></div>
+      <div class="confirm-btns">
+        <button id="confirmNo">No</button>
+        <button id="confirmYes" class="primary">Yes</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MAP -->
   <div class="map-wrap mobile-active" id="mobileMapPanel">
     <div id="map"></div>
@@ -938,7 +959,16 @@ function removeWaypoint(id) {
 
 function clearAll() {
   var hasPayload = paxUserAdjusted || (function(){ var s=document.getElementById('selA'); return s && s.value; })();
-  var clearPayload = hasPayload ? confirm('Clear payload and passenger count as well?') : false;
+  if (hasPayload) {
+    showConfirmDialog('Clear payload and passenger count as well?', function(answer) {
+      doClearAll(answer);
+    });
+    return;
+  }
+  doClearAll(false);
+}
+
+function doClearAll(clearPayload) {
   waypoints.forEach(function(w) {
     if (w.marker) map.removeLayer(w.marker);
     ['driveLine','driveTimeLabel','homeMarker','airportIcon'].forEach(function(k){ if (w[k]) map.removeLayer(w[k]); });
@@ -954,6 +984,23 @@ function clearAll() {
   updateMode();
   recalc();
   updateHelperBtns();
+}
+
+function showConfirmDialog(message, callback) {
+  var overlay = document.getElementById('confirmOverlay');
+  var msg = document.getElementById('confirmMsg');
+  var yes = document.getElementById('confirmYes');
+  var no = document.getElementById('confirmNo');
+  if (!overlay || !yes || !no) { callback(confirm(message)); return; }
+  msg.textContent = message;
+  overlay.style.display = 'flex';
+  function finish(answer) {
+    overlay.style.display = 'none';
+    yes.onclick = null; no.onclick = null;
+    callback(answer);
+  }
+  yes.onclick = function(){ finish(true); };
+  no.onclick = function(){ finish(false); };
 }
 
 function resetPayloadState() {
