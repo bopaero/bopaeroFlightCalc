@@ -555,7 +555,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-14.11</span>
+    <span style="color:var(--text-muted)">v2026-04-14.12</span>
   </div>
 </header>
 
@@ -876,17 +876,17 @@ select option { background:var(--surface2); }
 <script>
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
 (function(){
-  function inMap(t){ return t && t.closest && t.closest('#map'); }
+  function mapActive(t){ return t && t.closest && t.closest('#map') && typeof mapLocked !== 'undefined' && !mapLocked; }
   ['gesturestart','gesturechange','gestureend'].forEach(function(ev){
-    document.addEventListener(ev, function(e){ if (!inMap(e.target)) e.preventDefault(); }, { passive:false });
+    document.addEventListener(ev, function(e){ if (!mapActive(e.target)) e.preventDefault(); }, { passive:false });
   });
   document.addEventListener('touchmove', function(e){
-    if (e.touches && e.touches.length > 1 && !inMap(e.target)) e.preventDefault();
+    if (e.touches && e.touches.length > 1 && !mapActive(e.target)) e.preventDefault();
   }, { passive:false });
   var lastTap = 0;
   document.addEventListener('touchend', function(e){
     var now = Date.now();
-    if (now - lastTap < 350 && !inMap(e.target)) e.preventDefault();
+    if (now - lastTap < 350 && !mapActive(e.target)) e.preventDefault();
     lastTap = now;
   }, { passive:false });
 })();
