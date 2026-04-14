@@ -555,7 +555,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-14.14</span>
+    <span style="color:var(--text-muted)">v2026-04-14.15</span>
   </div>
 </header>
 
@@ -1034,6 +1034,8 @@ function resetPayloadState() {
   var spdRowA = document.getElementById('spdRowA');
   if (spdRowA) spdRowA.style.display = 'none';
   updateAircraftToggleLabel && updateAircraftToggleLabel();
+  if (typeof rangeCircle !== 'undefined' && rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; }
+  if (typeof clearRangeLabel === 'function') clearRangeLabel();
 }
 
 function wpById(id) {
