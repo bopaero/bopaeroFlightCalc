@@ -555,7 +555,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-14.12</span>
+    <span style="color:var(--text-muted)">v2026-04-14.13</span>
   </div>
 </header>
 
@@ -1943,6 +1943,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
 }
 
 var DRIVE_ROUTE_MIN_ZOOM = 11;
+var MAPBOX_TOKEN = 'pk.eyJ1IjoiYm9wYWVybyIsImEiOiJjbW55cTlyaHAwNGR5MnNvaXM5NGlpM2l6In0.NSwuC7VX576weB7LLZ1QVg';
 function driveRouteColor() { return isLightMode() ? '#d946ef' : '#f0abfc'; }
 function makeAirportIcon() {
   var c = isLightMode() ? '#0077aa' : '#00d4ff';
@@ -1964,8 +1965,9 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
   if (wp.driveLine) { map.removeLayer(wp.driveLine); wp.driveLine = null; }
   if (wp.driveTimeLabel) { map.removeLayer(wp.driveTimeLabel); wp.driveTimeLabel = null; }
   if (wp.homeMarker) { map.removeLayer(wp.homeMarker); wp.homeMarker = null; }
-  var url = 'https://router.project-osrm.org/route/v1/driving/' +
-    oLng + ',' + oLat + ';' + aLng + ',' + aLat + '?overview=full&geometries=geojson';
+  var url = 'https://api.mapbox.com/directions/v5/mapbox/driving/' +
+    oLng + ',' + oLat + ';' + aLng + ',' + aLat +
+    '?overview=full&geometries=geojson&access_token=' + MAPBOX_TOKEN;
   fetch(url).then(function(r){ return r.json(); }).then(function(j){
     if (!j || !j.routes || !j.routes.length) return;
     var route = j.routes[0];
