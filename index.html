@@ -555,7 +555,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-14.17</span>
+    <span style="color:var(--text-muted)">v2026-04-14.18</span>
   </div>
 </header>
 
@@ -805,6 +805,17 @@ select option { background:var(--surface2); }
 
   </div>
 
+  <!-- AIRCRAFT PICKER (mobile) -->
+  <div class="confirm-overlay" id="acPickerOverlay">
+    <div class="confirm-box">
+      <div class="confirm-msg">Choose an aircraft</div>
+      <div class="confirm-btns">
+        <button class="primary" onclick="pickAircraftFromPrompt('185')">SR22T</button>
+        <button class="primary" onclick="pickAircraftFromPrompt('300')">SF50</button>
+      </div>
+    </div>
+  </div>
+
   <!-- CONFIRM DIALOG -->
   <div class="confirm-overlay" id="confirmOverlay">
     <div class="confirm-box">
@@ -1002,6 +1013,21 @@ function doClearAll(clearPayload) {
   updateHelperBtns();
 }
 
+function promptAircraft() {
+  if (isMobile()) {
+    var o = document.getElementById('acPickerOverlay');
+    if (o) o.style.display = 'flex';
+  } else {
+    if (!acPaneOpen) toggleAircraftPane();
+    var ac = document.getElementById('aircraftSection') || document.getElementById('acSection');
+    if (ac && ac.scrollIntoView) setTimeout(function(){ ac.scrollIntoView({behavior:'smooth',block:'center'}); }, 150);
+  }
+}
+window.pickAircraftFromPrompt = function(val) {
+  var o = document.getElementById('acPickerOverlay');
+  if (o) o.style.display = 'none';
+  pickAircraft(val, 'A');
+};
 function showConfirmDialog(message, callback) {
   var overlay = document.getElementById('confirmOverlay');
   var msg = document.getElementById('confirmMsg');
@@ -1940,7 +1966,12 @@ function placeWaypointFromCoords(id, originLat, originLng) {
     drawAllLines(); renderWPList(); updateMode(); recalc();
     updateDriveRoutesVisibility();
     fitRouteOrWaypoint();
-    if (!paxPopupDismissed) showPaxPopup();
+    var selA = document.getElementById('selA');
+    if (!selA || !selA.value) {
+      promptAircraft();
+    } else if (!paxPopupDismissed) {
+      showPaxPopup();
+    }
   });
 }
 
@@ -3332,6 +3363,10 @@ window.pickAircraft = function(val, s) {
   }
   onSel(s);
   if (s === 'A' && !isMobile()) setTimeout(fitRouteOrWaypoint, 50);
+  if (s === 'A' && !paxPopupDismissed) {
+    var placed = waypoints.filter(function(w){ return w.lat !== null; });
+    if (placed.length > 0) setTimeout(showPaxPopup, 100);
+  }
 };
 
 window.onSel = function(s) {
@@ -3610,12 +3645,6 @@ window.dismissPaxPopup = function() {
   paxPopupDismissed = true;
   paxUserAdjusted = true;
   applyPaxToPayload();
-  var sel = document.getElementById('selA');
-  if (!sel || !sel.value) {
-    if (!acPaneOpen) toggleAircraftPane();
-    var ac = document.getElementById('aircraftSection') || document.getElementById('acSection');
-    if (ac && ac.scrollIntoView) setTimeout(function(){ ac.scrollIntoView({behavior:'smooth',block:'center'}); }, 150);
-  }
 };
 
 window.togglePayloadDetails = function() {
