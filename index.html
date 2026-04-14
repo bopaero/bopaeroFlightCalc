@@ -545,7 +545,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-14.6</span>
+    <span style="color:var(--text-muted)">v2026-04-14.7</span>
   </div>
 </header>
 
@@ -3371,13 +3371,16 @@ function renderPayloadInputs(spdKey) {
   if (!w) { section.style.display = 'none'; return; }
   section.style.display = 'block';
 
-  // Set passenger count in both popup and panel
+  // Set passenger count in both popup and panel — preserve user's choice if already adjusted
   var defPax = w.defaultPax || 1;
+  var existingEl = document.getElementById('paxCount') || document.getElementById('paxCountPanel');
+  var existing = existingEl ? parseInt(existingEl.textContent) : NaN;
+  var paxVal = paxUserAdjusted && !isNaN(existing) ? Math.min(w.maxPax, Math.max(0, existing)) : defPax;
   ['paxCount', 'paxCountPanel'].forEach(function(id) {
-    var el = document.getElementById(id); if (el) el.textContent = defPax;
+    var el = document.getElementById(id); if (el) el.textContent = paxVal;
   });
   ['luggageToggle', 'luggageTogglePanel'].forEach(function(id) {
-    var el = document.getElementById(id); if (el) el.checked = true;
+    var el = document.getElementById(id); if (el && !paxUserAdjusted) el.checked = true;
   });
 
   // Don't re-prompt on aircraft selection — prompt already fires on waypoint placement
@@ -3407,6 +3410,7 @@ function renderPayloadInputs(spdKey) {
   if (btn) btn.textContent = '▼ Weight details';
 
   updatePayloadSummary(spdKey);
+  if (paxUserAdjusted) applyPaxToPayload();
 }
 
 window.onPayloadInput = function() {
