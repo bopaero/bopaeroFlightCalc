@@ -545,7 +545,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-14.1</span>
+    <span style="color:var(--text-muted)">v2026-04-14.2</span>
   </div>
 </header>
 
@@ -3723,7 +3723,20 @@ function updateRangeCircle() {
   drawRangeLabel();
 
   // Show passenger prompt when range circle first appears
-  if (!paxPopupDismissed) showPaxPopup();
+  if (!paxPopupDismissed) {
+    if (!isMobile()) {
+      showPaxPopup();
+    } else {
+      // On mobile, show the panel card and scroll to it
+      var paxPanel = document.getElementById('paxPanel');
+      if (paxPanel) {
+        paxPanel.style.display = '';
+        if (!acPaneOpen) toggleAircraftPane();
+        setTimeout(function() { paxPanel.scrollIntoView({ behavior:'smooth', block:'center' }); }, 150);
+      }
+      showPaxPopup();
+    }
+  }
 }
 
 // ── CALCULATION ───────────────────────────────────────────────────────────────
