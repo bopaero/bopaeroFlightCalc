@@ -555,7 +555,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-14.10</span>
+    <span style="color:var(--text-muted)">v2026-04-14.11</span>
   </div>
 </header>
 
@@ -874,6 +874,22 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+// ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
+(function(){
+  function inMap(t){ return t && t.closest && t.closest('#map'); }
+  ['gesturestart','gesturechange','gestureend'].forEach(function(ev){
+    document.addEventListener(ev, function(e){ if (!inMap(e.target)) e.preventDefault(); }, { passive:false });
+  });
+  document.addEventListener('touchmove', function(e){
+    if (e.touches && e.touches.length > 1 && !inMap(e.target)) e.preventDefault();
+  }, { passive:false });
+  var lastTap = 0;
+  document.addEventListener('touchend', function(e){
+    var now = Date.now();
+    if (now - lastTap < 350 && !inMap(e.target)) e.preventDefault();
+    lastTap = now;
+  }, { passive:false });
+})();
 // ── TILE LAYERS ───────────────────────────────────────────────────────────────
 var TILES = {
   dark:      { url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',      attr:'&copy; <a href="https://carto.com/">CARTO</a> &copy; OSM', maxZoom:19 },
