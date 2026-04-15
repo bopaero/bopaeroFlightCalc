@@ -553,7 +553,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-15.8</span>
+    <span style="color:var(--text-muted)">v2026-04-15.9</span>
   </div>
 </header>
 
@@ -2070,7 +2070,8 @@ function zoomToRoute() {
   var placed = waypoints.filter(function(w){ return w.lat !== null; });
   if (placed.length >= 2) {
     if (mapLocked) unlockMap();
-    map.fitBounds(L.latLngBounds(placed.map(function(w){ return [w.lat, w.lng]; })), { padding: [50, 50] });
+    var pad = isMobile() ? [90, 90] : [50, 50];
+    map.fitBounds(L.latLngBounds(placed.map(function(w){ return [w.lat, w.lng]; })), { padding: pad });
   }
 }
 
