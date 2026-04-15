@@ -528,6 +528,7 @@ select option { background:var(--surface2); }
   display:flex; align-items:center; gap:5px; transition:all .15s;
 }
 .map-helper-btn:hover { border-color:var(--accent); color:var(--accent); }
+.map-helper-btn.active { border-color:var(--accent); color:var(--accent); }
 .map-helper-btn:disabled { opacity:0.4; cursor:default; border-color:var(--border); color:var(--text-muted); }
 
 /* Leaflet overrides */
@@ -555,7 +556,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-15.3</span>
+    <span style="color:var(--text-muted)">v2026-04-15.4</span>
   </div>
 </header>
 
@@ -853,6 +854,7 @@ select option { background:var(--surface2); }
     <div class="map-helper-btns">
       <button class="map-helper-btn" id="zoomRouteBtn" onclick="zoomToRoute()" disabled title="Zoom to fit entire route"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="2" cy="2" r="1.5" fill="currentColor" stroke="none"/><circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="5" cy="7" r="1.5" fill="currentColor" stroke="none"/><line x1="2" y1="2" x2="5" y2="7"/><line x1="5" y1="7" x2="12" y2="5"/><line x1="12" y1="5" x2="7" y2="12"/></svg> ROUTE</button>
       <button class="map-helper-btn" id="zoomLastBtn" onclick="zoomToLastStop()" disabled title="Zoom to last added stop">&#x1F4CD; LAST</button>
+      <button class="map-helper-btn active" id="rangeToggleBtn" onclick="toggleRangeVisible()" title="Show/hide range circle"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="7" cy="7" r="5.5" stroke-dasharray="2 1.6"/><circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg> RANGE</button>
     </div>
     <div class="map-badge">
       <div class="mode-dot placing" id="modeDot"></div>
@@ -2194,6 +2196,13 @@ var AC_WEIGHT = {
 var rangeCircle = null;
 var rangeLabelSvg = null;
 var rangeLabelData = null;
+var rangeVisible = true;
+window.toggleRangeVisible = function() {
+  rangeVisible = !rangeVisible;
+  var btn = document.getElementById('rangeToggleBtn');
+  if (btn) btn.classList.toggle('active', rangeVisible);
+  updateRangeCircle();
+};
 
 function getRwyThresholds() {
   // Return the most restrictive minFt across all active aircraft,
@@ -3792,6 +3801,7 @@ function drawRangeLabel() {
 }
 
 function updateRangeCircle() {
+  if (!rangeVisible) { if (rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; } clearRangeLabel(); return; }
   var placed = waypoints.filter(function(w) { return w.lat !== null; });
   if (!placed.length) { if (rangeCircle) { map.removeLayer(rangeCircle); rangeCircle = null; } clearRangeLabel(); return; }
   var acA = getAC('A');
