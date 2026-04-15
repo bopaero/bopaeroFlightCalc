@@ -553,7 +553,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-15.12</span>
+    <span style="color:var(--text-muted)">v2026-04-15.13</span>
   </div>
 </header>
 
@@ -3998,6 +3998,7 @@ function applyFuelInsertions(list) {
     updateRangeCircle();
     fitRouteOrWaypoint();
     updateHelperBtns();
+    recalc();
   } finally {
     _fuelSuppress = false;
   }
