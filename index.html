@@ -555,7 +555,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-15.1</span>
+    <span style="color:var(--text-muted)">v2026-04-15.2</span>
   </div>
 </header>
 
@@ -1547,7 +1547,7 @@ function lookupByIdentifier(id, code, input) {
   }
 
   wp.marker = L.marker([match.lat, match.lng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
-    .bindPopup(popupBody).addTo(map);
+    .bindPopup(popupBody, { autoPan: false }).addTo(map);
 
   if (wpIndex === 0 || (wpIndex === -1 && waypoints.filter(function(w){ return w.lat !== null; }).length === 0)) {
     wp.marker.on('popupopen', function() {
@@ -1822,7 +1822,7 @@ function placeWaypointDirect(id, airport) {
   }
 
   wp.marker = L.marker([airport.lat, airport.lng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
-    .bindPopup(popupBody).addTo(map);
+    .bindPopup(popupBody, { autoPan: false }).addTo(map);
 
   if (wpIndex === 0) {
     wp.marker.on('popupopen', function() {
@@ -1864,7 +1864,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
   var color = wpColor(wp.idx);
   var num = wpBadge(wp.idx);
   wp.marker = L.marker([originLat, originLng], { icon: makeSearchingIcon(color, num) })
-    .bindPopup('<span style="color:'+color+'">Searching for nearest airport...</span>')
+    .bindPopup('<span style="color:'+color+'">Searching for nearest airport...</span>', { autoPan: false })
     .addTo(map);
   wp.marker.openPopup();
   updateMode('searching');
@@ -1919,7 +1919,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
       wp2.airportIcon = L.marker([useLat, useLng], { icon: makeAirportIcon(), interactive: false, zIndexOffset: -100 });
     }
     wp2.marker = L.marker([useLat, useLng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
-      .bindPopup(popupBody).addTo(map);
+      .bindPopup(popupBody, { autoPan: false }).addTo(map);
 
     // Wire up return button on popup open — only show if 2+ placed waypoints
     if (wpIndex === 0) {
@@ -2855,20 +2855,23 @@ function applyPopupPosition(popup) {
 }
 
 var _openPopup = null;
+var _reposBusy = false;
 function _repositionOpenPopup() {
-  if (_openPopup) {
-    applyPopupPosition(_openPopup);
-    // Re-measure after reflow
-    setTimeout(function() { if (_openPopup) applyPopupPosition(_openPopup); }, 30);
-  }
+  if (!_openPopup || _reposBusy) return;
+  _reposBusy = true;
+  try { applyPopupPosition(_openPopup); }
+  finally { setTimeout(function() { _reposBusy = false; }, 0); }
 }
 window.repositionOpenPopup = _repositionOpenPopup;
 
 map.on('popupopen', function(e) {
   _openPopup = e.popup;
+  _reposBusy = true;
   applyPopupPosition(e.popup);
-  // Re-apply once popup is fully rendered with real dimensions
-  setTimeout(function() { applyPopupPosition(e.popup); }, 50);
+  setTimeout(function() {
+    if (_openPopup === e.popup) applyPopupPosition(e.popup);
+    _reposBusy = false;
+  }, 50);
 });
 
 map.on('popupclose', function(e) {
@@ -4316,7 +4319,7 @@ window.addFavoriteWP = function(icao) {
   }
 
   wp.marker = L.marker([fav.lat, fav.lng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
-    .bindPopup(popupBody).addTo(map);
+    .bindPopup(popupBody, { autoPan: false }).addTo(map);
 
   if (num === 1) {
     wp.marker.on('popupopen', function() {
