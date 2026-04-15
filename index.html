@@ -553,7 +553,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-15.11</span>
+    <span style="color:var(--text-muted)">v2026-04-15.12</span>
   </div>
 </header>
 
@@ -4132,9 +4132,8 @@ window.recalc = function() {
     document.getElementById('rName'+id).innerHTML=r.name+(faster?' <span class="faster-tag">FASTER</span>':'');
     document.getElementById('rTime'+id).innerHTML=fmtTime(r.hours);
     document.getElementById('rFlight'+id).innerHTML=fmtTime(r.flightHours);
-    document.getElementById('rGround'+id).innerHTML = r.groundStops > 0
-      ? fmtTime(r.groundHours) + '<span class="u" style="font-size:10px"> ('+r.groundStops+'\u00d7'+r.perStopMin+'m)</span>'
-      : '\u2014';
+    document.getElementById('rGround'+id).innerHTML =
+      fmtTime(r.groundHours) + '<span class="u" style="font-size:10px"> ('+r.groundStops+'\u00d7'+r.perStopMin+'m)</span>';
     document.getElementById('rDist'+id).innerHTML=Math.round(r.mi)+'<span class="u">mi</span>';
     document.getElementById('rSpd'+id).innerHTML=r.speed+'<span class="u">mph</span>';
     if(r.gph>0){
