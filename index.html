@@ -553,7 +553,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-15.10</span>
+    <span style="color:var(--text-muted)">v2026-04-15.11</span>
   </div>
 </header>
 
@@ -746,6 +746,13 @@ select option { background:var(--surface2); }
         <label class="cost-lbl" style="margin-left:12px">Trip days</label>
         <input enterkeyhint="done" inputmode="decimal" type="number" id="costTripDays" class="cost-input" placeholder="—" min="1" max="30" oninput="recalc()" style="width:50px">
       </div>
+      <div class="cost-row">
+        <label class="cost-lbl">Min ground time per stop</label>
+        <div style="display:flex;gap:4px;align-items:center">
+          <input enterkeyhint="done" inputmode="numeric" type="number" id="groundMinsPerStop" class="cost-input" value="35" min="0" max="999" oninput="recalc()" style="width:70px">
+          <span style="color:var(--text-muted);font-size:11px">min</span>
+        </div>
+      </div>
       <div id="fboList" style="margin-top:6px"></div>
     </div>
 
@@ -759,6 +766,8 @@ select option { background:var(--surface2); }
           <div class="res-name" id="rNameA">—</div>
           <div class="totals-grid">
             <div><div class="res-item-lbl">Total Time</div><div class="res-item-val" id="rTimeA">—</div></div>
+            <div><div class="res-item-lbl">Flight Time</div><div class="res-item-val" id="rFlightA">—</div></div>
+            <div><div class="res-item-lbl">Ground Time</div><div class="res-item-val" id="rGroundA">—</div></div>
             <div><div class="res-item-lbl">Total Distance</div><div class="res-item-val" id="rDistA">—</div></div>
             <div><div class="res-item-lbl">Speed</div><div class="res-item-val" id="rSpdA">—</div></div>
             <div id="rFuelWrapA" style="display:none"><div class="res-item-lbl">Total Fuel</div><div class="res-item-val" id="rFuelA">—</div></div>
@@ -773,6 +782,8 @@ select option { background:var(--surface2); }
           <div class="res-name" id="rNameB">—</div>
           <div class="totals-grid">
             <div><div class="res-item-lbl">Total Time</div><div class="res-item-val" id="rTimeB">—</div></div>
+            <div><div class="res-item-lbl">Flight Time</div><div class="res-item-val" id="rFlightB">—</div></div>
+            <div><div class="res-item-lbl">Ground Time</div><div class="res-item-val" id="rGroundB">—</div></div>
             <div><div class="res-item-lbl">Total Distance</div><div class="res-item-val" id="rDistB">—</div></div>
             <div><div class="res-item-lbl">Speed</div><div class="res-item-val" id="rSpdB">—</div></div>
             <div id="rFuelWrapB" style="display:none"><div class="res-item-lbl">Total Fuel</div><div class="res-item-val" id="rFuelB">—</div></div>
@@ -4103,7 +4114,15 @@ window.recalc = function() {
     totalMi += mi;
   }
 
-  var rA={ name:acA.name, speed:acA.speed, gph:acA.gph, hours:totalMi/acA.speed, mi:totalMi, legs:legs };
+  var perStopMin = parseFloat(document.getElementById('groundMinsPerStop') ? document.getElementById('groundMinsPerStop').value : '35');
+  if (!isFinite(perStopMin) || perStopMin < 0) perStopMin = 35;
+  var groundStops = Math.max(0, placed.length - 2);
+  var groundHours = (groundStops * perStopMin) / 60;
+  var flightHoursA = totalMi/acA.speed;
+  var rA={ name:acA.name, speed:acA.speed, gph:acA.gph,
+           flightHours:flightHoursA, groundHours:groundHours,
+           groundStops:groundStops, perStopMin:perStopMin,
+           hours:flightHoursA + groundHours, mi:totalMi, legs:legs };
 
   document.getElementById('emptyMsg').style.display='none';
   document.getElementById('resultsOut').style.display='block';
@@ -4112,11 +4131,15 @@ window.recalc = function() {
     var faster = other && r.hours < other.hours;
     document.getElementById('rName'+id).innerHTML=r.name+(faster?' <span class="faster-tag">FASTER</span>':'');
     document.getElementById('rTime'+id).innerHTML=fmtTime(r.hours);
+    document.getElementById('rFlight'+id).innerHTML=fmtTime(r.flightHours);
+    document.getElementById('rGround'+id).innerHTML = r.groundStops > 0
+      ? fmtTime(r.groundHours) + '<span class="u" style="font-size:10px"> ('+r.groundStops+'\u00d7'+r.perStopMin+'m)</span>'
+      : '\u2014';
     document.getElementById('rDist'+id).innerHTML=Math.round(r.mi)+'<span class="u">mi</span>';
     document.getElementById('rSpd'+id).innerHTML=r.speed+'<span class="u">mph</span>';
     if(r.gph>0){
       document.getElementById('rFuelWrap'+id).style.display='';
-      document.getElementById('rFuel'+id).innerHTML=(r.hours*r.gph).toFixed(1)+'<span class="u">gal</span>';
+      document.getElementById('rFuel'+id).innerHTML=(r.flightHours*r.gph).toFixed(1)+'<span class="u">gal</span>';
     } else {
       document.getElementById('rFuelWrap'+id).style.display='none';
     }
@@ -4144,7 +4167,11 @@ window.recalc = function() {
   fillCard('A', rA, null);
 
   if(comparisonActive && acB){
-    var rB={ name:acB.name, speed:acB.speed, gph:acB.gph, hours:totalMi/acB.speed, mi:totalMi, legs:legs };
+    var flightHoursB = totalMi/acB.speed;
+    var rB={ name:acB.name, speed:acB.speed, gph:acB.gph,
+             flightHours:flightHoursB, groundHours:groundHours,
+             groundStops:groundStops, perStopMin:perStopMin,
+             hours:flightHoursB + groundHours, mi:totalMi, legs:legs };
     fillCard('A', rA, rB);
     fillCard('B', rB, rA);
     var delta=Math.abs(rA.hours-rB.hours);
@@ -4189,13 +4216,13 @@ window.recalc = function() {
     acCost = 0; // owner pays no CPH
   } else {
     // Lessee: only hours exceeding included lease hours are billed
-    billableHrs = Math.max(0, rA.hours - leaseHrsIncl);
+    billableHrs = Math.max(0, rA.flightHours - leaseHrsIncl);
     acCost = acPerHr * billableHrs;
   }
 
-  var fuelCost      = fuelPerHr * rA.hours;
-  var oilCost       = oilPerHr * rA.hours;
-  var consumCost    = consumPerHr * rA.hours;
+  var fuelCost      = fuelPerHr * rA.flightHours;
+  var oilCost       = oilPerHr * rA.flightHours;
+  var consumCost    = consumPerHr * rA.flightHours;
   var pilotLow      = pilotMin * days;
   var pilotHigh     = pilotMax * days;
 
@@ -4233,11 +4260,11 @@ window.recalc = function() {
     if (billableHrs > 0) {
       rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr over ' + leaseHrsIncl + ' remaining × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
     } else {
-      rows += '<tr><td>Aircraft</td><td>' + rA.hours.toFixed(2) + ' hr within ' + leaseHrsIncl + ' hr remaining</td><td>$0</td></tr>';
+      rows += '<tr><td>Aircraft</td><td>' + rA.flightHours.toFixed(2) + ' hr within ' + leaseHrsIncl + ' hr remaining</td><td>$0</td></tr>';
     }
   }
-  rows += '<tr><td>Fuel</td><td>' + rA.hours.toFixed(2) + ' hr × ' + gph + ' GPH × $' + fuelPriceGal.toFixed(2) + '/gal</td><td>' + fmt$(fuelCost) + '</td></tr>';
-  rows += '<tr><td>Oil</td><td>' + rA.hours.toFixed(2) + ' hr × $' + oilPerHr.toFixed(2) + '/hr</td><td>' + fmt$(oilCost) + '</td></tr>';
+  rows += '<tr><td>Fuel</td><td>' + rA.flightHours.toFixed(2) + ' hr × ' + gph + ' GPH × $' + fuelPriceGal.toFixed(2) + '/gal</td><td>' + fmt$(fuelCost) + '</td></tr>';
+  rows += '<tr><td>Oil</td><td>' + rA.flightHours.toFixed(2) + ' hr × $' + oilPerHr.toFixed(2) + '/hr</td><td>' + fmt$(oilCost) + '</td></tr>';
   var pilotDetail = flyingDays + ' flying day' + (flyingDays>1?'s':'') + ' × $' + pilotMin + '–$' + pilotMax + '/day';
   if (tripDaysVal && tripDays > flyingDays) pilotDetail += ' (' + tripDays + ' day trip)';
   rows += '<tr><td>Pilot</td><td>' + pilotDetail + '</td><td>' + fmtRange(pilotLow, pilotHigh) + '</td></tr>';
