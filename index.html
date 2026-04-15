@@ -553,7 +553,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-15.9</span>
+    <span style="color:var(--text-muted)">v2026-04-15.10</span>
   </div>
 </header>
 
@@ -3883,6 +3883,172 @@ function updateRangeCircle() {
   }
 }
 
+// ── AUTO FUEL STOPS ───────────────────────────────────────────────────────────
+var FUEL_SAFETY = 0.92;
+var _fuelProposalPending = false;
+var _fuelProposalOpen = false;
+var _fuelSuppress = false;
+var _fuelLastDeclinedSig = null;
+
+function findFuelStopForLeg(fromWp, toWp, remainingMi, spdKey, excludeIcaos) {
+  if (!OA_CACHE || !OA_CACHE.length) return null;
+  var legMi = haversineNm(fromWp.lat, fromWp.lng, toWp.lat, toWp.lng) * 1.15078;
+  var reachable = remainingMi * FUEL_SAFETY;
+  if (legMi <= reachable) return null;
+  var thresholds = getRwyThresholds();
+  var minFt = thresholds.minFt;
+  // Max-reachable point along great circle
+  var f = Math.max(0, Math.min(1, reachable / legMi));
+  var pts = gcPoints(fromWp.lat, fromWp.lng, toWp.lat, toWp.lng, 60);
+  var targetIdx = Math.round(f * (pts.length - 1));
+  var target = pts[Math.max(0, Math.min(pts.length - 1, targetIdx))];
+  var searchRadM = Math.min(remainingMi * 0.25, 150) * 1609.34;
+  var reachableM = reachable * 1609.34;
+  var candidates = [];
+  for (var i = 0; i < OA_CACHE.length; i++) {
+    var a = OA_CACHE[i];
+    if (excludeIcaos[a.icao]) continue;
+    if (FAA_PUBLIC_SET && FAA_PUBLIC_SET.size && a.country === 'US' && !FAA_PUBLIC_SET.has(a.localCode || a.icao)) continue;
+    if (getMaxPavedRwyFt(a) < minFt) continue;
+    if (!airportHasFuel({ icao: a.icao }, spdKey)) continue;
+    var dTargetM = haversineM(a.lat, a.lng, target[0], target[1]);
+    if (dTargetM > searchRadM) continue;
+    var dFromM = haversineM(a.lat, a.lng, fromWp.lat, fromWp.lng);
+    if (dFromM > reachableM) continue;
+    var dToM = haversineM(a.lat, a.lng, toWp.lat, toWp.lng);
+    var dFromMi = dFromM / 1609.34;
+    var dToMi = dToM / 1609.34;
+    var detour = (dFromMi + dToMi) - legMi;
+    var offset = Math.abs(dFromMi - reachable);
+    candidates.push({ a: a, dFromMi: dFromMi, dToMi: dToMi, score: detour + offset * 0.25 });
+  }
+  if (!candidates.length) return null;
+  candidates.sort(function(x, y){ return x.score - y.score; });
+  var pick = candidates[0].a;
+  return { icao: pick.icao, name: pick.name, lat: pick.lat, lng: pick.lng,
+           maxRwyFt: getMaxPavedRwyFt(pick), dFromMi: candidates[0].dFromMi };
+}
+
+function computeAutoFuelInsertions() {
+  var acA = getAC('A');
+  if (!acA) return [];
+  var spdKey = String(Math.round(acA.speed));
+  var maxRangeMi = computePayloadRange(spdKey);
+  if (!maxRangeMi || maxRangeMi <= 0) return [];
+  var placed = waypoints.filter(function(w){ return w.lat !== null; });
+  if (placed.length < 2) return [];
+
+  var exclude = {};
+  placed.forEach(function(w){ if (w.icao) exclude[w.icao] = true; });
+
+  // Each insert: { legIdx: i (to-index in placed), ord: k-th stop within leg, airport }
+  var inserts = [];
+  var remainingMi = maxRangeMi;
+  for (var i = 1; i < placed.length; i++) {
+    var from = placed[i-1];
+    var to = placed[i];
+    if (i === 1 || airportHasFuel(from, spdKey)) remainingMi = maxRangeMi;
+
+    var cursor = from;
+    var legRemainMi = haversineNm(cursor.lat, cursor.lng, to.lat, to.lng) * 1.15078;
+    var ord = 0;
+    while (legRemainMi > remainingMi * FUEL_SAFETY && ord < 3) {
+      var stop = findFuelStopForLeg(cursor, to, remainingMi, spdKey, exclude);
+      if (!stop) break;
+      inserts.push({ legIdx: i, ord: ord, airport: stop });
+      exclude[stop.icao] = true;
+      cursor = { lat: stop.lat, lng: stop.lng, icao: stop.icao };
+      remainingMi = maxRangeMi;
+      legRemainMi = haversineNm(cursor.lat, cursor.lng, to.lat, to.lng) * 1.15078;
+      ord++;
+    }
+    remainingMi = Math.max(0, remainingMi - legRemainMi);
+  }
+  return inserts;
+}
+
+function applyFuelInsertions(list) {
+  _fuelSuppress = true;
+  try {
+    // Sort legIdx descending so earlier-leg inserts don't shift later-leg indices;
+    // within a leg, sort ord descending so each insertion goes immediately before
+    // the destination waypoint of that leg.
+    var sorted = list.slice().sort(function(a,b){
+      if (b.legIdx !== a.legIdx) return b.legIdx - a.legIdx;
+      return b.ord - a.ord;
+    });
+    sorted.forEach(function(ins){
+      insertFuelStopBeforePlacedIdx(ins.legIdx, ins.airport);
+    });
+    drawAllLines();
+    renderWPList();
+    updateMode();
+    refreshWarnIcons();
+    updateRangeCircle();
+    fitRouteOrWaypoint();
+    updateHelperBtns();
+  } finally {
+    _fuelSuppress = false;
+  }
+}
+
+function insertFuelStopBeforePlacedIdx(placedIdx, airport) {
+  // placedIdx is the index of the destination waypoint within current placed[];
+  // insert immediately before it in waypoints[]. Re-derive placed each call
+  // because earlier inserts may have shifted positions.
+  var placed = waypoints.filter(function(w){ return w.lat !== null; });
+  var anchor = placed[placedIdx];
+  if (!anchor) return;
+  var wpIdx = waypoints.indexOf(anchor);
+  var id = ++wpIdCounter;
+  var entry = { id:id, idx:0, lat:airport.lat, lng:airport.lng,
+                name:airport.name, icao:airport.icao,
+                rwyFt:airport.maxRwyFt || 0, marker:null, overnight:false,
+                autoFuel:true };
+  entry.warn = entry.rwyFt > 0 && wpNeedsWarn(entry.rwyFt);
+  waypoints.splice(wpIdx, 0, entry);
+  waypoints.forEach(function(w, i){ w.idx = i; });
+
+  var color = wpColor(entry.idx);
+  var num = wpBadge(entry.idx);
+  var popupBody = '<b style="color:'+color+'">'+ wpLabel(entry.idx) +'</b>&nbsp;';
+  if (entry.icao) popupBody += '<span style="color:var(--accent)">' + entry.icao + '</span><br>';
+  popupBody += entry.name;
+  if (entry.rwyFt) {
+    var rc = entry.warn ? '#f59e0b' : 'var(--text)';
+    popupBody += '<br><span style="color:'+rc+'">'+(entry.warn?'⚠ SHORT ':'')+'Longest paved rwy: '+entry.rwyFt.toLocaleString()+' ft</span>';
+  }
+  popupBody += '<br><span style="color:var(--text-muted)">'+entry.lat.toFixed(4)+'° / '+entry.lng.toFixed(4)+'°</span>';
+  popupBody += '<br><span style="color:var(--accent);font-size:10px">⛽ Auto fuel stop</span>';
+  entry.airportIcon = L.marker([entry.lat, entry.lng], { icon: makeAirportIcon(), interactive: false, zIndexOffset: -100 }).addTo(map);
+  entry.marker = L.marker([entry.lat, entry.lng], { icon: entry.warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
+    .bindPopup(popupBody, { autoPan: false }).addTo(map);
+}
+
+function insertionsSignature(list) {
+  return list.map(function(x){ return x.legIdx + ':' + x.ord + ':' + (x.airport.icao || x.airport.name || ''); }).join('|');
+}
+
+function maybeProposeFuelStops() {
+  if (_fuelSuppress || _fuelProposalOpen || _fuelProposalPending) return;
+  _fuelProposalPending = true;
+  setTimeout(function(){
+    _fuelProposalPending = false;
+    var list = computeAutoFuelInsertions();
+    if (!list.length) { _fuelLastDeclinedSig = null; return; }
+    var sig = insertionsSignature(list);
+    if (sig === _fuelLastDeclinedSig) return;
+    var icaos = list.map(function(x){ return x.airport.icao || x.airport.name || 'airport'; }).join(', ');
+    var msg = 'Fuel range exceeded. Insert ' + list.length + ' fuel stop' + (list.length>1?'s':'') + ': ' + icaos + '?';
+    _fuelProposalOpen = true;
+    showConfirmDialog(msg, function(yes){
+      _fuelProposalOpen = false;
+      if (yes) { _fuelLastDeclinedSig = null; applyFuelInsertions(list); }
+      else { _fuelLastDeclinedSig = sig; }
+    });
+  }, 250);
+}
+
 // ── CALCULATION ───────────────────────────────────────────────────────────────
 function fmtTime(h){
   var hrs=Math.floor(h),min=Math.round((h-hrs)*60);
@@ -4086,6 +4252,7 @@ window.recalc = function() {
   tbl.innerHTML = rows;
 
   updateRangeCircle();
+  maybeProposeFuelStops();
 };
 
 function renderFBOInputs(placed) {
