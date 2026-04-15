@@ -555,7 +555,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-14.21</span>
+    <span style="color:var(--text-muted)">v2026-04-14.22</span>
   </div>
 </header>
 
@@ -2984,6 +2984,8 @@ window.mobileTab = function(tab) {
   if (tab === 'map') {
     mapPanel.classList.add('mobile-active');
     document.getElementById('mnavMap').classList.add('active');
+    var pax = document.getElementById('paxOverlay');
+    if (pax) pax.style.display = 'none';
     // Trigger map resize, fit bounds, and redraw range circle
     setTimeout(function(){
       map.invalidateSize();
@@ -3628,6 +3630,7 @@ window.applyPaxToPayload = function() {
 var paxPopupDismissed = false;
 
 window.showPaxPopup = function() {
+  if (isMobile()) return;
   var overlay = document.getElementById('paxOverlay');
   if (overlay) overlay.style.display = 'flex';
 };
@@ -3855,7 +3858,6 @@ function updateRangeCircle() {
         if (!acPaneOpen) toggleAircraftPane();
         setTimeout(function() { paxPanel.scrollIntoView({ behavior:'smooth', block:'center' }); }, 150);
       }
-      showPaxPopup();
     }
   }
 }
