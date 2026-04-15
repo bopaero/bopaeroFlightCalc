@@ -553,7 +553,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-15.13</span>
+    <span style="color:var(--text-muted)">v2026-04-15.14</span>
   </div>
 </header>
 
@@ -1090,7 +1090,7 @@ function renderWPList() {
   list.innerHTML = '';
   var addBtn = document.getElementById('addWpBtn');
   var originHint = document.getElementById('originHint');
-  if (addBtn) addBtn.textContent = waypoints.length === 0 ? '+ Add Origin' : '+ Add Stop';
+  if (addBtn) addBtn.textContent = waypoints.length === 0 ? '+ Add Origin' : '+ Add Stop or Destination';
   if (originHint) originHint.style.display = 'none';
   var routingIntro = document.getElementById('routingIntro');
   if (routingIntro) routingIntro.style.display = waypoints.length === 0 ? '' : 'none';
