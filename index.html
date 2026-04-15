@@ -553,7 +553,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-15.7</span>
+    <span style="color:var(--text-muted)">v2026-04-15.8</span>
   </div>
 </header>
 
@@ -1843,7 +1843,7 @@ function placeWaypointDirect(id, airport) {
     });
   }
 
-  wp.marker.openPopup();
+  if (isMobile()) wp.marker.openPopup();
 
   var next = null, found = false;
   for (var i = 0; i < waypoints.length; i++) {
@@ -1872,7 +1872,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
   wp.marker = L.marker([originLat, originLng], { icon: makeSearchingIcon(color, num) })
     .bindPopup('<span style="color:'+color+'">Searching for nearest airport...</span>', { autoPan: false })
     .addTo(map);
-  wp.marker.openPopup();
+  if (isMobile()) wp.marker.openPopup();
   updateMode('searching');
 
   findNearestAirport(originLat, originLng, function(airport) {
@@ -1946,7 +1946,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
       });
     }
 
-    wp2.marker.openPopup();
+    if (isMobile()) wp2.marker.openPopup();
 
     // Auto-advance placingId to next unplaced wp (for map-click flow)
     var next = null, found = false;
