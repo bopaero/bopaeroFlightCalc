@@ -553,7 +553,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-15.5</span>
+    <span style="color:var(--text-muted)">v2026-04-15.6</span>
   </div>
 </header>
 
@@ -849,9 +849,9 @@ select option { background:var(--surface2); }
     </div>
     <div class="map-helper-btns">
       <button class="map-helper-btn" id="zoomRouteBtn" onclick="zoomToRoute()" disabled title="Zoom to fit entire route"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="2" cy="2" r="1.5" fill="currentColor" stroke="none"/><circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="5" cy="7" r="1.5" fill="currentColor" stroke="none"/><line x1="2" y1="2" x2="5" y2="7"/><line x1="5" y1="7" x2="12" y2="5"/><line x1="12" y1="5" x2="7" y2="12"/></svg> ROUTE</button>
-      <button class="map-lock-btn locked" id="mapLockBtn" onclick="toggleMapLock(event)" title="Lock map to scroll page">&#x1F512; MAP LOCKED</button>
       <button class="map-helper-btn" id="zoomLastBtn" onclick="zoomToLastStop()" disabled title="Zoom to last added stop">&#x1F4CD; LAST</button>
       <button class="map-helper-btn active" id="rangeToggleBtn" onclick="toggleRangeVisible()" title="Show/hide range circle"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="7" cy="7" r="5.5" stroke-dasharray="2 1.6"/><circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg> RANGE</button>
+      <button class="map-lock-btn locked" id="mapLockBtn" onclick="toggleMapLock(event)" title="Lock map to scroll page">&#x1F512; MAP LOCKED</button>
     </div>
     <div class="map-badge">
       <div class="mode-dot placing" id="modeDot"></div>
