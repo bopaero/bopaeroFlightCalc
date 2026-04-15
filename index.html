@@ -555,7 +555,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-15.2</span>
+    <span style="color:var(--text-muted)">v2026-04-15.3</span>
   </div>
 </header>
 
@@ -1022,6 +1022,13 @@ window.pickAircraftFromPrompt = function(val) {
   var o = document.getElementById('acPickerOverlay');
   if (o) o.style.display = 'none';
   pickAircraft(val, 'A');
+  if (isMobile() && !paxPopupDismissed) {
+    var mapPanel = document.getElementById('mobileMapPanel');
+    if (mapPanel && mapPanel.classList.contains('mobile-active')) {
+      var pax = document.getElementById('paxOverlay');
+      if (pax) pax.style.display = 'flex';
+    }
+  }
 };
 function showConfirmDialog(message, callback) {
   var overlay = document.getElementById('confirmOverlay');
