@@ -558,7 +558,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-17.2</span>
+    <span style="color:var(--text-muted)">v2026-04-17.3</span>
   </div>
 </header>
 
@@ -602,6 +602,10 @@ select option { background:var(--surface2); }
       <button class="add-wp-btn" id="addWpBtn" onclick="addWaypoint()">+ Add Origin</button>
       <div class="map-hint" id="originHint" style="display:none"></div>
       <button class="add-wp-btn" id="returnBtn" onclick="toggleClosedRoute()" style="display:none;color:var(--accent);border-color:var(--accent)">&#x21BA; Return to Origin</button>
+      <label for="fuelOnlyStopsToggle" style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 6px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;color:var(--text-muted);cursor:pointer" title="When enabled, map clicks and address lookups for intermediate stops prefer the nearest airport with matching fuel (100LL or Jet A). Canadian airports are exempt from this filter. Falls back to the nearest airport if none with fuel are within range.">
+        <span>&#x26FD; Fuel stops only</span>
+        <input type="checkbox" id="fuelOnlyStopsToggle" onchange="fuelOnlyStops=this.checked" style="cursor:pointer">
+      </label>
       <button class="clear-all-btn" onclick="clearAll()">&#x2715; Clear All</button>
       <div class="map-hint" id="mapHint">Add a stop, then click the map to place it</div>
     </div>
@@ -1891,6 +1895,20 @@ function placeWaypointFromCoords(id, originLat, originLng) {
   if (isMobile()) wp.marker.openPopup();
   updateMode('searching');
 
+  // Build nearest-airport options: apply fuel filter for intermediate stops
+  // (skips origin — i.e. when no other waypoint is already placed).
+  var _placedCount = 0;
+  for (var _i = 0; _i < waypoints.length; _i++) {
+    if (waypoints[_i].id !== id && waypoints[_i].lat !== null) _placedCount++;
+  }
+  var _isOriginPlacement = _placedCount === 0;
+  var _acA = getAC('A');
+  var _fuelSpdKey = _acA ? String(Math.round(_acA.speed)) : '';
+  var _opts = {};
+  if (fuelOnlyStops && !_isOriginPlacement && _fuelSpdKey) {
+    _opts.requireFuelSpdKey = _fuelSpdKey;
+  }
+
   findNearestAirport(originLat, originLng, function(airport) {
     var wp2 = wpById(id);
     if (!wp2) return;
@@ -1927,7 +1945,10 @@ function placeWaypointFromCoords(id, originLat, originLng) {
       var acA2 = getAC('A');
       var fuelSpdKey2 = acA2 ? String(Math.round(acA2.speed)) : '';
       if (fuelSpdKey2 && !airportHasFuel(wp2, fuelSpdKey2)) {
-        popupBody += '<br><span class="popup-no-fuel" style="color:#f59e0b;font-size:11px">⚠ No fuel services</span>';
+        var fuelWarnMsg = _opts.requireFuelSpdKey
+          ? '\u26A0 No fuel-equipped airport nearby \u2014 showing closest'
+          : '\u26A0 No fuel services';
+        popupBody += '<br><span class="popup-no-fuel" style="color:#f59e0b;font-size:11px">' + fuelWarnMsg + '</span>';
       }
     }
     if (wpIndex === 0) {
@@ -1989,7 +2010,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
     } else if (!paxPopupDismissed) {
       showPaxPopup();
     }
-  });
+  }, _opts);
 }
 
 var DRIVE_ROUTE_MIN_ZOOM = 11;
@@ -2266,41 +2287,35 @@ function getMaxPavedRwyFt(entry) {
          entry.type === 'medium_airport' ? 5000 : 3000;
 }
 
-function findNearestAirport(lat, lng, cb) {
-  // Find nearest airport from local DB instantly — no network call needed
-  var candidate = findNearestDBEntry(lat, lng, 150000);
-  if (!candidate) { cb(null); return; }
+// User toggle: when true, intermediate-stop lookups prefer airports with matching fuel.
+var fuelOnlyStops = false;
 
-  var ap = candidate.entry;
+function findNearestAirport(lat, lng, cb, opts) {
+  opts = opts || {};
+  var requireSpdKey = opts.requireFuelSpdKey || null;
   var thresholds = getRwyThresholds();
+  var fallback = null; // first runway-qualifying airport without fuel; used if no fuel match found
 
-  // Use actual paved runway length if available, otherwise estimate from type
-  var maxRwyFt = getMaxPavedRwyFt(ap);
-
-  // If runway doesn't meet minimum, try next nearest
-  if (maxRwyFt < thresholds.minFt) {
-    var next = findNextNearestDBEntry(lat, lng, candidate.dist);
-    if (next) {
-      findNearestAirport_withCandidate(next, lat, lng, thresholds, cb);
-    } else {
-      cb(null);
+  function tryCandidate(candidate) {
+    if (!candidate) { cb(fallback); return; }
+    var ap = candidate.entry;
+    var maxRwyFt = getMaxPavedRwyFt(ap);
+    if (maxRwyFt < thresholds.minFt) {
+      tryCandidate(findNextNearestDBEntry(lat, lng, candidate.dist));
+      return;
     }
-    return;
+    var airport = { lat: ap.lat, lng: ap.lng, name: ap.name, icao: ap.icao, maxRwyFt: maxRwyFt };
+    if (!requireSpdKey) { cb(airport); return; }
+
+    // Canadian airports (ICAO starts with 'C') are exempt — FAA_FUEL_MAP is US-only
+    var isUS = !(ap.icao && /^C[A-Z]/.test(ap.icao));
+    if (!isUS || airportHasFuel(airport, requireSpdKey)) { cb(airport); return; }
+
+    if (!fallback) fallback = airport;
+    tryCandidate(findNextNearestDBEntry(lat, lng, candidate.dist));
   }
 
-  cb({ lat: ap.lat, lng: ap.lng, name: ap.name, icao: ap.icao, maxRwyFt: maxRwyFt });
-}
-
-function findNearestAirport_withCandidate(candidate, lat, lng, thresholds, cb) {
-  var ap = candidate.entry;
-  var maxRwyFt = getMaxPavedRwyFt(ap);
-  if (maxRwyFt < thresholds.minFt) {
-    var next = findNextNearestDBEntry(lat, lng, candidate.dist);
-    if (next) { findNearestAirport_withCandidate(next, lat, lng, thresholds, cb); }
-    else { cb(null); }
-    return;
-  }
-  cb({ lat: ap.lat, lng: ap.lng, name: ap.name, icao: ap.icao, maxRwyFt: maxRwyFt });
+  tryCandidate(findNearestDBEntry(lat, lng, 150000));
 }
 
 function findNearestDBEntry(lat, lng, maxDistM) {
