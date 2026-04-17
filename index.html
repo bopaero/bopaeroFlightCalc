@@ -558,7 +558,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-17.3</span>
+    <span style="color:var(--text-muted)">v2026-04-17.4</span>
   </div>
 </header>
 
@@ -602,9 +602,9 @@ select option { background:var(--surface2); }
       <button class="add-wp-btn" id="addWpBtn" onclick="addWaypoint()">+ Add Origin</button>
       <div class="map-hint" id="originHint" style="display:none"></div>
       <button class="add-wp-btn" id="returnBtn" onclick="toggleClosedRoute()" style="display:none;color:var(--accent);border-color:var(--accent)">&#x21BA; Return to Origin</button>
-      <label for="fuelOnlyStopsToggle" style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 6px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;color:var(--text-muted);cursor:pointer" title="When enabled, map clicks and address lookups for intermediate stops prefer the nearest airport with matching fuel (100LL or Jet A). Canadian airports are exempt from this filter. Falls back to the nearest airport if none with fuel are within range.">
-        <span>&#x26FD; Fuel stops only</span>
-        <input type="checkbox" id="fuelOnlyStopsToggle" onchange="fuelOnlyStops=this.checked" style="cursor:pointer">
+      <label for="fuelOnlyStopsToggle" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 6px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;color:var(--text-muted);cursor:pointer" title="When enabled, map clicks and address lookups for intermediate stops prefer the nearest airport with matching fuel (100LL or Jet A). Canadian airports are exempt from this filter. Falls back to the nearest airport if none with fuel are within range.">
+        <span>&#x26FD; Only choose Airports with Fuel Services</span>
+        <input type="checkbox" id="fuelOnlyStopsToggle" onchange="onFuelOnlyToggle(this)" style="cursor:pointer;flex-shrink:0">
       </label>
       <button class="clear-all-btn" onclick="clearAll()">&#x2715; Clear All</button>
       <div class="map-hint" id="mapHint">Add a stop, then click the map to place it</div>
@@ -1885,6 +1885,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
   wp.originLat = originLat;
   wp.originLng = originLng;
   wp.driveMi   = null;
+  wp.fromApproximate = true; // placed via click/address, not an explicit airport pick — eligible for retro re-filter
 
   if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
   var color = wpColor(wp.idx);
@@ -2289,6 +2290,27 @@ function getMaxPavedRwyFt(entry) {
 
 // User toggle: when true, intermediate-stop lookups prefer airports with matching fuel.
 var fuelOnlyStops = false;
+
+function onFuelOnlyToggle(cb) {
+  fuelOnlyStops = cb.checked;
+  if (!fuelOnlyStops) return;
+  // Retro re-filter: if the user checks the box after already placing stops, move any
+  // intermediate stop (not origin) that was placed via click/address and lacks matching
+  // fuel to the nearest fuel-equipped airport near its original coordinates.
+  var acA = getAC('A');
+  var spdKey = acA ? String(Math.round(acA.speed)) : '';
+  if (!spdKey) return;
+  var placed = waypoints.filter(function(w){ return w.lat !== null; });
+  for (var i = 1; i < placed.length; i++) { // start at 1 — skip origin
+    var w = placed[i];
+    if (!w.fromApproximate) continue;                        // explicit pick — leave alone
+    if (!w.icao) continue;
+    if (/^C[A-Z]/.test(w.icao)) continue;                    // Canadian — exempt
+    if (airportHasFuel(w, spdKey)) continue;                 // already has fuel — nothing to do
+    if (w.originLat == null || w.originLng == null) continue;
+    placeWaypointFromCoords(w.id, w.originLat, w.originLng);
+  }
+}
 
 function findNearestAirport(lat, lng, cb, opts) {
   opts = opts || {};
