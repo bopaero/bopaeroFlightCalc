@@ -543,6 +543,36 @@ select option { background:var(--surface2); }
 .leaflet-popup-content-wrapper { background:var(--surface); border:1px solid var(--border); border-radius:4px; color:var(--text); box-shadow:0 4px 20px rgba(0,0,0,.6); font-family:var(--mono); font-size:11px; }
 .leaflet-popup-tip { background:var(--surface); }
 .leaflet-popup-content { margin:10px 14px; line-height:1.6; min-width:220px; }
+
+/* Export & Share section */
+.exp-btn-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.exp-btn {
+  width:100%; background:none; border:1px solid var(--border-bright); color:var(--accent);
+  font-family:var(--mono); font-size:12px; letter-spacing:1px; text-transform:uppercase;
+  padding:9px 8px; border-radius:3px; cursor:pointer; transition:all .15s; min-height:40px;
+}
+.exp-btn:hover { border-color:var(--accent); background:rgba(0,212,255,0.06); }
+.exp-btn:active { background:rgba(0,212,255,0.14); }
+.exp-btn.mini { padding:5px 10px; min-height:0; font-size:10px; width:auto; flex-shrink:0; }
+.ff-link {
+  flex:1; display:block; padding:8px 10px; background:var(--surface2);
+  border:1px solid var(--border-bright); border-radius:3px;
+  color:var(--accent2); font-family:var(--mono); font-size:11px; letter-spacing:1px;
+  text-decoration:none; text-align:center; transition:all .15s;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.ff-link:hover, .ff-link:active { border-color:var(--accent2); background:rgba(0,255,157,0.06); }
+.exp-status { font-family:var(--mono); font-size:10px; color:var(--text-muted); margin-top:6px; min-height:12px; }
+#printArea { display:none; }
+
+/* Print layout — hide app chrome, show briefing only */
+@media print {
+  html, body { height:auto !important; overflow:visible !important; background:#fff !important; color:#000 !important; }
+  header, .layout, .map-wrap, #mobileMapPanel, .leaflet-container, .sidebar { display:none !important; }
+  #printArea { display:block !important; padding:24px; background:#fff; color:#000; }
+  #printArea pre { font-family:Menlo,Consolas,monospace; font-size:10px; line-height:1.4; white-space:pre-wrap; margin:0; color:#000; }
+  @page { margin:0.5in; size:letter; }
+}
 </style>
 </head>
 <body>
@@ -558,7 +588,7 @@ select option { background:var(--surface2); }
     <span><span class="pulse"></span>SYSTEM ONLINE</span>
     <span id="clk">--:--:-- UTC</span>
     <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span style="color:var(--text-muted)">v2026-04-17.5</span>
+    <span id="appVersion" style="color:var(--text-muted)">v2026-04-17.6</span>
   </div>
 </header>
 
@@ -765,6 +795,22 @@ select option { background:var(--surface2); }
       <div id="fboList" style="margin-top:6px"></div>
     </div>
 
+    <!-- EXPORT & SHARE -->
+    <div class="sec" id="exportSec" style="display:none">
+      <div class="sec-title">Export &amp; Share</div>
+      <div id="ffLinkRow" style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+        <a id="ffLink" href="#" class="ff-link" target="_blank" rel="noopener">Open in ForeFlight</a>
+        <button type="button" class="exp-btn mini" onclick="copyFFUrl()">Copy</button>
+      </div>
+      <div class="exp-btn-row">
+        <button type="button" class="exp-btn" onclick="exportFPL()">FPL</button>
+        <button type="button" class="exp-btn" onclick="exportGPX()">GPX</button>
+        <button type="button" class="exp-btn" onclick="exportTXT()">Text</button>
+        <button type="button" class="exp-btn" onclick="doPrint()">Print</button>
+      </div>
+      <div id="exportStatus" class="exp-status" aria-live="polite"></div>
+    </div>
+
     <!-- RESULTS -->
     <div class="results-wrap">
       <div class="sec-title">Flight Time Results</div>
@@ -904,6 +950,9 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+var APP_VERSION = 'v2026-04-17.6';
+(function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
+
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
 (function(){
   function mapActive(t){ return t && t.closest && t.closest('#map') && typeof mapLocked !== 'undefined' && !mapLocked; }
@@ -4136,6 +4185,7 @@ window.recalc = function() {
     document.getElementById('emptyMsg').style.display='block';
     document.getElementById('resultsOut').style.display='none';
     updateRangeCircle();
+    refreshExportUI();
     return;
   }
 
@@ -4318,7 +4368,393 @@ window.recalc = function() {
 
   updateRangeCircle();
   maybeProposeFuelStops();
+  refreshExportUI();
 };
+
+// ── EXPORT & SHARE ───────────────────────────────────────────────────────────
+function _xmlEsc(s) {
+  return String(s == null ? '' : s).replace(/[<>&'"]/g, function(c) {
+    return {'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c];
+  });
+}
+function _fileSafe(s, maxLen) {
+  s = String(s || 'trip').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+  if (!s) s = 'trip';
+  maxLen = maxLen || 28;
+  return s.length > maxLen ? s.substring(0, maxLen) : s;
+}
+function _escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[<>&'"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&#39;','"':'&quot;'}[c]; });
+}
+
+function buildTripData() {
+  var placed = waypoints.filter(function(w){ return w.lat !== null; });
+  var acA = getAC('A');
+  var acB = comparisonActive ? getAC('B') : null;
+
+  var wps = placed.map(function(w, i) {
+    var country = 'US';
+    var c0 = (w.icao || '').charAt(0);
+    if (c0 === 'C') country = 'CA';
+    else if (c0 === 'K' || c0 === 'P') country = 'US';
+    else if (c0) country = '__';
+    return {
+      idx: i, icao: w.icao || '', name: w.name || '',
+      lat: w.lat, lng: w.lng, overnight: !!w.overnight,
+      rwyFt: w.rwyFt || 0, country: country
+    };
+  });
+
+  var legs = [], totalMi = 0;
+  for (var i = 1; i < placed.length; i++) {
+    var mi = haversineNm(placed[i-1].lat, placed[i-1].lng, placed[i].lat, placed[i].lng) * 1.15078;
+    legs.push({ from: placed[i-1].icao || placed[i-1].name, to: placed[i].icao || placed[i].name, mi: mi, overnight: !!placed[i].overnight });
+    totalMi += mi;
+  }
+  if (routeClosed && placed.length >= 2) {
+    var miC = haversineNm(placed[placed.length-1].lat, placed[placed.length-1].lng, placed[0].lat, placed[0].lng) * 1.15078;
+    legs.push({ from: placed[placed.length-1].icao || placed[placed.length-1].name, to: placed[0].icao || placed[0].name, mi: miC, overnight: false });
+    totalMi += miC;
+  }
+
+  var perStopEl = document.getElementById('groundMinsPerStop');
+  var perStopMin = perStopEl ? (parseFloat(perStopEl.value) || 35) : 35;
+  var groundStops = Math.max(0, placed.length - 2);
+  var groundHours = (groundStops * perStopMin) / 60;
+
+  if (acA) {
+    legs.forEach(function(l) {
+      l.hrs = l.mi / acA.speed;
+      l.fuelGal = l.hrs * acA.gph;
+    });
+  }
+
+  var totals = { mi: totalMi };
+  if (acA) {
+    totals.flightHrs = totalMi / acA.speed;
+    totals.groundHrs = groundHours;
+    totals.totalHrs = totals.flightHrs + totals.groundHrs;
+    totals.fuelGal = totals.flightHrs * acA.gph;
+    totals.groundStops = groundStops;
+    totals.perStopMin = perStopMin;
+  }
+
+  var costs = null;
+  if (acA) {
+    var spdKey = String(Math.round(acA.speed));
+    var preset = acCostPresets[spdKey];
+    var oilPerHr = preset ? preset.oilPerHr : 0;
+    var consumPerHr = parseFloat((document.getElementById('costConsumables')||{}).value) || 0;
+    var fuelPerHr = consumPerHr - oilPerHr;
+    var gphLookup = acGph[spdKey] || acA.gph || 0;
+    var fuelPriceGal = gphLookup > 0 ? (fuelPerHr / gphLookup) : 0;
+    var acPerHr = parseFloat((document.getElementById('costAcPerHr')||{}).value) || 0;
+    var pilotMin = parseFloat((document.getElementById('costPilotMin')||{}).value) || 0;
+    var pilotMax = parseFloat((document.getElementById('costPilotMax')||{}).value) || 0;
+    var leaseHrsIncl = parseFloat((document.getElementById('leaseHoursIncl')||{}).value) || 0;
+    var overnightCount = placed.filter(function(w){ return w.overnight; }).length;
+    var flyingDays = 1 + overnightCount;
+    var tripDaysVal = (document.getElementById('costTripDays')||{}).value;
+    var tripDays = tripDaysVal ? Math.max(parseFloat(tripDaysVal), flyingDays) : flyingDays;
+
+    var billableHrs = 0, acCost = 0;
+    if (userType === 'lessee') {
+      billableHrs = Math.max(0, totals.flightHrs - leaseHrsIncl);
+      acCost = acPerHr * billableHrs;
+    }
+    var fuelCost = fuelPerHr * totals.flightHrs;
+    var oilCost = oilPerHr * totals.flightHrs;
+    var consumCost = consumPerHr * totals.flightHrs;
+    var pilotLow = pilotMin * flyingDays;
+    var pilotHigh = pilotMax * flyingDays;
+
+    var fboTotal = 0;
+    var fboItems = [];
+    placed.forEach(function(wp) {
+      var inp = document.getElementById('fbo-' + wp.id);
+      var fee = inp ? (parseFloat(inp.value) || 0) : 0;
+      fboTotal += fee;
+      if (fee > 0) fboItems.push({ name: wp.name || wp.icao || 'Stop', fee: fee });
+    });
+    var totalLow = acCost + consumCost + pilotLow + fboTotal;
+    var totalHigh = acCost + consumCost + pilotHigh + fboTotal;
+
+    costs = {
+      userType: userType, acCost: acCost, billableHrs: billableHrs, leaseHrsIncl: leaseHrsIncl,
+      acPerHr: acPerHr, fuelCost: fuelCost, oilCost: oilCost, consumCost: consumCost,
+      pilotLow: pilotLow, pilotHigh: pilotHigh, pilotMin: pilotMin, pilotMax: pilotMax,
+      fboTotal: fboTotal, fboItems: fboItems,
+      totalLow: totalLow, totalHigh: totalHigh,
+      flyingDays: flyingDays, tripDays: tripDays,
+      fuelPriceGal: fuelPriceGal, gph: gphLookup, oilPerHr: oilPerHr
+    };
+  }
+
+  var nasrEl = document.getElementById('nasrCycle');
+  return {
+    version: APP_VERSION,
+    generatedAt: new Date(),
+    nasrCycle: nasrEl ? nasrEl.textContent.replace(/^NASR:\s*/, '') : '',
+    routeClosed: !!routeClosed,
+    waypoints: wps,
+    legs: legs,
+    totals: totals,
+    aircraftA: acA,
+    aircraftB: acB,
+    costs: costs,
+    comparisonActive: !!comparisonActive
+  };
+}
+
+function toForeFlightURL(td) {
+  if (!td.waypoints.length) return '';
+  var toks = td.waypoints.map(function(w) {
+    if (w.icao) return w.icao;
+    return w.lat.toFixed(4) + '%2C' + w.lng.toFixed(4);
+  });
+  if (td.routeClosed && toks.length) toks.push(toks[0]);
+  return 'foreflightmobile://maps/search?q=' + toks.join('+');
+}
+
+function _fplIdent(w) {
+  if (w.icao) return w.icao;
+  var base = _fileSafe(w.name, 12).replace(/-/g,'').toUpperCase();
+  return base || ('WP' + (w.idx + 1));
+}
+
+function toFPL(td) {
+  var xml = '<?xml version="1.0" encoding="utf-8"?>\n';
+  xml += '<flight-plan xmlns="http://www8.garmin.com/xmlschemas/FlightPlan/v1">\n';
+  xml += '  <created>' + td.generatedAt.toISOString() + '</created>\n';
+  var seen = {};
+  var uniq = [];
+  td.waypoints.forEach(function(w) {
+    var id = _fplIdent(w);
+    if (seen[id]) return;
+    seen[id] = true;
+    uniq.push({ id: id, type: w.icao ? 'AIRPORT' : 'USER WAYPOINT', country: w.country, lat: w.lat, lng: w.lng, name: w.name });
+  });
+  xml += '  <waypoint-table>\n';
+  uniq.forEach(function(w) {
+    xml += '    <waypoint>\n';
+    xml += '      <identifier>' + _xmlEsc(w.id) + '</identifier>\n';
+    xml += '      <type>' + w.type + '</type>\n';
+    xml += '      <country-code>' + w.country + '</country-code>\n';
+    xml += '      <lat>' + w.lat.toFixed(6) + '</lat>\n';
+    xml += '      <lon>' + w.lng.toFixed(6) + '</lon>\n';
+    if (w.name) xml += '      <comment>' + _xmlEsc(w.name) + '</comment>\n';
+    xml += '    </waypoint>\n';
+  });
+  xml += '  </waypoint-table>\n';
+  xml += '  <route>\n';
+  xml += '    <route-name>' + _xmlEsc(_fplIdent(td.waypoints[0]) + ' to ' + _fplIdent(td.waypoints[td.waypoints.length-1])) + '</route-name>\n';
+  td.waypoints.forEach(function(w) {
+    xml += '    <route-point>\n';
+    xml += '      <waypoint-identifier>' + _xmlEsc(_fplIdent(w)) + '</waypoint-identifier>\n';
+    xml += '      <waypoint-type>' + (w.icao ? 'AIRPORT' : 'USER WAYPOINT') + '</waypoint-type>\n';
+    xml += '      <waypoint-country-code>' + w.country + '</waypoint-country-code>\n';
+    xml += '    </route-point>\n';
+  });
+  if (td.routeClosed && td.waypoints.length) {
+    var w0 = td.waypoints[0];
+    xml += '    <route-point>\n';
+    xml += '      <waypoint-identifier>' + _xmlEsc(_fplIdent(w0)) + '</waypoint-identifier>\n';
+    xml += '      <waypoint-type>' + (w0.icao ? 'AIRPORT' : 'USER WAYPOINT') + '</waypoint-type>\n';
+    xml += '      <waypoint-country-code>' + w0.country + '</waypoint-country-code>\n';
+    xml += '    </route-point>\n';
+  }
+  xml += '  </route>\n';
+  xml += '</flight-plan>\n';
+  return xml;
+}
+
+function toGPX(td) {
+  var first = td.waypoints[0], last = td.waypoints[td.waypoints.length-1];
+  var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<gpx version="1.1" creator="bop Aero TripCalc ' + APP_VERSION + '" xmlns="http://www.topografix.com/GPX/1/1">\n';
+  xml += '  <rte>\n';
+  xml += '    <name>' + _xmlEsc((first.icao || first.name || '?') + ' to ' + (last.icao || last.name || '?')) + '</name>\n';
+  td.waypoints.forEach(function(w) {
+    xml += '    <rtept lat="' + w.lat.toFixed(6) + '" lon="' + w.lng.toFixed(6) + '">\n';
+    xml += '      <name>' + _xmlEsc(w.icao || w.name || ('WP' + (w.idx + 1))) + '</name>\n';
+    if (w.name && w.icao) xml += '      <desc>' + _xmlEsc(w.name) + '</desc>\n';
+    xml += '    </rtept>\n';
+  });
+  if (td.routeClosed && td.waypoints.length) {
+    var w0 = td.waypoints[0];
+    xml += '    <rtept lat="' + w0.lat.toFixed(6) + '" lon="' + w0.lng.toFixed(6) + '">\n';
+    xml += '      <name>' + _xmlEsc(w0.icao || w0.name || 'WP1') + '</name>\n';
+    xml += '    </rtept>\n';
+  }
+  xml += '  </rte>\n';
+  xml += '</gpx>\n';
+  return xml;
+}
+
+function toText(td) {
+  function pad(s, n, right) { s = String(s); if (s.length >= n) return s; var p = new Array(n - s.length + 1).join(' '); return right ? p + s : s + p; }
+  function fmtHrs(h) { if (h==null||!isFinite(h)) return '—'; var H=Math.floor(h); var M=Math.round((h-H)*60); if (M===60){H++;M=0;} return H+'h '+(M<10?'0':'')+M+'m'; }
+  function fmt$(n) { return '$' + Math.round(n).toLocaleString(); }
+  function fmtRange(lo, hi) { return lo===hi ? fmt$(lo) : fmt$(lo) + ' – ' + fmt$(hi); }
+  var dt = td.generatedAt;
+  var dateStr = dt.getFullYear() + '-' + ('0'+(dt.getMonth()+1)).slice(-2) + '-' + ('0'+dt.getDate()).slice(-2) +
+                ' ' + ('0'+dt.getHours()).slice(-2) + ':' + ('0'+dt.getMinutes()).slice(-2);
+  var sep = '================================================================';
+  var lines = [];
+  lines.push('bop Aero TripCalc — Trip Briefing');
+  lines.push('Generated: ' + dateStr + '   App: ' + td.version + '   NASR: ' + (td.nasrCycle || '—'));
+  lines.push(sep);
+  var routeIds = td.waypoints.map(function(w){ return w.icao || (w.lat.toFixed(3)+','+w.lng.toFixed(3)); });
+  var routeStr = routeIds.join(' → ');
+  if (td.routeClosed) routeStr += ' → ' + routeIds[0] + '  (closed loop)';
+  lines.push('Route:    ' + routeStr);
+  if (td.aircraftA) lines.push('Aircraft: ' + td.aircraftA.name + '  (' + Math.round(td.aircraftA.speed) + ' mph, ' + td.aircraftA.gph + ' GPH)');
+  else lines.push('Aircraft: (no aircraft selected)');
+  if (td.aircraftB) lines.push('Compare:  ' + td.aircraftB.name + '  (' + Math.round(td.aircraftB.speed) + ' mph, ' + td.aircraftB.gph + ' GPH)');
+  lines.push('');
+  lines.push('LEGS');
+  var hasFuel = td.aircraftA && td.aircraftA.gph > 0;
+  var header = '  ' + pad('#',3) + pad('FROM',8) + pad('TO',8) + pad('DIST',10,true) + '  ' + pad('TIME',10);
+  if (hasFuel) header += '  ' + pad('FUEL',10,true);
+  lines.push(header);
+  var day = 1;
+  td.legs.forEach(function(l, i) {
+    var row = '  ' + pad(String(i+1),3) + pad(String(l.from||'').substring(0,7),8) + pad(String(l.to||'').substring(0,7),8) + pad(Math.round(l.mi)+' mi',10,true) + '  ' + pad(fmtHrs(l.hrs),10);
+    if (hasFuel && l.fuelGal != null) row += '  ' + pad(l.fuelGal.toFixed(1)+' gal',10,true);
+    lines.push(row);
+    if (l.overnight) { day++; lines.push('    --- OVERNIGHT --- DAY ' + day + ' ---'); }
+  });
+  var overnights = td.waypoints.filter(function(w){ return w.overnight; });
+  if (overnights.length) {
+    lines.push('');
+    lines.push('Overnights: ' + overnights.map(function(w){ return w.icao || w.name; }).join(', '));
+  }
+  lines.push('');
+  lines.push('TOTALS');
+  lines.push('  Distance  ' + Math.round(td.totals.mi) + ' mi');
+  if (td.totals.flightHrs != null) {
+    lines.push('  Flight    ' + fmtHrs(td.totals.flightHrs));
+    lines.push('  Ground    ' + fmtHrs(td.totals.groundHrs) + '  (' + td.totals.groundStops + ' stop' + (td.totals.groundStops===1?'':'s') + ' × ' + td.totals.perStopMin + ' min)');
+    lines.push('  Total     ' + fmtHrs(td.totals.totalHrs));
+    if (hasFuel) lines.push('  Fuel      ' + td.totals.fuelGal.toFixed(1) + ' gal');
+  } else {
+    lines.push('  (select an aircraft to see time and fuel)');
+  }
+  if (td.costs) {
+    var c = td.costs;
+    lines.push('');
+    lines.push('COSTS  (' + c.userType + ')');
+    if (c.userType === 'lessee') {
+      var acLbl = c.billableHrs > 0 ? 'Aircraft (' + c.billableHrs.toFixed(1) + ' hr over lease)' : 'Aircraft (within lease)';
+      lines.push('  ' + pad(acLbl, 36) + fmt$(c.acCost));
+    }
+    lines.push('  ' + pad('Fuel',36) + fmt$(c.fuelCost));
+    lines.push('  ' + pad('Oil',36) + fmt$(c.oilCost));
+    lines.push('  ' + pad('Pilot (' + c.flyingDays + ' flying day' + (c.flyingDays===1?'':'s') + ')',36) + fmtRange(c.pilotLow, c.pilotHigh));
+    if (c.fboItems.length) {
+      c.fboItems.forEach(function(f){ lines.push('  ' + pad('  FBO: ' + f.name.substring(0,28),36) + fmt$(f.fee)); });
+      lines.push('  ' + pad('FBO Total',36) + fmt$(c.fboTotal));
+    } else {
+      lines.push('  ' + pad('FBO Fees',36) + fmt$(0));
+    }
+    lines.push('  ' + new Array(45).join('-'));
+    lines.push('  ' + pad('TOTAL',36) + fmtRange(c.totalLow, c.totalHigh));
+    if (c.gph) lines.push('  (Fuel based on $' + c.fuelPriceGal.toFixed(2) + '/gal at ' + c.gph + ' GPH)');
+  }
+  lines.push('');
+  lines.push(sep);
+  lines.push('Generated by bop Aero TripCalc ' + td.version);
+  return lines.join('\n');
+}
+
+// ── Export handlers ──────────────────────────────────────────────────────────
+function _flashExportStatus(msg) {
+  var el = document.getElementById('exportStatus');
+  if (!el) return;
+  el.textContent = msg;
+  clearTimeout(_flashExportStatus._t);
+  _flashExportStatus._t = setTimeout(function(){ el.textContent = ''; }, 2200);
+}
+function downloadBlob(filename, mime, content) {
+  var blob = new Blob([content], { type: mime });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 200);
+}
+function _exportFileBase(td) {
+  var first = td.waypoints[0];
+  var last = td.waypoints[td.waypoints.length - 1];
+  var a = (first && first.icao) || 'WP';
+  var b = (last && last.icao) || 'WP';
+  return _fileSafe(a + '-' + b, 28);
+}
+function exportFPL() {
+  var td = buildTripData();
+  if (td.waypoints.length < 2) return;
+  var fname = _exportFileBase(td) + '.fpl';
+  downloadBlob(fname, 'application/xml', toFPL(td));
+  _flashExportStatus('Downloaded ' + fname);
+}
+function exportGPX() {
+  var td = buildTripData();
+  if (td.waypoints.length < 2) return;
+  var fname = _exportFileBase(td) + '.gpx';
+  downloadBlob(fname, 'application/gpx+xml', toGPX(td));
+  _flashExportStatus('Downloaded ' + fname);
+}
+function exportTXT() {
+  var td = buildTripData();
+  if (td.waypoints.length < 2) return;
+  var fname = _exportFileBase(td) + '.txt';
+  downloadBlob(fname, 'text/plain;charset=utf-8', toText(td));
+  _flashExportStatus('Downloaded ' + fname);
+}
+function _fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  ta.remove();
+}
+function copyFFUrl() {
+  var link = document.getElementById('ffLink');
+  var url = link ? link.href : '';
+  if (!url || url === window.location.href + '#') return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function(){ _flashExportStatus('Copied'); },
+      function(){ _fallbackCopy(url); _flashExportStatus('Copied'); });
+  } else {
+    _fallbackCopy(url);
+    _flashExportStatus('Copied');
+  }
+}
+function doPrint() {
+  var td = buildTripData();
+  if (td.waypoints.length < 2) return;
+  var area = document.getElementById('printArea');
+  if (area) area.innerHTML = '<pre>' + _escapeHtml(toText(td)) + '</pre>';
+  window.print();
+}
+function refreshExportUI() {
+  var sec = document.getElementById('exportSec');
+  if (!sec) return;
+  var placedCount = waypoints.filter(function(w){ return w.lat !== null; }).length;
+  if (placedCount < 2) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  var td = buildTripData();
+  var url = toForeFlightURL(td);
+  var link = document.getElementById('ffLink');
+  if (link) {
+    link.href = url;
+    var first = td.waypoints[0];
+    var last = td.waypoints[td.waypoints.length - 1];
+    var a = first.icao || (first.lat.toFixed(2)+','+first.lng.toFixed(2));
+    var b = last.icao || (last.lat.toFixed(2)+','+last.lng.toFixed(2));
+    link.textContent = 'Open in ForeFlight (' + a + ' → ' + b + ')';
+  }
+}
 
 function renderFBOInputs(placed) {
   var container = document.getElementById('fboList');
@@ -4610,5 +5046,6 @@ document.addEventListener('click', function() {
   if (mapLocked) unlockMap();
 }, { once: false });
 </script>
+<div id="printArea" aria-hidden="true"></div>
 </body>
 </html>
