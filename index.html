@@ -399,6 +399,10 @@ select option { background:var(--surface2); }
   .hdr-right { flex-direction:column; align-items:flex-end; gap:2px; }
   .hdr-right span:not(:first-child) { display:none; } /* hide clock/version on mobile */
   .hdr-right #nasrCycle { display:inline; font-size:9px; } /* show NASR status on mobile */
+  .hdr-cluster { gap:10px; }
+  .hdr-export-label, .hdr-export-caret { display:none; }
+  .hdr-export-icon { display:inline-block; }
+  .hdr-export-btn { padding:6px 8px; }
 
   .layout { flex-direction:column; flex:1; position:relative; }
 
@@ -544,25 +548,33 @@ select option { background:var(--surface2); }
 .leaflet-popup-tip { background:var(--surface); }
 .leaflet-popup-content { margin:10px 14px; line-height:1.6; min-width:220px; }
 
-/* Export & Share section */
-.exp-btn-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-.exp-btn {
-  width:100%; background:none; border:1px solid var(--border-bright); color:var(--accent);
-  font-family:var(--mono); font-size:12px; letter-spacing:1px; text-transform:uppercase;
-  padding:9px 8px; border-radius:3px; cursor:pointer; transition:all .15s; min-height:40px;
+/* Header export dropdown */
+.hdr-cluster { display:flex; align-items:center; gap:16px; }
+.hdr-export { position:relative; }
+.hdr-export-btn {
+  background:none; border:1px solid var(--border-bright); color:var(--accent);
+  font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase;
+  padding:6px 10px; border-radius:3px; cursor:pointer; transition:all .15s;
+  display:inline-flex; align-items:center; gap:6px; line-height:1;
 }
-.exp-btn:hover { border-color:var(--accent); background:rgba(0,212,255,0.06); }
-.exp-btn:active { background:rgba(0,212,255,0.14); }
-.exp-btn.mini { padding:5px 10px; min-height:0; font-size:10px; width:auto; flex-shrink:0; }
-.ff-link {
-  flex:1; display:block; padding:8px 10px; background:var(--surface2);
-  border:1px solid var(--border-bright); border-radius:3px;
-  color:var(--accent2); font-family:var(--mono); font-size:11px; letter-spacing:1px;
-  text-decoration:none; text-align:center; transition:all .15s;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+.hdr-export-btn:hover { border-color:var(--accent); background:rgba(0,212,255,0.06); }
+.hdr-export-btn[aria-expanded="true"] { border-color:var(--accent); background:rgba(0,212,255,0.10); }
+.hdr-export-icon { width:15px; height:15px; display:none; }
+.hdr-export-caret { font-size:9px; opacity:0.7; }
+.hdr-export-menu {
+  display:none; position:absolute; top:calc(100% + 6px); right:0; z-index:1000;
+  min-width:190px; background:var(--surface); border:1px solid var(--border-bright);
+  border-radius:3px; box-shadow:0 6px 24px rgba(0,0,0,.5); padding:4px;
 }
-.ff-link:hover, .ff-link:active { border-color:var(--accent2); background:rgba(0,255,157,0.06); }
-.exp-status { font-family:var(--mono); font-size:10px; color:var(--text-muted); margin-top:6px; min-height:12px; }
+.hdr-export.open .hdr-export-menu { display:block; }
+.hdr-export-item {
+  display:block; width:100%; text-align:left; background:none; border:none;
+  color:var(--accent); font-family:var(--mono); font-size:12px; letter-spacing:1px;
+  text-transform:uppercase; padding:8px 10px; border-radius:2px; cursor:pointer;
+  text-decoration:none; white-space:nowrap; transition:background .1s;
+  box-sizing:border-box;
+}
+.hdr-export-item:hover, .hdr-export-item:focus { background:rgba(0,212,255,0.08); outline:none; }
 #printArea { display:none; }
 
 /* Print layout — hide app chrome, show briefing only */
@@ -584,11 +596,31 @@ select option { background:var(--surface2); }
     <div class="logo-divider" style="width:1px;height:24px;background:#fff;margin:0 6px;flex-shrink:0;align-self:center"></div>
     <div class="logo-title">Trip<span>Calc</span></div>
   </div>
-  <div class="hdr-right">
-    <span><span class="pulse"></span>SYSTEM ONLINE</span>
-    <span id="clk">--:--:-- UTC</span>
-    <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-    <span id="appVersion" style="color:var(--text-muted)">v2026-04-17.6</span>
+  <div class="hdr-cluster">
+    <div id="exportMenu" class="hdr-export" style="display:none">
+      <button type="button" class="hdr-export-btn" onclick="toggleExportMenu(event)" aria-haspopup="true" aria-expanded="false" aria-label="Export">
+        <span class="hdr-export-label">Export</span>
+        <svg class="hdr-export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>
+          <polyline points="16 6 12 2 8 6"/>
+          <line x1="12" y1="2" x2="12" y2="15"/>
+        </svg>
+        <span class="hdr-export-caret">&#9662;</span>
+      </button>
+      <div class="hdr-export-menu" role="menu">
+        <a id="ffLink" class="hdr-export-item" href="#" target="_blank" rel="noopener" role="menuitem" onclick="closeExportMenu()">Open in ForeFlight</a>
+        <button type="button" class="hdr-export-item" onclick="exportFPL(); closeExportMenu()" role="menuitem">FPL</button>
+        <button type="button" class="hdr-export-item" onclick="exportGPX(); closeExportMenu()" role="menuitem">GPX</button>
+        <button type="button" class="hdr-export-item" onclick="exportTXT(); closeExportMenu()" role="menuitem">Text</button>
+        <button type="button" class="hdr-export-item" onclick="doPrint(); closeExportMenu()" role="menuitem">Print</button>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <span><span class="pulse"></span>SYSTEM ONLINE</span>
+      <span id="clk">--:--:-- UTC</span>
+      <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
+      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.1</span>
+    </div>
   </div>
 </header>
 
@@ -793,22 +825,6 @@ select option { background:var(--surface2); }
         </div>
       </div>
       <div id="fboList" style="margin-top:6px"></div>
-    </div>
-
-    <!-- EXPORT & SHARE -->
-    <div class="sec" id="exportSec" style="display:none">
-      <div class="sec-title">Export &amp; Share</div>
-      <div id="ffLinkRow" style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
-        <a id="ffLink" href="#" class="ff-link" target="_blank" rel="noopener">Open in ForeFlight</a>
-        <button type="button" class="exp-btn mini" onclick="copyFFUrl()">Copy</button>
-      </div>
-      <div class="exp-btn-row">
-        <button type="button" class="exp-btn" onclick="exportFPL()">FPL</button>
-        <button type="button" class="exp-btn" onclick="exportGPX()">GPX</button>
-        <button type="button" class="exp-btn" onclick="exportTXT()">Text</button>
-        <button type="button" class="exp-btn" onclick="doPrint()">Print</button>
-      </div>
-      <div id="exportStatus" class="exp-status" aria-live="polite"></div>
     </div>
 
     <!-- RESULTS -->
@@ -4668,13 +4684,6 @@ function toText(td) {
 }
 
 // ── Export handlers ──────────────────────────────────────────────────────────
-function _flashExportStatus(msg) {
-  var el = document.getElementById('exportStatus');
-  if (!el) return;
-  el.textContent = msg;
-  clearTimeout(_flashExportStatus._t);
-  _flashExportStatus._t = setTimeout(function(){ el.textContent = ''; }, 2200);
-}
 function downloadBlob(filename, mime, content) {
   var blob = new Blob([content], { type: mime });
   var url = URL.createObjectURL(blob);
@@ -4693,42 +4702,17 @@ function _exportFileBase(td) {
 function exportFPL() {
   var td = buildTripData();
   if (td.waypoints.length < 2) return;
-  var fname = _exportFileBase(td) + '.fpl';
-  downloadBlob(fname, 'application/xml', toFPL(td));
-  _flashExportStatus('Downloaded ' + fname);
+  downloadBlob(_exportFileBase(td) + '.fpl', 'application/xml', toFPL(td));
 }
 function exportGPX() {
   var td = buildTripData();
   if (td.waypoints.length < 2) return;
-  var fname = _exportFileBase(td) + '.gpx';
-  downloadBlob(fname, 'application/gpx+xml', toGPX(td));
-  _flashExportStatus('Downloaded ' + fname);
+  downloadBlob(_exportFileBase(td) + '.gpx', 'application/gpx+xml', toGPX(td));
 }
 function exportTXT() {
   var td = buildTripData();
   if (td.waypoints.length < 2) return;
-  var fname = _exportFileBase(td) + '.txt';
-  downloadBlob(fname, 'text/plain;charset=utf-8', toText(td));
-  _flashExportStatus('Downloaded ' + fname);
-}
-function _fallbackCopy(text) {
-  var ta = document.createElement('textarea');
-  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-  document.body.appendChild(ta); ta.select();
-  try { document.execCommand('copy'); } catch (e) {}
-  ta.remove();
-}
-function copyFFUrl() {
-  var link = document.getElementById('ffLink');
-  var url = link ? link.href : '';
-  if (!url || url === window.location.href + '#') return;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(function(){ _flashExportStatus('Copied'); },
-      function(){ _fallbackCopy(url); _flashExportStatus('Copied'); });
-  } else {
-    _fallbackCopy(url);
-    _flashExportStatus('Copied');
-  }
+  downloadBlob(_exportFileBase(td) + '.txt', 'text/plain;charset=utf-8', toText(td));
 }
 function doPrint() {
   var td = buildTripData();
@@ -4737,11 +4721,38 @@ function doPrint() {
   if (area) area.innerHTML = '<pre>' + _escapeHtml(toText(td)) + '</pre>';
   window.print();
 }
+function toggleExportMenu(ev) {
+  if (ev) ev.stopPropagation();
+  var menu = document.getElementById('exportMenu');
+  if (!menu) return;
+  var btn = menu.querySelector('.hdr-export-btn');
+  var open = menu.classList.toggle('open');
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+function closeExportMenu() {
+  var menu = document.getElementById('exportMenu');
+  if (!menu) return;
+  menu.classList.remove('open');
+  var btn = menu.querySelector('.hdr-export-btn');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('exportMenu');
+  if (!menu || !menu.classList.contains('open')) return;
+  if (!menu.contains(e.target)) closeExportMenu();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeExportMenu();
+});
 function refreshExportUI() {
-  var sec = document.getElementById('exportSec');
+  var sec = document.getElementById('exportMenu');
   if (!sec) return;
   var placedCount = waypoints.filter(function(w){ return w.lat !== null; }).length;
-  if (placedCount < 2) { sec.style.display = 'none'; return; }
+  if (placedCount < 2) {
+    sec.style.display = 'none';
+    closeExportMenu();
+    return;
+  }
   sec.style.display = '';
   var td = buildTripData();
   var url = toForeFlightURL(td);
@@ -4752,7 +4763,7 @@ function refreshExportUI() {
     var last = td.waypoints[td.waypoints.length - 1];
     var a = first.icao || (first.lat.toFixed(2)+','+first.lng.toFixed(2));
     var b = last.icao || (last.lat.toFixed(2)+','+last.lng.toFixed(2));
-    link.textContent = 'Open in ForeFlight (' + a + ' → ' + b + ')';
+    link.textContent = 'ForeFlight (' + a + '→' + b + ')';
   }
 }
 
