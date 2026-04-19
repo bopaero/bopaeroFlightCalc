@@ -635,7 +635,7 @@ select option { background:var(--surface2); }
       <span><span class="pulse"></span>SYSTEM ONLINE</span>
       <span id="clk">--:--:-- UTC</span>
       <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.15</span>
+      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.16</span>
     </div>
   </div>
 </header>
@@ -982,7 +982,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-19.15';
+var APP_VERSION = 'v2026-04-19.16';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1109,7 +1109,7 @@ function focusSelectedWaypoint(wp) {
   } else {
     map.setView([wp.lat, wp.lng], 12, { animate: true });
   }
-  if (wp.marker) wp.marker.openPopup();
+  if (isMobile() && wp.marker) wp.marker.openPopup();
 }
 
 function clearAll() {
