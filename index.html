@@ -577,6 +577,16 @@ select option { background:var(--surface2); }
   box-sizing:border-box;
 }
 .hdr-export-item:hover, .hdr-export-item:focus { background:rgba(0,212,255,0.08); outline:none; }
+.hdr-export-divider { height:1px; background:var(--border); margin:4px 2px; }
+.hdr-toast {
+  position:fixed; top:60px; right:20px; z-index:5000;
+  background:var(--surface); border:1px solid var(--accent); color:var(--accent);
+  font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase;
+  padding:8px 14px; border-radius:3px; box-shadow:0 4px 16px rgba(0,0,0,.5);
+  opacity:0; transition:opacity .25s; pointer-events:none;
+}
+.hdr-toast.show { opacity:1; }
+@media (max-width:768px) { .hdr-toast { top:52px; right:14px; font-size:10px; padding:7px 12px; } }
 #printArea { display:none; }
 
 /* Print layout — hide app chrome, show briefing only */
@@ -609,7 +619,9 @@ select option { background:var(--surface2); }
         <span class="hdr-export-caret">&#9662;</span>
       </button>
       <div class="hdr-export-menu" role="menu">
+        <button type="button" class="hdr-export-item" onclick="copyRouteString(); closeExportMenu()" role="menuitem">Copy Route</button>
         <a id="ffLink" class="hdr-export-item" href="#" target="_blank" rel="noopener" role="menuitem" onclick="closeExportMenu()">Open in ForeFlight</a>
+        <div class="hdr-export-divider" role="separator"></div>
         <button type="button" class="hdr-export-item" onclick="exportFPL(); closeExportMenu()" role="menuitem">FPL</button>
         <button type="button" class="hdr-export-item" onclick="exportGPX(); closeExportMenu()" role="menuitem">GPX</button>
         <button type="button" class="hdr-export-item" onclick="exportTXT(); closeExportMenu()" role="menuitem">Text</button>
@@ -620,7 +632,7 @@ select option { background:var(--surface2); }
       <span><span class="pulse"></span>SYSTEM ONLINE</span>
       <span id="clk">--:--:-- UTC</span>
       <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.6</span>
+      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.7</span>
     </div>
   </div>
 </header>
@@ -967,7 +979,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-19.6';
+var APP_VERSION = 'v2026-04-19.7';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -4721,6 +4733,41 @@ function doPrint() {
   var area = document.getElementById('printArea');
   if (area) area.innerHTML = '<pre>' + _escapeHtml(toText(td)) + '</pre>';
   window.print();
+}
+function _flashToast(msg) {
+  var existing = document.getElementById('hdrToast');
+  if (existing) existing.remove();
+  var t = document.createElement('div');
+  t.id = 'hdrToast'; t.className = 'hdr-toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(function(){ t.classList.add('show'); });
+  setTimeout(function(){ t.classList.remove('show'); }, 1500);
+  setTimeout(function(){ if (t.parentNode) t.remove(); }, 1900);
+}
+function copyRouteString() {
+  var td = buildTripData();
+  if (td.waypoints.length < 2) return;
+  var parts = td.waypoints.map(function(wp) {
+    return wp.icao || (wp.lat.toFixed(4) + '/' + wp.lng.toFixed(4));
+  });
+  var route = parts.join(' ');
+  function ok(){ _flashToast('Route copied: ' + route); }
+  function fail(){ _flashToast('Copy failed'); }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(route).then(ok, function(){
+      var ta = document.createElement('textarea');
+      ta.value = route; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); ok(); } catch (e) { fail(); }
+      ta.remove();
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = route; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); ok(); } catch (e) { fail(); }
+    ta.remove();
+  }
 }
 function toggleExportMenu(ev) {
   if (ev) ev.stopPropagation();
