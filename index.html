@@ -635,7 +635,7 @@ select option { background:var(--surface2); }
       <span><span class="pulse"></span>SYSTEM ONLINE</span>
       <span id="clk">--:--:-- UTC</span>
       <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.13</span>
+      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.14</span>
     </div>
   </div>
 </header>
@@ -982,7 +982,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-19.13';
+var APP_VERSION = 'v2026-04-19.14';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1449,7 +1449,7 @@ function rePlaceWP(id) {
     // Clear placed state so the address/click alternatives show again
     if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
     wp.lat = null; wp.lng = null; wp.name = null;
-    wp.icao = null; wp.localCode = null; wp.rwyFt = 0; wp.warn = false;
+    wp.icao = null; wp.localCode = null; wp.icaoCode = null; wp.rwyFt = 0; wp.warn = false;
     wp.driveMi = null; wp.originLat = null; wp.originLng = null;
     wp.addrInput = '';
     // Re-index not needed, just re-draw
@@ -1675,6 +1675,7 @@ function lookupByIdentifier(id, code, input) {
   wp.name  = match.name;
   wp.icao  = match.icao;
   wp.localCode = match.localCode || null;
+  wp.icaoCode  = match.icaoCode || null;
   wp.rwyFt = rwyFt;
   wp.warn  = warn;
   wp.originLat = match.lat;
@@ -1938,6 +1939,7 @@ function placeWaypointDirect(id, airport) {
   wp.name  = airport.name;
   wp.icao  = airport.icao;
   wp.localCode = airport.localCode || null;
+  wp.icaoCode  = airport.icaoCode || null;
   wp.rwyFt = rwyFt;
   wp.warn  = warn;
 
@@ -2046,6 +2048,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
     wp2.name  = name;
     wp2.icao  = icao;
     wp2.localCode = (airport && airport.localCode) ? airport.localCode : null;
+    wp2.icaoCode  = (airport && airport.icaoCode) ? airport.icaoCode : null;
     wp2.rwyFt = rwyFt;
     wp2.warn  = warn;
 
@@ -2440,7 +2443,7 @@ function findNearestAirport(lat, lng, cb, opts) {
       tryCandidate(findNextNearestDBEntry(lat, lng, candidate.dist));
       return;
     }
-    var airport = { lat: ap.lat, lng: ap.lng, name: ap.name, icao: ap.icao, localCode: ap.localCode || null, maxRwyFt: maxRwyFt };
+    var airport = { lat: ap.lat, lng: ap.lng, name: ap.name, icao: ap.icao, localCode: ap.localCode || null, icaoCode: ap.icaoCode || null, maxRwyFt: maxRwyFt };
     if (!requireSpdKey) { cb(airport); return; }
 
     // Canadian airports (ICAO starts with 'C') are exempt — FAA_FUEL_MAP is US-only
@@ -2584,6 +2587,7 @@ var CITY_CACHE = null;
       var iRegion= hdr.indexOf('iso_region');
       var iSched = hdr.indexOf('scheduled_service');
       var iLocal = hdr.indexOf('local_code');
+      var iIcaoCode = hdr.indexOf('icao_code');
       var iKeywords = hdr.indexOf('keywords');
       console.log('CSV header indices — ident:'+iIdent+' type:'+iType+' name:'+iName+' lat:'+iLat+' lng:'+iLng+' country:'+iCtry);
       var arr = [];
@@ -2597,6 +2601,7 @@ var CITY_CACHE = null;
         var name = stripQ(cols[iName]);
         var ident = stripQ(cols[iIdent]);
         var localCode = iLocal >= 0 ? stripQ(cols[iLocal]) : '';
+        var icaoCode = iIcaoCode >= 0 ? stripQ(cols[iIcaoCode]) : '';
         var nameLower = name.toLowerCase();
         var keywords = iKeywords >= 0 ? stripQ(cols[iKeywords]).toLowerCase() : '';
         // DC SFRA — restricted to general aviation
@@ -2617,7 +2622,7 @@ var CITY_CACHE = null;
         var lat = parseFloat(cols[iLat]);
         var lng = parseFloat(cols[iLng]);
         if (isNaN(lat) || isNaN(lng)) continue;
-        arr.push({ icao: ident, name: name, lat: lat, lng: lng, type: type, localCode: localCode, country: ctry, municipality: stripQ(cols[iMuni] || '').toLowerCase(), region: stripQ(cols[iRegion] || '').toLowerCase() });
+        arr.push({ icao: ident, name: name, lat: lat, lng: lng, type: type, localCode: localCode, icaoCode: icaoCode, country: ctry, municipality: stripQ(cols[iMuni] || '').toLowerCase(), region: stripQ(cols[iRegion] || '').toLowerCase() });
       }
       OA_CACHE = arr;
       OA_READY = true;
@@ -4481,7 +4486,7 @@ function buildTripData() {
     else if (c0 === 'K' || c0 === 'P') country = 'US';
     else if (c0) country = '__';
     return {
-      idx: i, icao: w.icao || '', localCode: w.localCode || '', name: w.name || '',
+      idx: i, icao: w.icao || '', localCode: w.localCode || '', icaoCode: w.icaoCode || '', name: w.name || '',
       lat: w.lat, lng: w.lng, overnight: !!w.overnight,
       rwyFt: w.rwyFt || 0, country: country
     };
@@ -4601,7 +4606,8 @@ function toForeFlightURL(td) {
 
 function _exportIdent(w) {
   if (!w || !w.icao) return '';
-  if (w.localCode && w.localCode.length === 3 && w.localCode !== w.icao) return w.localCode;
+  // No real ICAO (OurAirports icao_code empty) → export the 3-char FAA local code
+  if (!w.icaoCode && w.localCode) return w.localCode;
   return w.icao;
 }
 function _fplIdent(w) {
@@ -5114,6 +5120,7 @@ window.addFavoriteWP = function(icao) {
   wp.name  = name;
   wp.icao  = icao;
   wp.localCode = info ? (info.localCode || null) : null;
+  wp.icaoCode  = info ? (info.icaoCode || null) : null;
   wp.rwyFt = rwyFt;
   wp.warn  = warn;
 
