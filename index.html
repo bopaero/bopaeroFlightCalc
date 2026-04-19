@@ -399,10 +399,6 @@ select option { background:var(--surface2); }
   .hdr-right { flex-direction:column; align-items:flex-end; gap:2px; }
   .hdr-right span:not(:first-child) { display:none; } /* hide clock/version on mobile */
   .hdr-right #nasrCycle { display:inline; font-size:9px; } /* show NASR status on mobile */
-  .hdr-cluster { gap:10px; }
-  .hdr-export-label, .hdr-export-caret { display:none; }
-  .hdr-export-icon { display:inline-block; }
-  .hdr-export-btn { padding:6px 8px; }
 
   .layout { flex-direction:column; flex:1; position:relative; }
 
@@ -560,6 +556,12 @@ select option { background:var(--surface2); }
 .hdr-export-btn:hover { border-color:var(--accent); background:rgba(0,212,255,0.06); }
 .hdr-export-btn[aria-expanded="true"] { border-color:var(--accent); background:rgba(0,212,255,0.10); }
 .hdr-export-icon { width:18px; height:18px; display:none; }
+@media (max-width: 768px) {
+  .hdr-cluster { gap:10px; }
+  .hdr-export-label, .hdr-export-caret { display:none; }
+  .hdr-export-icon { display:inline-block; }
+  .hdr-export-btn { padding:6px 8px; }
+}
 .hdr-export-caret { font-size:9px; opacity:0.7; }
 .hdr-export-menu {
   display:none; position:absolute; top:calc(100% + 6px); right:0; z-index:3000;
@@ -618,7 +620,7 @@ select option { background:var(--surface2); }
       <span><span class="pulse"></span>SYSTEM ONLINE</span>
       <span id="clk">--:--:-- UTC</span>
       <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.5</span>
+      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.6</span>
     </div>
   </div>
 </header>
@@ -965,7 +967,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-19.5';
+var APP_VERSION = 'v2026-04-19.6';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
