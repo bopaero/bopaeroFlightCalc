@@ -557,6 +557,7 @@ select option { background:var(--surface2); }
 .hdr-export-btn:hover { border-color:var(--accent); background:rgba(0,212,255,0.06); }
 .hdr-export-btn[aria-expanded="true"] { border-color:var(--accent); background:rgba(0,212,255,0.10); }
 .hdr-export-icon { width:18px; height:18px; display:none; }
+#ffLink { display:none; }
 @media (max-width: 768px) {
   .hdr-cluster { gap:10px; }
   .hdr-export-label, .hdr-export-caret { display:none; }
@@ -579,7 +580,6 @@ select option { background:var(--surface2); }
   box-sizing:border-box;
 }
 .hdr-export-item:hover, .hdr-export-item:focus { background:rgba(0,212,255,0.08); outline:none; }
-#ffLink { display:none; }
 .hdr-export-divider { height:1px; background:var(--border); margin:4px 2px; }
 .hdr-toast {
   position:fixed; top:60px; right:20px; z-index:5000;
@@ -635,7 +635,7 @@ select option { background:var(--surface2); }
       <span><span class="pulse"></span>SYSTEM ONLINE</span>
       <span id="clk">--:--:-- UTC</span>
       <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.10</span>
+      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.11</span>
     </div>
   </div>
 </header>
@@ -982,7 +982,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-19.10';
+var APP_VERSION = 'v2026-04-19.11';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1090,17 +1090,7 @@ function selectWaypoint(id) {
   var wp = wpById(id);
   if (!wp || wp.lat === null || !wp.marker) return;
   selectedWpId = id;
-  if (isMobile()) {
-    var mapPanel = document.getElementById('mobileMapPanel');
-    if (mapPanel && !mapPanel.classList.contains('mobile-active')) {
-      mobileTab('map');
-      setTimeout(function(){ focusSelectedWaypoint(wp); }, 200);
-    } else {
-      focusSelectedWaypoint(wp);
-    }
-  } else {
-    focusSelectedWaypoint(wp);
-  }
+  focusSelectedWaypoint(wp);
   renderWPList();
 }
 
@@ -3169,7 +3159,12 @@ window.mobileTab = function(tab) {
     // Trigger map resize, fit bounds, and redraw range circle
     setTimeout(function(){
       map.invalidateSize();
-      fitRouteOrWaypoint();
+      var selWp = selectedWpId !== null ? wpById(selectedWpId) : null;
+      if (selWp && selWp.lat !== null && selWp.marker) {
+        focusSelectedWaypoint(selWp);
+      } else {
+        fitRouteOrWaypoint();
+      }
       drawRangeLabel();
       drawLegLabels();
     }, 150);
