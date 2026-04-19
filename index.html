@@ -601,9 +601,8 @@ select option { background:var(--surface2); }
       <button type="button" class="hdr-export-btn" onclick="toggleExportMenu(event)" aria-haspopup="true" aria-expanded="false" aria-label="Export">
         <span class="hdr-export-label">Export</span>
         <svg class="hdr-export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="4" y="11" width="16" height="10" rx="2"/>
-          <line x1="12" y1="16" x2="12" y2="3"/>
-          <polyline points="7 8 12 3 17 8"/>
+          <path d="M6 11 h12 a1.5 1.5 0 0 1 1.5 1.5 v7 a1.5 1.5 0 0 1 -1.5 1.5 h-12 a1.5 1.5 0 0 1 -1.5 -1.5 v-7 a1.5 1.5 0 0 1 1.5 -1.5 z"/>
+          <path d="M12 16 V3 M7 8 L12 3 L17 8"/>
         </svg>
         <span class="hdr-export-caret">&#9662;</span>
       </button>
@@ -619,7 +618,7 @@ select option { background:var(--surface2); }
       <span><span class="pulse"></span>SYSTEM ONLINE</span>
       <span id="clk">--:--:-- UTC</span>
       <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.4</span>
+      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.5</span>
     </div>
   </div>
 </header>
@@ -966,7 +965,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-19.4';
+var APP_VERSION = 'v2026-04-19.5';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
