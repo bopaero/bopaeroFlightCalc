@@ -632,7 +632,7 @@ select option { background:var(--surface2); }
       <span><span class="pulse"></span>SYSTEM ONLINE</span>
       <span id="clk">--:--:-- UTC</span>
       <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.7</span>
+      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.8</span>
     </div>
   </div>
 </header>
@@ -979,7 +979,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-19.7';
+var APP_VERSION = 'v2026-04-19.8';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -4750,6 +4750,7 @@ function copyRouteString() {
   var parts = td.waypoints.map(function(wp) {
     return wp.icao || (wp.lat.toFixed(4) + '/' + wp.lng.toFixed(4));
   });
+  if (td.routeClosed && parts.length) parts.push(parts[0]);
   var route = parts.join(' ');
   function ok(){ _flashToast('Route copied: ' + route); }
   function fail(){ _flashToast('Copy failed'); }
