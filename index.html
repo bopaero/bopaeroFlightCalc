@@ -114,6 +114,7 @@ header {
 }
 .wp-row-main { display:flex; align-items:center; gap:7px; width:100%; }
 .wp-row.next-to-place { border-color:var(--accent); box-shadow:0 0 0 1px rgba(0,212,255,.1); }
+.wp-row.selected { border:3px solid var(--accent); box-shadow:0 0 10px rgba(0,212,255,.45); padding:5px 7px; }
 .wp-row.drag-over { border-color:var(--accent2); box-shadow:0 0 0 1px rgba(0,255,157,.2); background:rgba(0,255,157,.04); }
 .wp-row.dragging { opacity:0.35; }
 .wp-row.wp-rwy-unsuitable { border:2px solid #ff4444 !important; box-shadow:0 0 8px rgba(255,68,68,.4); background:rgba(255,68,68,.08); }
@@ -634,7 +635,7 @@ select option { background:var(--surface2); }
       <span><span class="pulse"></span>SYSTEM ONLINE</span>
       <span id="clk">--:--:-- UTC</span>
       <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.9</span>
+      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.10</span>
     </div>
   </div>
 </header>
@@ -981,7 +982,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-19.9';
+var APP_VERSION = 'v2026-04-19.10';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1043,6 +1044,7 @@ var legLabelData = []; // { from, to, hours } for redraw on zoom
 var wpIdCounter = 0;
 var placingId = null;  // id of waypoint currently awaiting map click
 var routeClosed = false; // whether last wp connects back to first
+var selectedWpId = null; // id of waypoint currently selected from the panel
 var custAOpen = false, custBOpen = false;
 
 // Colour ramp for waypoint numbers
@@ -1076,11 +1078,36 @@ function removeWaypoint(id) {
   waypoints = waypoints.filter(function(w) { return w.id !== id; });
   waypoints.forEach(function(w, i) { w.idx = i; });
   if (placingId === id) placingId = null;
+  if (selectedWpId === id) selectedWpId = null;
   drawAllLines();
   renderWPList();
   updateMode();
   recalc();
   updateHelperBtns();
+}
+
+function selectWaypoint(id) {
+  var wp = wpById(id);
+  if (!wp || wp.lat === null || !wp.marker) return;
+  selectedWpId = id;
+  if (isMobile()) {
+    var mapPanel = document.getElementById('mobileMapPanel');
+    if (mapPanel && !mapPanel.classList.contains('mobile-active')) {
+      mobileTab('map');
+      setTimeout(function(){ focusSelectedWaypoint(wp); }, 200);
+    } else {
+      focusSelectedWaypoint(wp);
+    }
+  } else {
+    focusSelectedWaypoint(wp);
+  }
+  renderWPList();
+}
+
+function focusSelectedWaypoint(wp) {
+  var z = Math.max(map.getZoom(), 10);
+  map.setView([wp.lat, wp.lng], z, { animate: true });
+  if (wp.marker) wp.marker.openPopup();
 }
 
 function clearAll() {
@@ -1315,6 +1342,14 @@ function renderWPList() {
     }
 
     row.innerHTML = innerHtml;
+
+    if (selectedWpId === wp.id && wp.lat !== null) row.classList.add('selected');
+
+    row.addEventListener('click', function(e) {
+      if (e.target.closest('button, input, .wp-overnight, .wp-addr-row, .drag-handle, .predict-dropdown')) return;
+      if (wp.lat === null || !wp.marker) return;
+      selectWaypoint(wp.id);
+    });
 
     // Drag events
     row.addEventListener('dragstart', function(e) {
