@@ -1030,7 +1030,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.16';
+var APP_VERSION = 'v2026-04-27.17';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1172,7 +1172,9 @@ function clearAll() {
 }
 
 function doClearAll(clearPayload) {
-  if (clearPayload) { location.reload(); return; }
+  // Wipe autosave immediately so a reload or close never triggers a restore prompt.
+  try { localStorage.removeItem(AUTOSAVE_KEY); } catch(e) {}
+  if (clearPayload) { _bypassBeforeUnload = true; location.reload(); return; }
   waypoints.forEach(function(w) {
     if (w.marker) map.removeLayer(w.marker);
     ['driveLine','driveTimeLabel','homeMarker','airportIcon'].forEach(function(k){ if (w[k]) map.removeLayer(w[k]); });
@@ -5303,10 +5305,11 @@ window.addFavoriteWP = function(icao) {
 };
 
 // ── TRIP PERSISTENCE ──────────────────────────────────────────────────────────
-var AUTOSAVE_KEY   = 'tripcalc_autosave';
-var CLEAN_EXIT_KEY = 'tripcalc_clean_exit';
-var SAVES_KEY      = 'tripcalc_saves';
-var _autoSaveTimer = null;
+var AUTOSAVE_KEY      = 'tripcalc_autosave';
+var CLEAN_EXIT_KEY    = 'tripcalc_clean_exit';
+var SAVES_KEY         = 'tripcalc_saves';
+var _autoSaveTimer    = null;
+var _bypassBeforeUnload = false; // set true before programmatic reloads (Clear All)
 
 // Read and immediately clear the clean-exit marker so a crash after "Stay"
 // won't be mistaken for a clean close on the next launch.
@@ -5317,7 +5320,9 @@ var _cleanExit = (function() {
 
 // On intentional close: mark clean exit + show native "Leave page?" dialog
 // when there are placed waypoints so the user has a chance to stay and save.
+// Bypassed during programmatic reloads (e.g. Clear All with payload).
 window.addEventListener('beforeunload', function(e) {
+  if (_bypassBeforeUnload) return;
   try { localStorage.setItem(CLEAN_EXIT_KEY, '1'); } catch(ex) {}
   var placed = waypoints.filter(function(w) { return w.lat !== null; });
   if (placed.length > 0) { e.preventDefault(); e.returnValue = ''; }
