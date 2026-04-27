@@ -980,7 +980,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.9';
+var APP_VERSION = 'v2026-04-27.10';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1954,11 +1954,11 @@ function placeWaypointDirect(id, airport) {
   popupBody += '<br><span style="color:var(--text-muted)">'+airport.lat.toFixed(4)+'° / '+airport.lng.toFixed(4)+'°</span>';
 
   var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp);
-  // Fuel services warning / live price (skip origin)
-  if (wpIndex > 0 && airport.icao) {
+  // Fuel availability warning / live price (all stops including origin)
+  if (airport.icao) {
     var acA = getAC('A');
     var fuelSpdKey = acA ? String(Math.round(acA.speed)) : '';
-    if (fuelSpdKey && !airportHasFuel(wp, fuelSpdKey)) {
+    if (wpIndex > 0 && fuelSpdKey && !airportHasFuel(wp, fuelSpdKey)) {
       popupBody += '<br><span class="popup-no-fuel" style="color:#f59e0b;font-size:11px">&#9888; No fuel services</span>';
     } else {
       var fuelLine = airportFuelLine(airport.icao, acA, false);
@@ -2068,15 +2068,18 @@ function placeWaypointFromCoords(id, originLat, originLng) {
 
     // For WP1, add a return button — shown/hidden dynamically when popup opens
     var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp2);
-    // Fuel services warning (skip origin)
-    if (wpIndex > 0 && icao) {
+    // Fuel availability warning / live price (all stops including origin)
+    if (icao) {
       var acA2 = getAC('A');
       var fuelSpdKey2 = acA2 ? String(Math.round(acA2.speed)) : '';
-      if (fuelSpdKey2 && !airportHasFuel(wp2, fuelSpdKey2)) {
+      if (wpIndex > 0 && fuelSpdKey2 && !airportHasFuel(wp2, fuelSpdKey2)) {
         var fuelWarnMsg = _opts.requireFuelSpdKey
           ? '\u26A0 No fuel-equipped airport nearby \u2014 showing closest'
           : '\u26A0 No fuel services';
         popupBody += '<br><span class="popup-no-fuel" style="color:#f59e0b;font-size:11px">' + fuelWarnMsg + '</span>';
+      } else {
+        var fuelLine2 = airportFuelLine(icao, acA2, false);
+        if (fuelLine2) popupBody += '<br>' + fuelLine2;
       }
     }
     if (wpIndex === 0) {
@@ -2299,9 +2302,9 @@ function fetchAirportFuel(icao) {
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       airportFuelCache[icao] = (data && (data.avgas_100ll || data.jet_a)) ? data : 'none';
-      renderWPList();
+      renderWPList(); recalc();
     })
-    .catch(function() { airportFuelCache[icao] = 'none'; });
+    .catch(function() { airportFuelCache[icao] = 'none'; renderWPList(); recalc(); });
 }
 
 function airportFuelLine(icao, acA, small) {
