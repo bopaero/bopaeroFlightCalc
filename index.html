@@ -1030,7 +1030,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.14';
+var APP_VERSION = 'v2026-04-27.15';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1206,21 +1206,24 @@ window.pickAircraftFromPrompt = function(val) {
     }
   }
 };
-function showConfirmDialog(message, callback) {
+function showConfirmDialog(message, callback, yesLabel, noLabel) {
   var overlay = document.getElementById('confirmOverlay');
   var msg = document.getElementById('confirmMsg');
   var yes = document.getElementById('confirmYes');
-  var no = document.getElementById('confirmNo');
-  if (!overlay || !yes || !no) { callback(confirm(message)); return; }
-  msg.textContent = message;
+  var no  = document.getElementById('confirmNo');
+  if (!overlay || !yes || !no) { callback(confirm(message.replace(/<[^>]*>/g,''))); return; }
+  msg.innerHTML = message;
+  yes.textContent = yesLabel || 'Yes';
+  no.textContent  = noLabel  || 'No';
   overlay.style.display = 'flex';
   function finish(answer) {
     overlay.style.display = 'none';
     yes.onclick = null; no.onclick = null;
+    yes.textContent = 'Yes'; no.textContent = 'No';
     callback(answer);
   }
   yes.onclick = function(){ finish(true); };
-  no.onclick = function(){ finish(false); };
+  no.onclick  = function(){ finish(false); };
 }
 
 function resetPayloadState() {
@@ -5504,13 +5507,23 @@ initMetroDropdown();
 renderWPList();
 updateMode();
 initMobileLayout();
-// Restore last session
+// Offer to restore last session
 setTimeout(function() {
   try {
     var saved = localStorage.getItem(AUTOSAVE_KEY);
-    if (saved) { var s = JSON.parse(saved); if (s && s.v === 1 && s.wps && s.wps.length) restoreState(s); }
+    if (!saved) return;
+    var s = JSON.parse(saved);
+    if (!s || s.v !== 1 || !s.wps || !s.wps.length) return;
+    var placed = s.wps.filter(function(w){ return w.lat !== null && w.lat !== undefined; });
+    if (!placed.length) return;
+    var acName = (s.acA && s.acA.sel) ? s.acA.sel : (s.acA && s.acA.cName ? s.acA.cName : '');
+    var detail = placed.length + ' stop' + (placed.length === 1 ? '' : 's') + (acName ? ' &middot; ' + acName : '');
+    showConfirmDialog('Restore your previous trip?<br><span style="font-size:12px;font-weight:normal;color:var(--text-muted)">' + detail + '</span>', function(yes) {
+      if (yes) restoreState(s);
+      else { try { localStorage.removeItem(AUTOSAVE_KEY); } catch(e) {} }
+    }, 'Restore Trip', 'Start New');
   } catch(e) {}
-}, 200);
+}, 300);
 // Start with map guard active on all devices
 // Map starts locked; unlock on first interaction anywhere
 setTimeout(lockMap, 300);
