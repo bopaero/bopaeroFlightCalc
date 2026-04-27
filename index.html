@@ -83,6 +83,8 @@ header {
 .logo-title { font-size:15px; font-weight:700; letter-spacing:2px; align-self:flex-end; }
 .logo-title span { color:var(--accent); }
 .hdr-right { font-family:var(--mono); font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:16px; }
+.guide-link { color:var(--accent); text-decoration:none; border:1px solid var(--accent); border-radius:4px; padding:3px 8px; letter-spacing:0.5px; white-space:nowrap; }
+.guide-link:hover { background:rgba(0,212,255,0.08); }
 #nasrCycle { text-shadow:0 0.5px 0 #000; }
 .pulse { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent2); margin-right:6px; animation:blink 2s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
@@ -642,7 +644,6 @@ select option { background:var(--surface2); }
     <div class="logo-title">Trip<span>Calc</span></div>
   </div>
   <div class="hdr-cluster">
-    <a href="guide.html" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:11px;color:var(--text-muted);text-decoration:none;letter-spacing:0.5px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;white-space:nowrap" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">User Guide</a>
     <div id="exportMenu" class="hdr-export" style="display:none">
       <button type="button" class="hdr-export-btn" onclick="toggleExportMenu(event)" aria-haspopup="true" aria-expanded="false" aria-label="Export">
         <span class="hdr-export-label">Export</span>
@@ -667,6 +668,7 @@ select option { background:var(--surface2); }
       <span id="clk">--:--:-- UTC</span>
       <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
       <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.16</span>
+      <a href="guide.html" target="_blank" rel="noopener" class="guide-link">User Guide</a>
     </div>
   </div>
 </header>
@@ -1031,7 +1033,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.19';
+var APP_VERSION = 'v2026-04-27.20';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
