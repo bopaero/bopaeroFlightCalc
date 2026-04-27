@@ -703,8 +703,8 @@ select option { background:var(--surface2); }
       </div>
 
       <div class="ac-btn-row">
-        <button class="ac-pick-btn" id="acBtnSR22T" onclick="pickAircraft('185','A')">SR22T</button>
-        <button class="ac-pick-btn" id="acBtnSF50" onclick="pickAircraft('300','A')">SF50</button>
+        <button class="ac-pick-btn" id="acBtnSR22T" onclick="pickAircraft('175','A')">SR22T</button>
+        <button class="ac-pick-btn" id="acBtnSF50" onclick="pickAircraft('280','A')">SF50</button>
       </div>
 
       <button class="legs-toggle" id="acToggleBtn" onclick="toggleAircraftPane()" style="margin-bottom:6px">&#x25BC; <span id="acToggleLabel">Choose Aircraft</span></button>
@@ -715,8 +715,8 @@ select option { background:var(--surface2); }
         <span class="ac-slot-lbl lbl-a">// Primary Aircraft</span>
         <select id="selA" onchange="onSel('A')" style="display:none">
           <option value="" selected>— Select aircraft —</option>
-          <option value="185">Cirrus SR22T — 185 mph</option>
-          <option value="300">Cirrus SF50 — 300 mph</option>
+          <option value="175">Cirrus SR22T — 175 mph</option>
+          <option value="280">Cirrus SF50 — 280 mph</option>
         </select>
         <div class="spd-row" id="spdRowA" style="display:none">
           <input enterkeyhint="done" inputmode="decimal" type="number" id="spdA" min="1" max="9999" value="" oninput="recalc()">
@@ -775,9 +775,9 @@ select option { background:var(--surface2); }
           <span class="ac-slot-lbl lbl-b">// Comparison Aircraft</span>
           <select id="selB" onchange="onSel('B')">
             <option value="">— Select aircraft —</option>
-            <option value="185">Cirrus SR22T — 185 mph</option>
-            <option value="345">Cirrus SF50 G2 Vision Jet — 345 mph</option>
-            <option value="351">Cirrus SF50 G2+ Vision Jet — 351 mph</option>
+            <option value="175">Cirrus SR22T — 175 mph</option>
+            <option value="280">Cirrus SF50 G2 Vision Jet — 280 mph</option>
+            <option value="280">Cirrus SF50 G2+ Vision Jet — 280 mph</option>
           </select>
           <div class="spd-row" id="spdRowB" style="display:none">
             <input enterkeyhint="done" inputmode="decimal" type="number" id="spdB" min="1" max="9999" placeholder="Speed" oninput="recalc()">
@@ -906,8 +906,8 @@ select option { background:var(--surface2); }
     <div class="confirm-box">
       <div class="confirm-msg">Choose an aircraft</div>
       <div class="confirm-btns">
-        <button class="primary" onclick="pickAircraftFromPrompt('185')">SR22T</button>
-        <button class="primary" onclick="pickAircraftFromPrompt('300')">SF50</button>
+        <button class="primary" onclick="pickAircraftFromPrompt('175')">SR22T</button>
+        <button class="primary" onclick="pickAircraftFromPrompt('280')">SF50</button>
       </div>
     </div>
   </div>
@@ -982,7 +982,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-19.16';
+var APP_VERSION = 'v2026-04-27.1';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2270,15 +2270,15 @@ var PAVED_SURFACES = ['paved','asphalt','asp','concrete','con','tarmac','bitumin
 
 // Per-aircraft GPH lookup (mph speed value → fuel burn in GPH)
 var acGph = {
-  '185': 18,    // SR22T
-  '300': 59     // SF50
+  '175': 18,    // SR22T
+  '280': 59     // SF50
 };
 
 // Per-aircraft cost presets (mph speed value → { acPerHr, consumLabel, oilPerHr, fuelType })
 // consumPerHr is computed dynamically from national avg fuel prices
 var acCostPresets = {
-  '185': { acPerHr: 372, consumLabel: 'Fuel/Oil/TKS', oilPerHr: 2.00, fuelType: '100ll', pilotMin: 500, pilotMax: 1500 },
-  '300': { acPerHr: 372, consumLabel: 'Fuel/Oil', oilPerHr: 6.45, fuelType: 'jeta', pilotMin: 1500, pilotMax: 2500 }
+  '175': { acPerHr: 372, consumLabel: 'Fuel/Oil/TKS', oilPerHr: 2.00, fuelType: '100ll', pilotMin: 500, pilotMax: 1500 },
+  '280': { acPerHr: 372, consumLabel: 'Fuel/Oil', oilPerHr: 6.45, fuelType: 'jeta', pilotMin: 1500, pilotMax: 2500 }
 };
 
 // National average fuel prices (updated daily via GitHub Action)
@@ -2311,20 +2311,20 @@ function computeConsumPerHr(spdKey) {
 
 // Per-aircraft runway thresholds (mph speed value → thresholds)
 var AC_RWY = {
-  '185': { minFt: 2500, warnFt: 3000 },   // SR22T
-  '300': { minFt: 3000, warnFt: 4000 },   // SF50
+  '175': { minFt: 2500, warnFt: 3000 },   // SR22T
+  '280': { minFt: 3000, warnFt: 4000 },   // SF50
 };
 var DEFAULT_RWY = { minFt: 2500, warnFt: 3000 };
 
 // Per-aircraft max fuel range in miles (mph speed value → miles)
 var AC_RANGE = {
-  '185': 800,    // SR22T
-  '300': 1000    // SF50
+  '175': 800,    // SR22T
+  '280': 1000    // SF50
 };
 
 // Per-aircraft weight/payload data
 var AC_WEIGHT = {
-  '185': {  // SR22T — 4 seats (pilot + 3 pax)
+  '175': {  // SR22T — 4 seats (pilot + 3 pax)
     mtow: 3600, emptyWt: 2520, maxFuelGal: 92, fuelDensity: 6.0, mrcGph: 14.5,
     defaultPax: 1, stdPaxWt: 190, stdBagPerPax: 30, maxPax: 3,
     paxOrder: [2, 1, 3], // fill order: rear left, front, rear right
@@ -2336,7 +2336,7 @@ var AC_WEIGHT = {
     ],
     baggage: [{ label: 'Baggage', default: 30, std: 30, max: 130 }]
   },
-  '300': {  // SF50 — 7 seats (pilot + 4 adults + 2 children)
+  '280': {  // SF50 — 7 seats (pilot + 4 adults + 2 children)
     mtow: 6000, emptyWt: 3900, maxFuelGal: 296, fuelDensity: 6.7, mrcGph: 46,
     defaultPax: 1, stdPaxWt: 190, stdChildWt: 80, stdBagPerPax: 25, maxPax: 6,
     paxOrder: [1, 2, 3, 4, 5], // fill order: front, mid L, mid R, rear L, rear R
@@ -3550,14 +3550,14 @@ window.pickAircraft = function(val, s) {
   sel.value = val;
   // Clear all aircraft pick buttons, then activate the selected one
   document.querySelectorAll('.ac-pick-btn').forEach(function(b) { b.classList.remove('active'); });
-  var map = { '185': 'acBtnSR22T', '300': 'acBtnSF50' };
+  var map = { '175': 'acBtnSR22T', '280': 'acBtnSF50' };
   var activeBtn = document.getElementById(map[val]);
   if (activeBtn) activeBtn.classList.add('active');
   // Show Owner/Lessee row when aircraft is selected
   document.getElementById('userTypeRow').style.display = 'flex';
   // SF50 has no lease option — hide Lessee button and force Owner
   var lesseeBtn = document.getElementById('btnLessee');
-  if (val === '300') {
+  if (val === '280') {
     lesseeBtn.style.display = 'none';
     if (lesseeBtn.classList.contains('active')) setUserType('owner');
   } else {
@@ -5014,7 +5014,7 @@ setInterval(tick,1000); tick();
 // ── PROGRAM AREA FAVORITES ───────────────────────────────────────────────────
 var METRO_AREAS = {
   'Cincinnati, OH': {
-    aircraft: ['185'], // SR22T only
+    aircraft: ['175'], // SR22T only
     airports: [
       { icao:'KCVG', name:'Cincinnati/NKY Intl',   lat:39.0488,  lng:-84.6678 },
       { icao:'KLUK', name:'Lunken Field',           lat:39.1033,  lng:-84.4186 },
