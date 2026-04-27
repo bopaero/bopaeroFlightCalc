@@ -982,7 +982,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.2';
+var APP_VERSION = 'v2026-04-27.3';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2313,7 +2313,7 @@ function computeConsumPerHr(spdKey) {
 // First `mins` minutes of each leg use `gph` fuel flow; remainder uses cruise gph.
 // For legs shorter than `mins`, the first half of the leg uses climb gph.
 var AC_CLIMB = {
-  '175': { mins: 12, gph: 38 }  // SR22T: 12-min climbout at 38 GPH
+  '175': { mins: 8, gph: 38 }  // SR22T: 8-min climbout at 38 GPH
 };
 
 function legFuelGal(legHrs, spdKey, cruiseGph) {
