@@ -982,7 +982,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.4';
+var APP_VERSION = 'v2026-04-27.5';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1277,12 +1277,14 @@ function renderWPList() {
     }
     if (isPlaced) {
       subLine += (subLine ? '&nbsp; ' : '') + '<span style="color:var(--text-muted);font-family:var(--mono);font-size:9px">' + wp.lat.toFixed(3) + '° / ' + wp.lng.toFixed(3) + '°</span>';
-      // Fuel availability warning (skip origin — assumed fueled at departure)
+      // Fuel availability warning / prices link (skip origin — assumed fueled at departure)
       if (i > 0 && wp.icao) {
         var acA = getAC('A');
         var spdKey = acA ? String(Math.round(acA.speed)) : '';
         if (spdKey && !airportHasFuel(wp, spdKey)) {
           subLine += '<br><span style="color:#f59e0b;font-family:var(--mono);font-size:9px">&#9888; NO FUEL SERVICES</span>';
+        } else if (wp.icao) {
+          subLine += '<br><a href="https://www.airnav.com/airport/' + wp.icao + '" target="_blank" rel="noopener" style="color:var(--accent);font-family:var(--mono);font-size:9px;text-decoration:none">&#9981; Fuel prices &#8599;</a>';
         }
       }
     }
@@ -1953,12 +1955,14 @@ function placeWaypointDirect(id, airport) {
   popupBody += '<br><span style="color:var(--text-muted)">'+airport.lat.toFixed(4)+'° / '+airport.lng.toFixed(4)+'°</span>';
 
   var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp);
-  // Fuel services warning (skip origin)
+  // Fuel services warning / prices link (skip origin)
   if (wpIndex > 0 && airport.icao) {
     var acA = getAC('A');
     var fuelSpdKey = acA ? String(Math.round(acA.speed)) : '';
     if (fuelSpdKey && !airportHasFuel(wp, fuelSpdKey)) {
       popupBody += '<br><span class="popup-no-fuel" style="color:#f59e0b;font-size:11px">⚠ No fuel services</span>';
+    } else if (airport.icao) {
+      popupBody += '<br><a href="https://www.airnav.com/airport/' + airport.icao + '" target="_blank" rel="noopener" style="color:var(--accent);font-size:11px;text-decoration:none">⛽ Fuel prices ↗</a>';
     }
   }
   if (wpIndex === 0) {
