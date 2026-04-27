@@ -728,13 +728,12 @@ select option { background:var(--surface2); }
         </div>
         <div id="payloadSection" style="display:none">
           <div id="paxPanel" class="pax-panel" style="display:none">
-            <div class="pax-title">How many passengers?</div>
-            <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:-10px;margin-bottom:10px">Pilot is already included</div>
+            <div class="pax-title">Total Occupants</div>
             <div class="pax-stepper">
-              <label>Passengers</label>
+              <label>Including pilot</label>
               <div class="pax-stepper-btns">
                 <button onclick="adjustPax(-1)">−</button>
-                <span id="paxCountPanel">1</span>
+                <span id="paxCountPanel">2</span>
                 <button onclick="adjustPax(1)">+</button>
               </div>
             </div>
@@ -928,13 +927,12 @@ select option { background:var(--surface2); }
     <div id="map"></div>
     <div id="paxOverlay" class="pax-overlay" style="display:none">
       <div class="pax-popup">
-        <div class="pax-title">How many passengers?</div>
-        <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:-10px;margin-bottom:10px">Pilot is already included</div>
+        <div class="pax-title">Total Occupants</div>
         <div class="pax-stepper">
-          <label>Passengers</label>
+          <label>Including pilot</label>
           <div class="pax-stepper-btns">
             <button onclick="adjustPax(-1)">−</button>
-            <span id="paxCount">1</span>
+            <span id="paxCount">2</span>
             <button onclick="adjustPax(1)">+</button>
           </div>
         </div>
@@ -982,7 +980,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.7';
+var APP_VERSION = 'v2026-04-27.8';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1185,7 +1183,7 @@ function resetPayloadState() {
   if (userTypeRow) userTypeRow.style.display = 'none';
   var payloadSection = document.getElementById('payloadSection');
   if (payloadSection) payloadSection.style.display = 'none';
-  ['paxCount','paxCountPanel'].forEach(function(id){ var el=document.getElementById(id); if (el) el.textContent = 1; });
+  ['paxCount','paxCountPanel'].forEach(function(id){ var el=document.getElementById(id); if (el) el.textContent = 2; });
   ['luggageToggle','luggageTogglePanel'].forEach(function(id){ var el=document.getElementById(id); if (el) el.checked = true; });
   var spdRowA = document.getElementById('spdRowA');
   if (spdRowA) spdRowA.style.display = 'none';
@@ -3759,11 +3757,11 @@ function renderPayloadInputs(spdKey) {
   if (!w) { section.style.display = 'none'; return; }
   section.style.display = 'block';
 
-  // Set passenger count in both popup and panel — preserve user's choice if already adjusted
-  var defPax = w.defaultPax || 1;
+  // Set total occupant count (pilot + passengers) in both popup and panel
+  var defPax = (w.defaultPax || 1) + 1; // +1 for pilot
   var existingEl = document.getElementById('paxCount') || document.getElementById('paxCountPanel');
   var existing = existingEl ? parseInt(existingEl.textContent) : NaN;
-  var paxVal = paxUserAdjusted && !isNaN(existing) ? Math.min(w.maxPax, Math.max(0, existing)) : defPax;
+  var paxVal = paxUserAdjusted && !isNaN(existing) ? Math.min(w.maxPax + 1, Math.max(1, existing)) : defPax;
   ['paxCount', 'paxCountPanel'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.textContent = paxVal;
   });
@@ -3833,10 +3831,10 @@ var paxUserAdjusted = false;
 window.adjustPax = function(delta) {
   var sel = document.getElementById('selA');
   var w = sel && sel.value ? AC_WEIGHT[sel.value] : null;
-  var maxPax = w ? w.maxPax : 5;
+  var maxPax = w ? (w.maxPax + 1) : 6; // +1 to include pilot in total
   var els = [document.getElementById('paxCount'), document.getElementById('paxCountPanel')];
-  var current = parseInt((els[0] || els[1]).textContent) || 0;
-  var next = Math.max(0, Math.min(maxPax, current + delta));
+  var current = parseInt((els[0] || els[1]).textContent) || 1;
+  var next = Math.max(1, Math.min(maxPax, current + delta)); // min 1 = pilot only
   els.forEach(function(el) { if (el) el.textContent = next; });
   paxUserAdjusted = true;
   if (w) applyPaxToPayload();
@@ -3848,14 +3846,15 @@ window.applyPaxToPayload = function() {
   var w = AC_WEIGHT[sel.value];
   if (!w) return;
   var countEl = document.getElementById('paxCount') || document.getElementById('paxCountPanel');
-  var paxCount = countEl ? (parseInt(countEl.textContent) || 0) : (w.defaultPax || 1);
+  var totalOccupants = countEl ? (parseInt(countEl.textContent) || 1) : ((w.defaultPax || 1) + 1);
+  var paxCount = Math.max(0, totalOccupants - 1); // subtract pilot
   var lugEl = document.getElementById('luggageToggle') || document.getElementById('luggageTogglePanel');
   var luggage = lugEl ? lugEl.checked : true;
   // Sync both
   var countEl2 = document.getElementById('paxCountPanel');
-  if (countEl2) countEl2.textContent = paxCount;
+  if (countEl2) countEl2.textContent = totalOccupants;
   var countEl3 = document.getElementById('paxCount');
-  if (countEl3) countEl3.textContent = paxCount;
+  if (countEl3) countEl3.textContent = totalOccupants;
   var lugEl2 = document.getElementById('luggageTogglePanel');
   var lugEl3 = document.getElementById('luggageToggle');
   if (lugEl2) lugEl2.checked = luggage;
