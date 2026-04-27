@@ -982,7 +982,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.1';
+var APP_VERSION = 'v2026-04-27.2';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1243,7 +1243,7 @@ function renderWPList() {
           legTxt += '<div class="leg-details">';
           legTxt += '<span class="leg-time">' + fmtPlain(legHrs) + '</span>';
           if (acA.gph > 0) {
-            legTxt += '<span class="leg-fuel">' + (legHrs * acA.gph).toFixed(1) + ' gal</span>';
+            legTxt += '<span class="leg-fuel">' + legFuelGal(legHrs, String(Math.round(acA.speed)), acA.gph).toFixed(1) + ' gal</span>';
           }
           var maxRange = AC_RANGE[String(Math.round(acA.speed))];
           if (maxRange && mi > maxRange) {
@@ -2309,6 +2309,22 @@ function computeConsumPerHr(spdKey) {
   return Math.round((fuelPrice * gph) + preset.oilPerHr);
 }
 
+// Per-aircraft climbout profile (mph speed value → { mins, gph })
+// First `mins` minutes of each leg use `gph` fuel flow; remainder uses cruise gph.
+// For legs shorter than `mins`, the first half of the leg uses climb gph.
+var AC_CLIMB = {
+  '175': { mins: 12, gph: 38 }  // SR22T: 12-min climbout at 38 GPH
+};
+
+function legFuelGal(legHrs, spdKey, cruiseGph) {
+  if (cruiseGph <= 0) return 0;
+  var climb = AC_CLIMB[spdKey];
+  if (!climb) return legHrs * cruiseGph;
+  var legMins = legHrs * 60;
+  var climbMins = legMins < climb.mins ? legMins / 2 : climb.mins;
+  return (climbMins / 60) * climb.gph + ((legMins - climbMins) / 60) * cruiseGph;
+}
+
 // Per-aircraft runway thresholds (mph speed value → thresholds)
 var AC_RWY = {
   '175': { minFt: 2500, warnFt: 3000 },   // SR22T
@@ -3292,7 +3308,7 @@ function updateReturnUI() {
       returnLegHtml += '<div class="leg-details">';
       returnLegHtml += '<span class="leg-time">' + fmtPlain(retHrs) + '</span>';
       if (acA.gph > 0) {
-        returnLegHtml += '<span class="leg-fuel">' + (retHrs * acA.gph).toFixed(1) + ' gal</span>';
+        returnLegHtml += '<span class="leg-fuel">' + legFuelGal(retHrs, String(Math.round(acA.speed)), acA.gph).toFixed(1) + ' gal</span>';
       }
       var maxRange = AC_RANGE[String(Math.round(acA.speed))];
       if (maxRange && closingMi > maxRange) {
@@ -4298,10 +4314,13 @@ window.recalc = function() {
   var groundStops = Math.max(0, placed.length - 2);
   var groundHours = (groundStops * perStopMin) / 60;
   var flightHoursA = totalMi/acA.speed;
+  var spdKeyA = String(Math.round(acA.speed));
+  var totalFuelGalA = legs.reduce(function(s,l){ return s + legFuelGal(l.mi/acA.speed, spdKeyA, acA.gph); }, 0);
   var rA={ name:acA.name, speed:acA.speed, gph:acA.gph,
            flightHours:flightHoursA, groundHours:groundHours,
            groundStops:groundStops, perStopMin:perStopMin,
-           hours:flightHoursA + groundHours, mi:totalMi, legs:legs };
+           hours:flightHoursA + groundHours, mi:totalMi, legs:legs,
+           totalFuelGal:totalFuelGalA };
 
   document.getElementById('emptyMsg').style.display='none';
   document.getElementById('resultsOut').style.display='block';
@@ -4317,12 +4336,14 @@ window.recalc = function() {
     document.getElementById('rSpd'+id).innerHTML=r.speed+'<span class="u">mph</span>';
     if(r.gph>0){
       document.getElementById('rFuelWrap'+id).style.display='';
-      document.getElementById('rFuel'+id).innerHTML=(r.flightHours*r.gph).toFixed(1)+'<span class="u">gal</span>';
+      var displayFuel = r.totalFuelGal != null ? r.totalFuelGal : r.flightHours * r.gph;
+      document.getElementById('rFuel'+id).innerHTML=displayFuel.toFixed(1)+'<span class="u">gal</span>';
     } else {
       document.getElementById('rFuelWrap'+id).style.display='none';
     }
     var tbl=document.getElementById('legsTable'+id);
     var hasFuel = r.gph > 0;
+    var rSpdKey = String(Math.round(r.speed));
     var cols = '<colgroup><col style="width:7%"><col style="width:16%"><col style="width:16%"><col style="width:20%"><col style="width:22%">' + (hasFuel ? '<col style="width:19%">' : '') + '</colgroup>';
     var colCount = hasFuel ? 6 : 5;
     var currentDay = 1;
@@ -4332,7 +4353,7 @@ window.recalc = function() {
     r.legs.forEach(function(leg,li){
       var legHrs=leg.mi/r.speed;
       rows+='<tr><td class="dim">'+(li+1)+'</td><td>'+truncate(leg.from,6)+'</td><td>'+truncate(leg.to,6)+'</td><td>'+Math.round(leg.mi)+'<span style="color:var(--text-muted)"> mi</span></td><td>'+fmtPlain(legHrs)+'</td>';
-      if(hasFuel) rows+='<td>'+(legHrs*r.gph).toFixed(1)+'<span style="color:var(--text-muted)"> gal</span></td>';
+      if(hasFuel) rows+='<td>'+legFuelGal(legHrs, rSpdKey, r.gph).toFixed(1)+'<span style="color:var(--text-muted)"> gal</span></td>';
       rows+='</tr>';
       if (leg.overnight) {
         currentDay++;
@@ -4346,10 +4367,13 @@ window.recalc = function() {
 
   if(comparisonActive && acB){
     var flightHoursB = totalMi/acB.speed;
+    var spdKeyB = String(Math.round(acB.speed));
+    var totalFuelGalB = legs.reduce(function(s,l){ return s + legFuelGal(l.mi/acB.speed, spdKeyB, acB.gph); }, 0);
     var rB={ name:acB.name, speed:acB.speed, gph:acB.gph,
              flightHours:flightHoursB, groundHours:groundHours,
              groundStops:groundStops, perStopMin:perStopMin,
-             hours:flightHoursB + groundHours, mi:totalMi, legs:legs };
+             hours:flightHoursB + groundHours, mi:totalMi, legs:legs,
+             totalFuelGal:totalFuelGalB };
     fillCard('A', rA, rB);
     fillCard('B', rB, rA);
     var delta=Math.abs(rA.hours-rB.hours);
@@ -4513,9 +4537,10 @@ function buildTripData() {
   var groundHours = (groundStops * perStopMin) / 60;
 
   if (acA) {
+    var _spdKeyA = String(Math.round(acA.speed));
     legs.forEach(function(l) {
       l.hrs = l.mi / acA.speed;
-      l.fuelGal = l.hrs * acA.gph;
+      l.fuelGal = legFuelGal(l.hrs, _spdKeyA, acA.gph);
     });
   }
 
@@ -4524,7 +4549,7 @@ function buildTripData() {
     totals.flightHrs = totalMi / acA.speed;
     totals.groundHrs = groundHours;
     totals.totalHrs = totals.flightHrs + totals.groundHrs;
-    totals.fuelGal = totals.flightHrs * acA.gph;
+    totals.fuelGal = legs.reduce(function(s, l) { return s + (l.fuelGal || 0); }, 0);
     totals.groundStops = groundStops;
     totals.perStopMin = perStopMin;
   }
