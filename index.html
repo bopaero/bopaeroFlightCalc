@@ -982,7 +982,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.3';
+var APP_VERSION = 'v2026-04-27.4';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2285,7 +2285,7 @@ var acCostPresets = {
 var fuelPrices = { avgas_100ll: 6.38, jet_a: 6.80, updated: '' };
 
 (function loadFuelPrices() {
-  fetch('data/fuel_prices.json')
+  fetch('data/fuel_prices.json?v=' + new Date().toISOString().slice(0,10))
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       if (data) {
