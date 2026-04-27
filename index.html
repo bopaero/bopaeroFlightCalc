@@ -1030,7 +1030,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.15';
+var APP_VERSION = 'v2026-04-27.16';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5304,8 +5304,24 @@ window.addFavoriteWP = function(icao) {
 
 // ── TRIP PERSISTENCE ──────────────────────────────────────────────────────────
 var AUTOSAVE_KEY   = 'tripcalc_autosave';
+var CLEAN_EXIT_KEY = 'tripcalc_clean_exit';
 var SAVES_KEY      = 'tripcalc_saves';
 var _autoSaveTimer = null;
+
+// Read and immediately clear the clean-exit marker so a crash after "Stay"
+// won't be mistaken for a clean close on the next launch.
+var _cleanExit = (function() {
+  try { var v = !!localStorage.getItem(CLEAN_EXIT_KEY); localStorage.removeItem(CLEAN_EXIT_KEY); return v; }
+  catch(e) { return false; }
+})();
+
+// On intentional close: mark clean exit + show native "Leave page?" dialog
+// when there are placed waypoints so the user has a chance to stay and save.
+window.addEventListener('beforeunload', function(e) {
+  try { localStorage.setItem(CLEAN_EXIT_KEY, '1'); } catch(ex) {}
+  var placed = waypoints.filter(function(w) { return w.lat !== null; });
+  if (placed.length > 0) { e.preventDefault(); e.returnValue = ''; }
+});
 
 function _elVal(id)  { var e=document.getElementById(id); return e ? e.value : ''; }
 function _elText(id) { var e=document.getElementById(id); return e ? e.textContent : ''; }
@@ -5507,18 +5523,26 @@ initMetroDropdown();
 renderWPList();
 updateMode();
 initMobileLayout();
-// Offer to restore last session
+// On intentional quit: autosave is present but clean-exit marker was set —
+// honour the user's choice and start fresh. On crash: no clean-exit marker,
+// offer to restore.
 setTimeout(function() {
   try {
     var saved = localStorage.getItem(AUTOSAVE_KEY);
     if (!saved) return;
+    if (_cleanExit) {
+      // User closed deliberately — discard autosave, begin fresh.
+      localStorage.removeItem(AUTOSAVE_KEY);
+      return;
+    }
+    // Crash recovery path.
     var s = JSON.parse(saved);
     if (!s || s.v !== 1 || !s.wps || !s.wps.length) return;
     var placed = s.wps.filter(function(w){ return w.lat !== null && w.lat !== undefined; });
     if (!placed.length) return;
     var acName = (s.acA && s.acA.sel) ? s.acA.sel : (s.acA && s.acA.cName ? s.acA.cName : '');
     var detail = placed.length + ' stop' + (placed.length === 1 ? '' : 's') + (acName ? ' &middot; ' + acName : '');
-    showConfirmDialog('Restore your previous trip?<br><span style="font-size:12px;font-weight:normal;color:var(--text-muted)">' + detail + '</span>', function(yes) {
+    showConfirmDialog('Restore trip after unexpected exit?<br><span style="font-size:12px;font-weight:normal;color:var(--text-muted)">' + detail + '</span>', function(yes) {
       if (yes) restoreState(s);
       else { try { localStorage.removeItem(AUTOSAVE_KEY); } catch(e) {} }
     }, 'Restore Trip', 'Start New');
