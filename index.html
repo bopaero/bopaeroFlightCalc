@@ -980,7 +980,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.11';
+var APP_VERSION = 'v2026-04-27.12';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1279,12 +1279,10 @@ function renderWPList() {
       if (wp.icao) {
         var acA = getAC('A');
         var spdKey = acA ? String(Math.round(acA.speed)) : '';
-        if (i === 0) console.log('[fuel] renderWPList origin i=0 icao=', wp.icao, 'cache=', airportFuelCache[wp.icao]);
         if (i > 0 && spdKey && !airportHasFuel(wp, spdKey)) {
           subLine += '<br><span style="color:#f59e0b;font-family:var(--mono);font-size:9px">&#9888; NO FUEL SERVICES</span>';
         } else {
           var fuelLine = airportFuelLine(wp.icao, acA, true);
-          if (i === 0) console.log('[fuel] origin fuelLine=', fuelLine);
           if (fuelLine) subLine += '<br>' + fuelLine;
         }
       }
@@ -2298,29 +2296,32 @@ var FUEL_WORKER_URL = 'https://wandering-star-ec81.compilotrc.workers.dev/';
 var airportFuelCache = {}; // icao → { avgas_100ll, jet_a } | 'loading' | 'none'
 
 function fetchAirportFuel(icao) {
-  if (airportFuelCache[icao]) { console.log('[fuel] cache hit for', icao, airportFuelCache[icao]); return; }
+  if (airportFuelCache[icao]) return;
   airportFuelCache[icao] = 'loading';
-  console.log('[fuel] fetching', icao);
   fetch(FUEL_WORKER_URL + '?icao=' + icao)
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       airportFuelCache[icao] = (data && (data.avgas_100ll || data.jet_a)) ? data : 'none';
-      console.log('[fuel] result for', icao, airportFuelCache[icao]);
       renderWPList(); recalc();
     })
-    .catch(function(e) { console.log('[fuel] error for', icao, e); airportFuelCache[icao] = 'none'; renderWPList(); recalc(); });
+    .catch(function() { airportFuelCache[icao] = 'none'; renderWPList(); recalc(); });
 }
 
 function airportFuelLine(icao, acA, small) {
   var cached = airportFuelCache[icao];
-  if (!cached) { fetchAirportFuel(icao); return ''; }
-  if (cached === 'loading') return '<span style="color:var(--text-muted);font-family:var(--mono);font-size:' + (small ? '9' : '11') + 'px">&#9981; loading...</span>';
-  if (cached === 'none') return '';
   var isJet = acA && String(Math.round(acA.speed)) === '280';
-  var price = isJet ? cached.jet_a : cached.avgas_100ll;
   var label = isJet ? 'Jet-A' : '100LL';
-  if (!price) return '';
-  return '<span style="color:var(--accent);font-family:var(--mono);font-size:' + (small ? '9' : '11') + 'px">&#9981; ' + label + ' $' + price.toFixed(2) + '/gal</span>';
+  var sz = small ? '9' : '11';
+  if (!cached) { fetchAirportFuel(icao); return ''; }
+  if (cached === 'loading') return '<span style="color:var(--text-muted);font-family:var(--mono);font-size:' + sz + 'px">&#9981; loading...</span>';
+  if (cached !== 'none') {
+    var price = isJet ? cached.jet_a : cached.avgas_100ll;
+    if (price) return '<span style="color:var(--accent);font-family:var(--mono);font-size:' + sz + 'px">&#9981; ' + label + ' $' + price.toFixed(2) + '/gal</span>';
+  }
+  // No scraped price — show national average as fallback
+  var avgPrice = isJet ? fuelPrices.jet_a : fuelPrices.avgas_100ll;
+  if (!avgPrice) return '';
+  return '<span style="color:var(--text-muted);font-family:var(--mono);font-size:' + sz + 'px">&#9981; ' + label + ' ~$' + avgPrice.toFixed(2) + '/gal avg</span>';
 }
 
 (function loadFuelPrices() {
