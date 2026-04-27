@@ -1030,7 +1030,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.17';
+var APP_VERSION = 'v2026-04-27.18';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5545,9 +5545,7 @@ setTimeout(function() {
     if (!s || s.v !== 1 || !s.wps || !s.wps.length) return;
     var placed = s.wps.filter(function(w){ return w.lat !== null && w.lat !== undefined; });
     if (!placed.length) return;
-    var acName = (s.acA && s.acA.sel) ? s.acA.sel : (s.acA && s.acA.cName ? s.acA.cName : '');
-    var detail = placed.length + ' stop' + (placed.length === 1 ? '' : 's') + (acName ? ' &middot; ' + acName : '');
-    showConfirmDialog('Restore trip after unexpected exit?<br><span style="font-size:12px;font-weight:normal;color:var(--text-muted)">' + detail + '</span>', function(yes) {
+    showConfirmDialog('Restore Last Trip?', function(yes) {
       if (yes) restoreState(s);
       else { try { localStorage.removeItem(AUTOSAVE_KEY); } catch(e) {} }
     }, 'Restore Trip', 'Start New');
