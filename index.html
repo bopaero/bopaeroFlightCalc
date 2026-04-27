@@ -982,7 +982,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.6';
+var APP_VERSION = 'v2026-04-27.7';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2349,6 +2349,20 @@ function computeConsumPerHr(spdKey) {
 var AC_CLIMB = {
   '175': { mins: 8, gph: 38 }  // SR22T: 8-min climbout at 38 GPH
 };
+
+// Returns the per-gallon fuel price for a departure airport.
+// Uses the scraped AirNav price when available, falls back to national average.
+function scrapedPricePerGal(icao, spdKey) {
+  var isJet = spdKey === '280';
+  if (icao) {
+    var cached = airportFuelCache[icao];
+    if (cached && cached !== 'loading' && cached !== 'none') {
+      var price = isJet ? cached.jet_a : cached.avgas_100ll;
+      if (price) return price;
+    }
+  }
+  return isJet ? fuelPrices.jet_a : fuelPrices.avgas_100ll;
+}
 
 function legFuelGal(legHrs, spdKey, cruiseGph) {
   if (cruiseGph <= 0) return 0;
@@ -4333,13 +4347,13 @@ window.recalc = function() {
   var legs=[], totalMi=0;
   for(var i=1;i<placed.length;i++){
     var mi = haversineNm(placed[i-1].lat,placed[i-1].lng,placed[i].lat,placed[i].lng) * 1.15078;
-    legs.push({ from:placed[i-1].icao||placed[i-1].name, to:placed[i].icao||placed[i].name, mi:mi, overnight:placed[i].overnight });
+    legs.push({ from:placed[i-1].icao||placed[i-1].name, to:placed[i].icao||placed[i].name, mi:mi, overnight:placed[i].overnight, depIcao:placed[i-1].icao||'' });
     totalMi += mi;
   }
   // Closing leg
   if (routeClosed && placed.length >= 2) {
     var mi = haversineNm(placed[placed.length-1].lat,placed[placed.length-1].lng,placed[0].lat,placed[0].lng) * 1.15078;
-    legs.push({ from:placed[placed.length-1].icao||placed[placed.length-1].name, to:placed[0].icao||placed[0].name, mi:mi, overnight:false });
+    legs.push({ from:placed[placed.length-1].icao||placed[placed.length-1].name, to:placed[0].icao||placed[0].name, mi:mi, overnight:false, depIcao:placed[placed.length-1].icao||'' });
     totalMi += mi;
   }
 
@@ -4350,6 +4364,8 @@ window.recalc = function() {
   var flightHoursA = totalMi/acA.speed;
   var spdKeyA = String(Math.round(acA.speed));
   var totalFuelGalA = legs.reduce(function(s,l){ return s + legFuelGal(l.mi/acA.speed, spdKeyA, acA.gph); }, 0);
+  var totalFuelCostA = legs.reduce(function(s,l){ return s + legFuelGal(l.mi/acA.speed, spdKeyA, acA.gph) * scrapedPricePerGal(l.depIcao, spdKeyA); }, 0);
+  var blendedPriceA = totalFuelGalA > 0 ? totalFuelCostA / totalFuelGalA : 0;
   var rA={ name:acA.name, speed:acA.speed, gph:acA.gph,
            flightHours:flightHoursA, groundHours:groundHours,
            groundStops:groundStops, perStopMin:perStopMin,
@@ -4456,9 +4472,9 @@ window.recalc = function() {
     acCost = acPerHr * billableHrs;
   }
 
-  var fuelCost      = fuelPerHr * rA.flightHours;
+  var fuelCost      = totalFuelCostA;
   var oilCost       = oilPerHr * rA.flightHours;
-  var consumCost    = consumPerHr * rA.flightHours;
+  var consumCost    = fuelCost + oilCost;
   var pilotLow      = pilotMin * days;
   var pilotHigh     = pilotMax * days;
 
@@ -4499,7 +4515,7 @@ window.recalc = function() {
       rows += '<tr><td>Aircraft</td><td>' + rA.flightHours.toFixed(2) + ' hr within ' + leaseHrsIncl + ' hr remaining</td><td>$0</td></tr>';
     }
   }
-  rows += '<tr><td>Fuel</td><td>' + rA.flightHours.toFixed(2) + ' hr × ' + gph + ' GPH × $' + fuelPriceGal.toFixed(2) + '/gal</td><td>' + fmt$(fuelCost) + '</td></tr>';
+  rows += '<tr><td>Fuel</td><td>' + totalFuelGalA.toFixed(1) + ' gal × $' + blendedPriceA.toFixed(2) + '/gal blended</td><td>' + fmt$(fuelCost) + '</td></tr>';
   rows += '<tr><td>Oil</td><td>' + rA.flightHours.toFixed(2) + ' hr × $' + oilPerHr.toFixed(2) + '/hr</td><td>' + fmt$(oilCost) + '</td></tr>';
   var pilotDetail = flyingDays + ' flying day' + (flyingDays>1?'s':'') + ' × $' + pilotMin + '–$' + pilotMax + '/day';
   if (tripDaysVal && tripDays > flyingDays) pilotDetail += ' (' + tripDays + ' day trip)';
@@ -4556,12 +4572,12 @@ function buildTripData() {
   var legs = [], totalMi = 0;
   for (var i = 1; i < placed.length; i++) {
     var mi = haversineNm(placed[i-1].lat, placed[i-1].lng, placed[i].lat, placed[i].lng) * 1.15078;
-    legs.push({ from: _exportIdent(placed[i-1]) || placed[i-1].name, to: _exportIdent(placed[i]) || placed[i].name, mi: mi, overnight: !!placed[i].overnight });
+    legs.push({ from: _exportIdent(placed[i-1]) || placed[i-1].name, to: _exportIdent(placed[i]) || placed[i].name, mi: mi, overnight: !!placed[i].overnight, depIcao: placed[i-1].icao || '' });
     totalMi += mi;
   }
   if (routeClosed && placed.length >= 2) {
     var miC = haversineNm(placed[placed.length-1].lat, placed[placed.length-1].lng, placed[0].lat, placed[0].lng) * 1.15078;
-    legs.push({ from: _exportIdent(placed[placed.length-1]) || placed[placed.length-1].name, to: _exportIdent(placed[0]) || placed[0].name, mi: miC, overnight: false });
+    legs.push({ from: _exportIdent(placed[placed.length-1]) || placed[placed.length-1].name, to: _exportIdent(placed[0]) || placed[0].name, mi: miC, overnight: false, depIcao: placed[placed.length-1].icao || '' });
     totalMi += miC;
   }
 
@@ -4611,9 +4627,11 @@ function buildTripData() {
       billableHrs = Math.max(0, totals.flightHrs - leaseHrsIncl);
       acCost = acPerHr * billableHrs;
     }
-    var fuelCost = fuelPerHr * totals.flightHrs;
+    var _spdKeyC = String(Math.round(acA.speed));
+    var fuelCost = legs.reduce(function(s, l) { return s + (l.fuelGal || 0) * scrapedPricePerGal(l.depIcao, _spdKeyC); }, 0);
+    var blendedPrice = totals.fuelGal > 0 ? fuelCost / totals.fuelGal : 0;
     var oilCost = oilPerHr * totals.flightHrs;
-    var consumCost = consumPerHr * totals.flightHrs;
+    var consumCost = fuelCost + oilCost;
     var pilotLow = pilotMin * flyingDays;
     var pilotHigh = pilotMax * flyingDays;
 
@@ -4635,7 +4653,7 @@ function buildTripData() {
       fboTotal: fboTotal, fboItems: fboItems,
       totalLow: totalLow, totalHigh: totalHigh,
       flyingDays: flyingDays, tripDays: tripDays,
-      fuelPriceGal: fuelPriceGal, gph: gphLookup, oilPerHr: oilPerHr
+      fuelPriceGal: blendedPrice, gph: gphLookup, oilPerHr: oilPerHr
     };
   }
 
@@ -4816,7 +4834,7 @@ function toText(td) {
     }
     lines.push('  ' + new Array(45).join('-'));
     lines.push('  ' + pad('TOTAL',36) + fmtRange(c.totalLow, c.totalHigh));
-    if (c.gph) lines.push('  (Fuel based on $' + c.fuelPriceGal.toFixed(2) + '/gal at ' + c.gph + ' GPH)');
+    if (c.gph) lines.push('  (Fuel: ' + td.totals.fuelGal.toFixed(1) + ' gal × $' + c.fuelPriceGal.toFixed(2) + '/gal blended)');
   }
   lines.push('');
   lines.push(sep);
