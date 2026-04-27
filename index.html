@@ -980,7 +980,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.8';
+var APP_VERSION = 'v2026-04-27.9';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1275,11 +1275,11 @@ function renderWPList() {
     }
     if (isPlaced) {
       subLine += (subLine ? '&nbsp; ' : '') + '<span style="color:var(--text-muted);font-family:var(--mono);font-size:9px">' + wp.lat.toFixed(3) + '° / ' + wp.lng.toFixed(3) + '°</span>';
-      // Fuel availability warning / live price (skip origin — assumed fueled at departure)
-      if (i > 0 && wp.icao) {
+      // Fuel availability warning / live price (all stops including origin)
+      if (wp.icao) {
         var acA = getAC('A');
         var spdKey = acA ? String(Math.round(acA.speed)) : '';
-        if (spdKey && !airportHasFuel(wp, spdKey)) {
+        if (i > 0 && spdKey && !airportHasFuel(wp, spdKey)) {
           subLine += '<br><span style="color:#f59e0b;font-family:var(--mono);font-size:9px">&#9888; NO FUEL SERVICES</span>';
         } else {
           var fuelLine = airportFuelLine(wp.icao, acA, true);
