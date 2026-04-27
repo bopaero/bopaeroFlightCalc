@@ -642,6 +642,7 @@ select option { background:var(--surface2); }
     <div class="logo-title">Trip<span>Calc</span></div>
   </div>
   <div class="hdr-cluster">
+    <a href="guide.html" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:11px;color:var(--text-muted);text-decoration:none;letter-spacing:0.5px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;white-space:nowrap" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">User Guide</a>
     <div id="exportMenu" class="hdr-export" style="display:none">
       <button type="button" class="hdr-export-btn" onclick="toggleExportMenu(event)" aria-haspopup="true" aria-expanded="false" aria-label="Export">
         <span class="hdr-export-label">Export</span>
@@ -1030,7 +1031,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.18';
+var APP_VERSION = 'v2026-04-27.19';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────

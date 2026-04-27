@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<!--
+  bop Aero TripCalc — User Guide
+  Copyright (c) 2026 bop Aero. All rights reserved.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TripCalc — User Guide</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root {
+  --bg: #0a0c0f;
+  --surface: #111418;
+  --surface2: #161b22;
+  --bg-card: #1a1f27;
+  --border: #1f2937;
+  --border-bright: #2d3748;
+  --accent: #00d4ff;
+  --accent2: #00ff9d;
+  --warn: #f59e0b;
+  --text: #e2e8f0;
+  --text-muted: #8899aa;
+  --red: #ff4444;
+  --mono: 'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f5f5f5;
+    --surface: #e8e8e8;
+    --surface2: #ffffff;
+    --bg-card: #ffffff;
+    --border: #d0d0d0;
+    --border-bright: #b0b0b0;
+    --accent: #0077aa;
+    --accent2: #008855;
+    --warn: #d48400;
+    --text: #1a1a2e;
+    --text-muted: #5a6070;
+    --red: #cc2222;
+  }
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+/* HEADER */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.logo-diamond {
+  width:20px; height:20px; border:2px solid var(--accent);
+  transform:rotate(45deg); position:relative; flex-shrink:0;
+}
+.logo-diamond::after {
+  content:''; position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%); width:6px; height:6px; background:var(--accent);
+}
+.logo-title { font-size:14px; font-weight:700; letter-spacing:2px; color:var(--text); }
+.logo-title span { color:var(--accent); }
+.hdr-right { font-family:var(--mono); font-size:11px; color:var(--text-muted); }
+.back-link {
+  font-family:var(--mono); font-size:12px; color:var(--accent);
+  text-decoration:none; border:1px solid var(--accent);
+  padding:5px 12px; border-radius:4px; letter-spacing:0.5px;
+}
+.back-link:hover { background:var(--accent); color:#000; }
+
+/* LAYOUT */
+.page { display:flex; max-width:1100px; margin:0 auto; gap:0; }
+
+/* NAV */
+nav {
+  width:220px;
+  flex-shrink:0;
+  padding:32px 0 40px;
+  position:sticky;
+  top:54px;
+  height:calc(100vh - 54px);
+  overflow-y:auto;
+  border-right:1px solid var(--border);
+}
+nav::-webkit-scrollbar { width:3px; }
+nav::-webkit-scrollbar-thumb { background:var(--border-bright); }
+.nav-section { margin-bottom:6px; }
+.nav-label {
+  font-family:var(--mono); font-size:10px; letter-spacing:1.5px;
+  color:var(--text-muted); padding:10px 20px 4px; text-transform:uppercase;
+}
+.nav-link {
+  display:block; padding:6px 20px; font-size:13px;
+  color:var(--text-muted); text-decoration:none;
+  border-left:2px solid transparent;
+  transition:color 0.15s, border-color 0.15s;
+}
+.nav-link:hover { color:var(--text); border-left-color:var(--border-bright); }
+.nav-link.active { color:var(--accent); border-left-color:var(--accent); }
+
+/* CONTENT */
+.content {
+  flex:1;
+  padding:40px 48px 80px;
+  min-width:0;
+}
+
+/* SECTIONS */
+.guide-section { margin-bottom:56px; }
+.guide-section h2 {
+  font-size:22px; font-weight:700; color:var(--text);
+  margin-bottom:20px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+}
+.guide-section h3 {
+  font-size:16px; font-weight:600; color:var(--accent);
+  margin:28px 0 10px; letter-spacing:0.3px;
+}
+.guide-section p { color:var(--text-muted); margin-bottom:12px; }
+.guide-section p strong { color:var(--text); }
+.guide-section ul, .guide-section ol {
+  padding-left:20px; color:var(--text-muted); margin-bottom:12px;
+}
+.guide-section li { margin-bottom:6px; }
+.guide-section li strong { color:var(--text); }
+
+/* INTRO HERO */
+.hero {
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:28px 32px;
+  margin-bottom:40px;
+}
+.hero h1 {
+  font-size:28px; font-weight:800; letter-spacing:1px;
+  margin-bottom:8px;
+}
+.hero h1 span { color:var(--accent); }
+.hero p { color:var(--text-muted); font-size:15px; max-width:560px; }
+
+/* CALLOUT BOXES */
+.callout {
+  border-radius:8px; padding:14px 18px; margin:16px 0;
+  display:flex; gap:12px; align-items:flex-start;
+}
+.callout.tip { background:rgba(0,212,255,0.07); border-left:3px solid var(--accent); }
+.callout.warn { background:rgba(245,158,11,0.07); border-left:3px solid var(--warn); }
+.callout.note { background:rgba(255,255,255,0.03); border-left:3px solid var(--border-bright); }
+.callout-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+.callout p { margin:0; color:var(--text-muted); font-size:14px; }
+.callout p strong { color:var(--text); }
+
+/* BADGES / CHIPS */
+.badge {
+  display:inline-block; padding:1px 8px; border-radius:4px;
+  font-family:var(--mono); font-size:12px; font-weight:600;
+  vertical-align:middle;
+}
+.badge-ac { background:rgba(0,212,255,0.15); color:var(--accent); }
+.badge-warn { background:rgba(245,158,11,0.15); color:var(--warn); }
+.badge-danger { background:rgba(255,68,68,0.15); color:var(--red); }
+.badge-ok { background:rgba(0,255,157,0.12); color:var(--accent2); }
+
+/* KEYBOARD SHORTCUT */
+kbd {
+  background:var(--surface2); border:1px solid var(--border-bright);
+  border-radius:4px; padding:1px 7px; font-family:var(--mono);
+  font-size:12px; color:var(--text); white-space:nowrap;
+}
+
+/* STEP LIST */
+.steps { list-style:none; padding:0; counter-reset:step; }
+.steps li {
+  counter-increment:step;
+  padding:10px 0 10px 44px;
+  position:relative;
+  border-bottom:1px solid var(--border);
+  color:var(--text-muted);
+}
+.steps li:last-child { border-bottom:none; }
+.steps li::before {
+  content:counter(step);
+  position:absolute; left:0; top:12px;
+  width:26px; height:26px; line-height:26px;
+  border-radius:50%; background:var(--surface2);
+  border:1px solid var(--accent); color:var(--accent);
+  font-family:var(--mono); font-size:12px; font-weight:700;
+  text-align:center; flex-shrink:0;
+}
+.steps li strong { color:var(--text); }
+
+/* SPEC TABLE */
+.spec-table { width:100%; border-collapse:collapse; font-size:14px; margin:12px 0 20px; }
+.spec-table th {
+  text-align:left; font-family:var(--mono); font-size:11px;
+  letter-spacing:1px; text-transform:uppercase;
+  color:var(--text-muted); padding:8px 12px;
+  background:var(--surface2); border-bottom:1px solid var(--border);
+}
+.spec-table td { padding:9px 12px; border-bottom:1px solid var(--border); color:var(--text-muted); }
+.spec-table td:first-child { color:var(--text); font-weight:500; }
+.spec-table tr:last-child td { border-bottom:none; }
+.spec-table td .badge { vertical-align:baseline; }
+
+/* FEATURE GRID */
+.feature-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:16px 0; }
+@media (max-width:700px) { .feature-grid { grid-template-columns:1fr; } }
+.feature-card {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:16px;
+}
+.feature-card h4 { font-size:13px; font-weight:600; color:var(--text); margin-bottom:6px; }
+.feature-card p { font-size:13px; color:var(--text-muted); margin:0; }
+
+/* DIVIDER */
+hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
+
+/* MOBILE */
+@media (max-width:800px) {
+  nav { display:none; }
+  .content { padding:24px 20px 60px; }
+  .hero { padding:20px; }
+  .feature-grid { grid-template-columns:1fr; }
+}
+
+/* TOC top */
+.toc-mobile {
+  display:none;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:14px 18px;
+  margin-bottom:28px;
+  font-size:14px;
+}
+@media (max-width:800px) { .toc-mobile { display:block; } }
+.toc-mobile summary { color:var(--accent); cursor:pointer; font-weight:600; }
+.toc-mobile ul { margin:10px 0 0 16px; }
+.toc-mobile a { color:var(--text-muted); text-decoration:none; }
+.toc-mobile a:hover { color:var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="index.html">
+    <div class="logo-diamond"></div>
+    <span class="logo-title">bop&nbsp;<span>Aero</span>&nbsp;TripCalc</span>
+  </a>
+  <a class="back-link" href="index.html">← Back to App</a>
+</header>
+
+<div class="page">
+
+  <!-- Sidebar nav -->
+  <nav id="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <a class="nav-link" href="#overview">What is TripCalc?</a>
+      <a class="nav-link" href="#quickstart">Quick Start</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Planning</div>
+      <a class="nav-link" href="#waypoints">Adding Stops</a>
+      <a class="nav-link" href="#aircraft">Aircraft</a>
+      <a class="nav-link" href="#payload">Payload & Weight</a>
+      <a class="nav-link" href="#overnight">Overnight Stops</a>
+      <a class="nav-link" href="#fuel-stops">Fuel-Only Stops</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Map</div>
+      <a class="nav-link" href="#map-controls">Map Controls</a>
+      <a class="nav-link" href="#range-circle">Range Circle</a>
+      <a class="nav-link" href="#popups">Airport Popups</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Results</div>
+      <a class="nav-link" href="#results">Flight Results</a>
+      <a class="nav-link" href="#fuel-prices">Fuel Prices</a>
+      <a class="nav-link" href="#costs">Trip Cost</a>
+      <a class="nav-link" href="#warnings">Warnings</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Trips</div>
+      <a class="nav-link" href="#saving">Saving Trips</a>
+      <a class="nav-link" href="#export">Export & Print</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Reference</div>
+      <a class="nav-link" href="#aircraft-specs">Aircraft Specs</a>
+      <a class="nav-link" href="#data-sources">Data Sources</a>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="content">
+
+    <!-- Mobile TOC -->
+    <details class="toc-mobile">
+      <summary>Contents</summary>
+      <ul>
+        <li><a href="#overview">What is TripCalc?</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#waypoints">Adding Stops</a></li>
+        <li><a href="#aircraft">Aircraft</a></li>
+        <li><a href="#payload">Payload &amp; Weight</a></li>
+        <li><a href="#overnight">Overnight Stops</a></li>
+        <li><a href="#fuel-stops">Fuel-Only Stops</a></li>
+        <li><a href="#map-controls">Map Controls</a></li>
+        <li><a href="#range-circle">Range Circle</a></li>
+        <li><a href="#popups">Airport Popups</a></li>
+        <li><a href="#results">Flight Results</a></li>
+        <li><a href="#fuel-prices">Fuel Prices</a></li>
+        <li><a href="#costs">Trip Cost</a></li>
+        <li><a href="#warnings">Warnings</a></li>
+        <li><a href="#saving">Saving Trips</a></li>
+        <li><a href="#export">Export &amp; Print</a></li>
+        <li><a href="#aircraft-specs">Aircraft Specs</a></li>
+        <li><a href="#data-sources">Data Sources</a></li>
+      </ul>
+    </details>
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1>TripCalc <span>User Guide</span></h1>
+      <p>Plan multi-leg flights with real airport data, live fuel prices, weight &amp; balance, and side-by-side aircraft comparison — all in one page.</p>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section class="guide-section" id="overview">
+      <h2>What is TripCalc?</h2>
+      <p>TripCalc is a browser-based mission planning tool for Cirrus pilots. Drop stops on the map, pick your aircraft, and instantly see flight times, fuel requirements, runway suitability, and a full cost estimate — for one aircraft or two side-by-side.</p>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>&#9992; Real Airport Data</h4>
+          <p>Runway lengths and airport identifiers from the FAA NASR database, refreshed every 28 days.</p>
+        </div>
+        <div class="feature-card">
+          <h4>&#9981; Live Fuel Prices</h4>
+          <p>Per-airport 100LL and Jet-A prices pulled from AirNav, with a national average fallback when AirNav has no data.</p>
+        </div>
+        <div class="feature-card">
+          <h4>&#9878; Weight &amp; Balance</h4>
+          <p>Seat-by-seat payload entry for the SR22T with auto-calculated max takeoff weight status.</p>
+        </div>
+        <div class="feature-card">
+          <h4>&#128203; Side-by-Side Compare</h4>
+          <p>Add a second aircraft to compare flight times, fuel cost, and total trip cost on the same route.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUICK START -->
+    <section class="guide-section" id="quickstart">
+      <h2>Quick Start</h2>
+      <ol class="steps">
+        <li><strong>Add your origin.</strong> Click <strong>+ Add Origin</strong> in the sidebar, then click your departure airport on the map — or type its ICAO code (e.g., <kbd>KFCM</kbd>) in the search field and press <kbd>Enter</kbd>.</li>
+        <li><strong>Add stops.</strong> After the origin is placed, each map click adds the next stop. You can also type an ICAO code or city name into any waypoint's search field.</li>
+        <li><strong>Select an aircraft.</strong> Click <strong>SR22T</strong> or <strong>SF50</strong> in the Aircraft section. Flight times and fuel calculations appear immediately.</li>
+        <li><strong>Review results.</strong> The Results section shows total time, flight time, distance, and fuel. Expand <strong>▼ Route Details</strong> for a leg-by-leg breakdown.</li>
+        <li><strong>Close the loop (optional).</strong> Click <strong>↻ Return to Origin</strong> to add a return leg back to your departure airport.</li>
+      </ol>
+      <div class="callout tip">
+        <div class="callout-icon">&#128161;</div>
+        <p><strong>Tip:</strong> TripCalc works best on a desktop browser with a wide screen. On mobile, use the <strong>Plan / Map / Results</strong> tabs at the bottom to switch views.</p>
+      </div>
+    </section>
+
+    <!-- WAYPOINTS -->
+    <section class="guide-section" id="waypoints">
+      <h2>Adding Stops</h2>
+      <h3>Map Click</h3>
+      <p>When a waypoint is pending (shown by the flashing badge in the sidebar), click anywhere on the map to place it. TripCalc snaps it to the nearest public-use airport within a reasonable radius.</p>
+
+      <h3>ICAO or Address Search</h3>
+      <p>Type directly into a waypoint's search field. TripCalc accepts:</p>
+      <ul>
+        <li><strong>ICAO codes</strong> — e.g., <kbd>KSNA</kbd>, <kbd>KFCM</kbd></li>
+        <li><strong>City or address</strong> — TripCalc geocodes the address and snaps to the nearest airport</li>
+      </ul>
+      <p>A dropdown of matching airports appears as you type. Press <kbd>Enter</kbd> or click a suggestion to place the stop.</p>
+
+      <h3>Reordering Stops</h3>
+      <p>Drag the <strong>☰</strong> handle on any waypoint row to reorder the route. The map and results update instantly.</p>
+
+      <h3>Moving a Stop</h3>
+      <p>Click the <strong>↻</strong> re-place button on a waypoint to put it back into pending mode so you can click a new location on the map.</p>
+
+      <h3>Removing a Stop</h3>
+      <p>Click the <strong>×</strong> button on any waypoint row. The route reconnects around the removed stop automatically.</p>
+
+      <div class="callout warn">
+        <div class="callout-icon">&#9888;</div>
+        <p><strong>Canadian airports:</strong> Canadian airports use ICAO identifiers starting with <strong>C</strong> (e.g., <kbd>CYYZ</kbd>). Fuel-only stop filtering is disabled for Canadian airports since fuel type availability data is limited.</p>
+      </div>
+    </section>
+
+    <!-- AIRCRAFT -->
+    <section class="guide-section" id="aircraft">
+      <h2>Aircraft</h2>
+      <h3>Primary Aircraft</h3>
+      <p>Click <strong>SR22T</strong> or <strong>SF50</strong> to load factory defaults for speed and fuel burn. You can override either value by typing directly into the Speed (mph) or GPH fields.</p>
+
+      <h3>Custom Aircraft</h3>
+      <p>Click <strong>+ Custom Aircraft</strong> under the primary slot to define a fully custom aircraft — enter a name, cruise speed, and fuel burn rate.</p>
+
+      <h3>Comparison Aircraft</h3>
+      <p>Click <strong>+ Add Comparison Aircraft</strong> to add a second aircraft. Both aircraft compute side-by-side results on the same route, with a time-difference row showing how much faster or slower the second aircraft is.</p>
+
+      <h3>SF50 — Owner vs. Lessee</h3>
+      <p>When the SF50 is selected, choose between <strong>OWNER</strong> and <strong>LESSEE</strong> modes. In Lessee mode, enter your remaining lease hours; cost calculations adjust accordingly.</p>
+
+      <div class="callout note">
+        <div class="callout-icon">&#9432;</div>
+        <p>Speed and GPH edits apply only to the current session. Clicking the aircraft quick-pick button again reloads factory defaults.</p>
+      </div>
+    </section>
+
+    <!-- PAYLOAD -->
+    <section class="guide-section" id="payload">
+      <h2>Payload &amp; Weight (SR22T)</h2>
+      <p>The SR22T includes a seat-by-seat payload calculator to help you stay within max takeoff weight.</p>
+
+      <h3>Setting Occupants</h3>
+      <p>Click the occupant count to open a popup with <strong>−</strong> and <strong>+</strong> buttons. TripCalc fills seats in order: pilot → rear left → front passenger → rear right. Toggle <strong>Luggage</strong> to add standard baggage weight.</p>
+
+      <h3>Weight Details</h3>
+      <p>Click <strong>▼ Weight Details</strong> to edit individual seat weights and baggage. The payload bar turns red when total weight exceeds the SR22T's max takeoff weight. Click <strong>Use Standard Weights</strong> to reset all seats to standard FAA weights (190 lbs per adult, 80 lbs per child).</p>
+
+      <table class="spec-table">
+        <thead>
+          <tr><th>Seat</th><th>Default</th><th>Standard</th><th>Max</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Pilot</td><td>190 lbs</td><td>190 lbs</td><td>300 lbs</td></tr>
+          <tr><td>Front passenger</td><td>0 lbs</td><td>190 lbs</td><td>300 lbs</td></tr>
+          <tr><td>Rear left</td><td>190 lbs</td><td>190 lbs</td><td>300 lbs</td></tr>
+          <tr><td>Rear right</td><td>0 lbs</td><td>190 lbs</td><td>300 lbs</td></tr>
+          <tr><td>Baggage</td><td>30 lbs</td><td>30 lbs</td><td>130 lbs</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-icon">&#9888;</div>
+        <p>Payload calculation is a planning tool only. Always verify weight and balance using Cirrus's official Weight &amp; Balance software before flight.</p>
+      </div>
+    </section>
+
+    <!-- OVERNIGHT -->
+    <section class="guide-section" id="overnight">
+      <h2>Overnight Stops</h2>
+      <p>Mark any stop (except the origin) as an overnight stop by clicking the <strong>☽</strong> moon icon on its waypoint row. This tells TripCalc that you are spending the night and continuing the following day.</p>
+      <ul>
+        <li>The <strong>Flying Days</strong> count in the Trip Cost section increments by one for each overnight stop.</li>
+        <li>The Route Details table shows a <strong>☽ DAY 2</strong> (or DAY 3, etc.) divider after each overnight stop.</li>
+        <li>Pilot cost in the cost estimate uses a daily rate, so adding overnight stops increases the pilot cost total.</li>
+      </ul>
+      <div class="callout tip">
+        <div class="callout-icon">&#128161;</div>
+        <p>Use overnight stops on multi-day trips to get an accurate pilot cost estimate. Flying Days is set to 1 by default (day trip).</p>
+      </div>
+    </section>
+
+    <!-- FUEL-ONLY STOPS -->
+    <section class="guide-section" id="fuel-stops">
+      <h2>Fuel-Only Stops</h2>
+      <p>The <strong>Fuel-Only Stops</strong> toggle in the sidebar filters intermediate stop candidates to airports that carry the right fuel type for your aircraft — 100LL for the SR22T, Jet-A for the SF50.</p>
+      <p>When enabled and no suitable fuel airport exists within range, TripCalc falls back to the nearest airport and shows a warning.</p>
+    </section>
+
+    <!-- MAP CONTROLS -->
+    <section class="guide-section" id="map-controls">
+      <h2>Map Controls</h2>
+
+      <h3>Helper Buttons (top-left)</h3>
+      <table class="spec-table">
+        <thead><tr><th>Button</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>ROUTE</td><td>Zooms and pans the map to fit the entire route in view.</td></tr>
+          <tr><td>LAST</td><td>Zooms to the most recently added stop.</td></tr>
+          <tr><td>RANGE</td><td>Toggles the aircraft range circle on and off.</td></tr>
+          <tr><td>MAP LOCKED</td><td>Locks or unlocks map scrolling. Locked by default to prevent accidental panning while scrolling the sidebar.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Map Layer (bottom-left)</h3>
+      <p>Switch between <strong>DARK</strong> (default), <strong>STREET</strong>, and <strong>SAT</strong> (satellite) tile layers.</p>
+
+      <div class="callout note">
+        <div class="callout-icon">&#9432;</div>
+        <p>On mobile, the map is locked by default. Tap <strong>MAP LOCKED</strong> to enable panning, then lock it again when done to avoid unintended scrolling.</p>
+      </div>
+    </section>
+
+    <!-- RANGE CIRCLE -->
+    <section class="guide-section" id="range-circle">
+      <h2>Range Circle</h2>
+      <p>The range circle is a dashed ring centered on the last-placed waypoint showing the maximum distance your selected aircraft can fly on a full tank, accounting for a one-hour fuel reserve.</p>
+      <ul>
+        <li>The ring label shows the range in statute miles and the time to reach maximum range.</li>
+        <li>The circle updates automatically when you change aircraft, edit fuel burn, or add/move waypoints.</li>
+        <li>Toggle visibility with the <strong>RANGE</strong> button in the top-left map controls.</li>
+      </ul>
+      <div class="callout warn">
+        <div class="callout-icon">&#9888;</div>
+        <p>The range circle is a planning estimate. It does not account for winds, altitude, climb fuel burn (modeled separately), or ATC routing. Always confirm fuel planning with the aircraft's POH.</p>
+      </div>
+    </section>
+
+    <!-- POPUPS -->
+    <section class="guide-section" id="popups">
+      <h2>Airport Popups</h2>
+      <p>Click any waypoint marker on the map to see a popup with:</p>
+      <ul>
+        <li><strong>Airport name and ICAO code</strong></li>
+        <li><strong>Coordinates</strong> in decimal degrees</li>
+        <li><strong>Longest paved runway</strong> with a color-coded suitability indicator</li>
+        <li><strong>Fuel price</strong> — live AirNav price (highlighted in color) or a muted <em>*Natl Avg</em> fallback when no local data is available</li>
+        <li><strong>Return to Origin</strong> button on the origin marker when the route is open</li>
+      </ul>
+    </section>
+
+    <!-- RESULTS -->
+    <section class="guide-section" id="results">
+      <h2>Flight Results</h2>
+      <p>The Results section appears once at least one stop is placed and an aircraft is selected.</p>
+
+      <h3>Totals</h3>
+      <table class="spec-table">
+        <thead><tr><th>Field</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>Total Time</td><td>Flight time plus all ground time at intermediate stops.</td></tr>
+          <tr><td>Flight Time</td><td>Airborne time only (climb + cruise modeled separately).</td></tr>
+          <tr><td>Ground Time</td><td>Time on the ground at stops (configurable in Trip Cost).</td></tr>
+          <tr><td>Total Distance</td><td>Sum of great-circle distances for all legs, in statute miles.</td></tr>
+          <tr><td>Average Speed</td><td>Total distance divided by total flight time.</td></tr>
+          <tr><td>Total Fuel</td><td>Estimated fuel burn for the entire route (gallons).</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Route Details</h3>
+      <p>Click <strong>▼ Route Details</strong> to expand a leg-by-leg table showing distance, time, fuel burn, and maximum range per leg. Day separators (☽ DAY 2, ☽ DAY 3…) appear after overnight stops.</p>
+
+      <h3>Side-by-Side Comparison</h3>
+      <p>When a second aircraft is added, both results cards appear with a row showing the time difference between them.</p>
+    </section>
+
+    <!-- FUEL PRICES -->
+    <section class="guide-section" id="fuel-prices">
+      <h2>Fuel Prices</h2>
+      <p>TripCalc fetches fuel prices for each airport in your route from AirNav.com. Prices are shown in airport popups and in the waypoint list sidebar.</p>
+
+      <table class="spec-table">
+        <thead><tr><th>Display</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>&#9981; 100LL $X.XX/gal <span class="badge badge-ok">colored</span></td><td>Live AirNav price for that airport.</td></tr>
+          <tr><td>&#9981; loading… <span class="badge badge-ac">muted</span></td><td>Price fetch is in progress.</td></tr>
+          <tr><td>*Natl Avg 100LL $X.XX/gal <span class="badge badge-ac">muted</span></td><td>No AirNav data for this airport; national average shown as a fallback.</td></tr>
+        </tbody>
+      </table>
+
+      <p>National average prices are updated automatically via a scheduled data pipeline and reflect recent nationwide averages for both 100LL and Jet-A.</p>
+
+      <div class="callout tip">
+        <div class="callout-icon">&#128161;</div>
+        <p>Fuel prices are used in the cost estimate. For the most accurate cost projection, verify prices with the FBO before your flight.</p>
+      </div>
+    </section>
+
+    <!-- COSTS -->
+    <section class="guide-section" id="costs">
+      <h2>Trip Cost</h2>
+      <p>The Trip Cost section lets you configure costs to generate a full trip cost estimate.</p>
+
+      <h3>Cost Inputs</h3>
+      <table class="spec-table">
+        <thead><tr><th>Field</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>Aircraft Cost ($/hr)</td><td>Ownership or charter cost per hour. Leave at $0 if not applicable.</td></tr>
+          <tr><td>Fuel/Oil/TKS ($/hr)</td><td>Pre-filled based on aircraft GPH × current fuel price. Editable.</td></tr>
+          <tr><td>Pilot Cost ($/day)</td><td>Minimum and maximum daily pilot cost. The estimate shows a range.</td></tr>
+          <tr><td>Flying Days</td><td>Auto-calculated: 1 + number of overnight stops.</td></tr>
+          <tr><td>Trip Days</td><td>Total days away from base (may differ from flying days).</td></tr>
+          <tr><td>Ground Time Per Stop</td><td>Minutes budgeted at each intermediate stop. Default: 35 min.</td></tr>
+          <tr><td>FBO/Airport Fees</td><td>Per-airport fee rows — enter known fees or use the AirNav and AOPA links to look them up.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Cost Breakdown</h3>
+      <p>Click <strong>▼ Cost Breakdown</strong> inside the cost estimate card to see a line-by-line breakdown: aircraft cost, fuel cost, oil/consumables, pilot cost, and FBO fees.</p>
+    </section>
+
+    <!-- WARNINGS -->
+    <section class="guide-section" id="warnings">
+      <h2>Warnings</h2>
+      <p>TripCalc flags safety-relevant conditions at the waypoint and leg level.</p>
+
+      <table class="spec-table">
+        <thead><tr><th>Warning</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-warn">⚠ SHORT RWY</span></td><td>Longest paved runway is below the aircraft's caution threshold but above the hard minimum.</td></tr>
+          <tr><td><span class="badge badge-danger">⚠ SHORT RWY</span></td><td>Longest paved runway is below the aircraft's required minimum. Evaluate carefully.</td></tr>
+          <tr><td><span class="badge badge-danger">⚠ EXCEEDS FUEL RANGE</span></td><td>The leg distance exceeds the aircraft's maximum range. A fuel stop is required.</td></tr>
+          <tr><td><span class="badge badge-warn">⚠ NO FUEL</span></td><td>Airport does not carry the fuel type required by the selected aircraft.</td></tr>
+          <tr><td><span class="badge badge-danger">OVER</span></td><td>Payload total exceeds the aircraft's max takeoff weight (SR22T only).</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Runway Thresholds</h3>
+      <table class="spec-table">
+        <thead><tr><th>Aircraft</th><th>Caution below</th><th>Minimum</th></tr></thead>
+        <tbody>
+          <tr><td>SR22T</td><td>3,000 ft</td><td>2,500 ft</td></tr>
+          <tr><td>SF50</td><td>4,000 ft</td><td>3,000 ft</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SAVING -->
+    <section class="guide-section" id="saving">
+      <h2>Saving Trips</h2>
+
+      <h3>Auto-Save</h3>
+      <p>TripCalc automatically saves your current route to browser storage every 1–2 seconds. If the browser crashes or the tab is closed unexpectedly, you'll be offered the option to <strong>Restore Trip</strong> the next time you open TripCalc.</p>
+
+      <div class="callout note">
+        <div class="callout-icon">&#9432;</div>
+        <p>If you close the browser tab normally (via the tab × button or the browser File menu), TripCalc treats it as an intentional exit and will start fresh on the next launch — no restore prompt.</p>
+      </div>
+
+      <h3>Named Saves (💾 Trips)</h3>
+      <p>Click the <strong>💾 Trips</strong> button (next to Clear All) to open the Saved Trips modal.</p>
+      <ol class="steps">
+        <li>Type a name for your trip in the <strong>Name this trip…</strong> field.</li>
+        <li>Press <kbd>Enter</kbd> or click <strong>Save</strong>. The trip is saved to browser storage instantly.</li>
+        <li>To reload a saved trip later, open the Trips modal and click <strong>Load</strong> next to any entry.</li>
+        <li>To remove a saved trip, click <strong>Delete</strong>. Up to 30 trips can be saved.</li>
+      </ol>
+
+      <div class="callout warn">
+        <div class="callout-icon">&#9888;</div>
+        <p>Saved trips live in your browser's local storage. Clearing browser data or switching browsers will remove them. For permanent storage, use <strong>Export → Export TXT</strong> to save a text copy of the route.</p>
+      </div>
+
+      <h3>Clear All</h3>
+      <p>Click <strong>✕ Clear All</strong> to reset the entire trip. You'll be asked to confirm before anything is removed.</p>
+    </section>
+
+    <!-- EXPORT -->
+    <section class="guide-section" id="export">
+      <h2>Export &amp; Print</h2>
+      <p>Click the <strong>Export</strong> button in the header to access sharing and export options.</p>
+
+      <table class="spec-table">
+        <thead><tr><th>Option</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>Copy Route</td><td>Copies the airport sequence to the clipboard (e.g., <code>KFCM KORD KSNA</code>).</td></tr>
+          <tr><td>Open in ForeFlight</td><td>Launches ForeFlight (if installed) with the route pre-loaded. Works on iPhone and iPad.</td></tr>
+          <tr><td>Export FPL</td><td>Downloads an FAA flight plan file compatible with most EFB apps.</td></tr>
+          <tr><td>Export GPX</td><td>Downloads a GPX file for GPS devices and other aviation apps.</td></tr>
+          <tr><td>Export TXT</td><td>Downloads a plain-text trip summary including all legs, distances, fuel, and cost.</td></tr>
+          <tr><td>Print</td><td>Opens a print-formatted version of the trip summary.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- AIRCRAFT SPECS -->
+    <section class="guide-section" id="aircraft-specs">
+      <h2>Aircraft Specifications</h2>
+
+      <h3>Cirrus SR22T <span class="badge badge-ac">Piston</span></h3>
+      <table class="spec-table">
+        <thead><tr><th>Spec</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Cruise Speed</td><td>175 mph</td></tr>
+          <tr><td>Fuel Burn</td><td>18 GPH</td></tr>
+          <tr><td>Fuel Type</td><td>100LL (Avgas)</td></tr>
+          <tr><td>Max Range</td><td>~800 statute miles (with reserve)</td></tr>
+          <tr><td>Seats</td><td>4 (pilot + 3 passengers)</td></tr>
+          <tr><td>Max Takeoff Weight</td><td>3,600 lbs</td></tr>
+          <tr><td>Min Runway (hard)</td><td>2,500 ft</td></tr>
+          <tr><td>Min Runway (caution)</td><td>3,000 ft</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Cirrus SF50 Vision Jet <span class="badge badge-ac">Jet</span></h3>
+      <table class="spec-table">
+        <thead><tr><th>Spec</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Cruise Speed</td><td>280 mph</td></tr>
+          <tr><td>Fuel Burn</td><td>59 GPH</td></tr>
+          <tr><td>Fuel Type</td><td>Jet-A</td></tr>
+          <tr><td>Max Range</td><td>~1,000 statute miles (with reserve)</td></tr>
+          <tr><td>Seats</td><td>7 (pilot + 4 adults + 2 children)</td></tr>
+          <tr><td>Max Takeoff Weight</td><td>6,000 lbs</td></tr>
+          <tr><td>Min Runway (hard)</td><td>3,000 ft</td></tr>
+          <tr><td>Min Runway (caution)</td><td>4,000 ft</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-icon">&#9888;</div>
+        <p>Aircraft performance values in TripCalc are planning estimates based on published cruise performance. Actual performance varies with weight, altitude, temperature, and wind. Always conduct a complete preflight performance calculation using the official Pilot's Operating Handbook.</p>
+      </div>
+    </section>
+
+    <!-- DATA SOURCES -->
+    <section class="guide-section" id="data-sources">
+      <h2>Data Sources</h2>
+      <table class="spec-table">
+        <thead><tr><th>Data</th><th>Source</th><th>Update Frequency</th></tr></thead>
+        <tbody>
+          <tr><td>Airport identifiers &amp; locations</td><td>OurAirports (airports.csv)</td><td>On each app load</td></tr>
+          <tr><td>Runway lengths</td><td>FAA NASR (National Airspace System Resources)</td><td>Every 28 days</td></tr>
+          <tr><td>Fuel prices (per airport)</td><td>AirNav.com</td><td>Live, on demand</td></tr>
+          <tr><td>National average fuel prices</td><td>bop Aero data pipeline</td><td>Every 14 days</td></tr>
+        </tbody>
+      </table>
+      <p>The current FAA NASR cycle is displayed in the header. When the NASR data is unavailable, <span style="color:var(--warn)">NASR: OFFLINE</span> is shown — airport lookups still work but runway data may be stale.</p>
+
+      <hr>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:8px;">
+        TripCalc is developed by bop Aero. For questions or feedback, contact
+        <a href="mailto:raymond@bopaero.com" style="color:var(--accent)">raymond@bopaero.com</a>.
+      </p>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// Highlight active nav link on scroll
+(function() {
+  var links = document.querySelectorAll('#sidebar-nav .nav-link');
+  var sections = [];
+  links.forEach(function(link) {
+    var id = link.getAttribute('href').replace('#','');
+    var el = document.getElementById(id);
+    if (el) sections.push({ id:id, el:el, link:link });
+  });
+  function onScroll() {
+    var scrollY = window.scrollY + 80;
+    var current = sections[0];
+    sections.forEach(function(s) {
+      if (s.el.offsetTop <= scrollY) current = s;
+    });
+    links.forEach(function(l) { l.classList.remove('active'); });
+    if (current) current.link.classList.add('active');
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+})();
+</script>
+
+</body>
+</html>
