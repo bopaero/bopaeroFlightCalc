@@ -980,7 +980,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.12';
+var APP_VERSION = 'v2026-04-27.13';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2321,7 +2321,7 @@ function airportFuelLine(icao, acA, small) {
   // No scraped price — show national average as fallback
   var avgPrice = isJet ? fuelPrices.jet_a : fuelPrices.avgas_100ll;
   if (!avgPrice) return '';
-  return '<span style="color:var(--text-muted);font-family:var(--mono);font-size:' + sz + 'px">&#9981; ' + label + ' ~$' + avgPrice.toFixed(2) + '/gal avg</span>';
+  return '<span style="color:var(--text-muted);font-family:var(--mono);font-size:' + sz + 'px">*Natl Avg ' + label + ' $' + avgPrice.toFixed(2) + '/gal</span>';
 }
 
 (function loadFuelPrices() {
