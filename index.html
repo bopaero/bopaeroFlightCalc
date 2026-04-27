@@ -229,11 +229,41 @@ header {
 .add-wp-btn:hover { border-color:var(--accent); color:var(--accent); }
 
 .clear-all-btn {
-  width:100%; background:none; border:1px solid var(--border); color:var(--text-muted);
+  flex:1; background:none; border:1px solid var(--border); color:var(--text-muted);
   font-family:var(--mono); font-size:12px; letter-spacing:1px; text-transform:uppercase;
   padding:5px; border-radius:3px; cursor:pointer; transition:all .15s; margin-top:5px;
 }
 .clear-all-btn:hover { border-color:var(--red); color:var(--red); }
+.trips-btn {
+  flex:1; background:none; border:1px solid var(--border); color:var(--text-muted);
+  font-family:var(--mono); font-size:12px; letter-spacing:1px; text-transform:uppercase;
+  padding:5px; border-radius:3px; cursor:pointer; transition:all .15s; margin-top:5px;
+}
+.trips-btn:hover { border-color:var(--accent); color:var(--accent); }
+.clear-trips-row { display:flex; gap:6px; }
+.trip-modal-panel { background:var(--surface2); border:2px solid var(--accent); border-radius:10px; padding:20px; width:340px; max-width:92vw; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 4px 24px rgba(0,0,0,0.5); }
+.trip-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.trip-modal-header span { font-size:15px; font-weight:700; color:var(--text); }
+.trip-modal-header button { background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:0 2px; line-height:1; }
+.trip-modal-header button:hover { color:var(--text); }
+.trip-name-row { display:flex; gap:6px; margin-bottom:14px; }
+.trip-name-row input { flex:1; background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:5px; padding:6px 8px; font-size:13px; font-family:inherit; }
+.trip-name-row input:focus { outline:none; border-color:var(--accent); }
+.trip-name-row button { background:var(--accent); color:#fff; border:none; border-radius:5px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.trip-name-row button:hover { opacity:0.85; }
+.trip-save-list { overflow-y:auto; flex:1; }
+.trip-save-item { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); gap:8px; }
+.trip-save-item:last-child { border-bottom:none; }
+.trip-save-meta { flex:1; min-width:0; }
+.trip-save-meta strong { display:block; font-size:13px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.trip-save-meta span { font-size:10px; color:var(--text-muted); }
+.trip-save-actions { display:flex; gap:5px; flex-shrink:0; }
+.trip-action-btn { background:none; border:1px solid var(--border); color:var(--text-muted); border-radius:4px; padding:3px 9px; font-size:11px; cursor:pointer; }
+.trip-action-btn:hover { border-color:var(--accent); color:var(--accent); }
+.trip-delete-btn:hover { border-color:var(--red) !important; color:var(--red) !important; }
+@media (max-width:900px) {
+  .trip-modal-panel { width:100%; max-width:100%; border-radius:14px 14px 0 0; border-width:2px 0 0 0; }
+}
 
 .map-hint { font-size:11px; color:var(--text-muted); font-style:italic; margin-top:6px; }
 
@@ -684,7 +714,10 @@ select option { background:var(--surface2); }
         <span>&#x26FD; Only choose Airports with Fuel Services</span>
         <input type="checkbox" id="fuelOnlyStopsToggle" onchange="onFuelOnlyToggle(this)" style="cursor:pointer;flex-shrink:0">
       </label>
-      <button class="clear-all-btn" onclick="clearAll()">&#x2715; Clear All</button>
+      <div class="clear-trips-row">
+        <button class="clear-all-btn" onclick="clearAll()">&#x2715; Clear All</button>
+        <button class="trips-btn" onclick="openTripModal()">&#x1F4BE; Trips</button>
+      </div>
       <div class="map-hint" id="mapHint">Add a stop, then click the map to place it</div>
     </div>
 
@@ -943,6 +976,23 @@ select option { background:var(--surface2); }
         <button class="pax-done-btn" onclick="dismissPaxPopup()">Done</button>
       </div>
     </div>
+
+  <!-- Trip Save/Load Modal -->
+  <div class="confirm-overlay" id="tripModal" onclick="if(event.target===this)closeTripModal()">
+    <div class="trip-modal-panel">
+      <div class="trip-modal-header">
+        <span>&#x1F4BE; Saved Trips</span>
+        <button onclick="closeTripModal()">&#x2715;</button>
+      </div>
+      <div class="trip-name-row">
+        <input id="tripNameInput" type="text" placeholder="Name this trip..." maxlength="60"
+               onkeydown="if(event.key==='Enter')saveTripFromModal()">
+        <button onclick="saveTripFromModal()">Save</button>
+      </div>
+      <div class="trip-save-list" id="tripSaveList"></div>
+    </div>
+  </div>
+
     <div class="map-helper-btns">
       <button class="map-helper-btn" id="zoomRouteBtn" onclick="zoomToRoute()" disabled title="Zoom to fit entire route"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="2" cy="2" r="1.5" fill="currentColor" stroke="none"/><circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="5" cy="7" r="1.5" fill="currentColor" stroke="none"/><line x1="2" y1="2" x2="5" y2="7"/><line x1="5" y1="7" x2="12" y2="5"/><line x1="12" y1="5" x2="7" y2="12"/></svg> ROUTE</button>
       <button class="map-helper-btn" id="zoomLastBtn" onclick="zoomToLastStop()" disabled title="Zoom to last added stop">&#x1F4CD; LAST</button>
@@ -980,7 +1030,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.13';
+var APP_VERSION = 'v2026-04-27.14';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5249,11 +5299,218 @@ window.addFavoriteWP = function(icao) {
   fitRouteOrWaypoint();
 };
 
+// ── TRIP PERSISTENCE ──────────────────────────────────────────────────────────
+var AUTOSAVE_KEY   = 'tripcalc_autosave';
+var SAVES_KEY      = 'tripcalc_saves';
+var _autoSaveTimer = null;
+
+function _elVal(id)  { var e=document.getElementById(id); return e ? e.value : ''; }
+function _elText(id) { var e=document.getElementById(id); return e ? e.textContent : ''; }
+function _elChk(id)  { var e=document.getElementById(id); return e ? e.checked : false; }
+function _setEl(id, v) { var e=document.getElementById(id); if (e && v!=null) e.value = v; }
+
+function serializeState() {
+  return {
+    v: 1,
+    wps: waypoints.map(function(w) {
+      return { id:w.id, idx:w.idx, lat:w.lat, lng:w.lng, name:w.name||'',
+               icao:w.icao||null, localCode:w.localCode||null, icaoCode:w.icaoCode||null,
+               rwyFt:w.rwyFt||0, warn:!!w.warn, overnight:!!w.overnight,
+               originLat:w.originLat||null, originLng:w.originLng||null, driveMi:w.driveMi||null };
+    }),
+    wpIdCounter: wpIdCounter,
+    routeClosed: routeClosed,
+    fuelOnly: fuelOnlyStops,
+    acA: { sel:_elVal('selA'), spd:_elVal('spdA'), gph:_elVal('gphA'),
+           cust:custAOpen, cName:_elVal('custNameA'), cSpd:_elVal('custSpdA'), cGph:_elVal('custGphA') },
+    acB: { sel:_elVal('selB'), spd:_elVal('spdB'), gph:_elVal('gphB'),
+           cust:custBOpen, cName:_elVal('custNameB'), cSpd:_elVal('custSpdB'), cGph:_elVal('custGphB'),
+           active:comparisonActive },
+    pax: { count: parseInt(_elText('paxCountPanel'))||1, lug:_elChk('luggageTogglePanel') }
+  };
+}
+
+function scheduleAutoSave() {
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(function() {
+    try { localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(serializeState())); } catch(e) {}
+  }, 1500);
+}
+
+function restoreState(state) {
+  if (!state || state.v !== 1) return false;
+  try {
+    // Clear existing
+    waypoints.forEach(function(w) {
+      if (w.marker) { try { map.removeLayer(w.marker); } catch(e) {} }
+      ['driveLine','driveTimeLabel','homeMarker','airportIcon'].forEach(function(k) {
+        if (w[k]) { try { map.removeLayer(w[k]); } catch(e) {} }
+      });
+    });
+    gcLines.forEach(function(l)   { try { map.removeLayer(l); } catch(e) {} });
+    legLabels.forEach(function(l) { try { map.removeLayer(l); } catch(e) {} });
+    gcLines = []; legLabels = []; legLabelData = [];
+
+    // Waypoints
+    waypoints = [];
+    wpIdCounter = state.wpIdCounter || 0;
+    routeClosed = !!state.routeClosed;
+    fuelOnlyStops = !!state.fuelOnly;
+    var fuelToggle = document.getElementById('fuelOnlyStopsToggle');
+    if (fuelToggle) fuelToggle.checked = fuelOnlyStops;
+
+    (state.wps || []).forEach(function(s) {
+      var wp = { id:s.id, idx:s.idx, lat:s.lat, lng:s.lng, name:s.name||'',
+                 icao:s.icao||null, localCode:s.localCode||null, icaoCode:s.icaoCode||null,
+                 rwyFt:s.rwyFt||0, warn:!!s.warn, overnight:!!s.overnight,
+                 originLat:s.originLat||null, originLng:s.originLng||null,
+                 driveMi:s.driveMi||null, marker:null,
+                 driveLine:null, driveTimeLabel:null, homeMarker:null, airportIcon:null };
+      if (wp.lat !== null && wp.lat !== undefined) {
+        var color = wpColor(wp.idx), num = wpBadge(wp.idx);
+        var needsWarn = wp.rwyFt > 0 && wpNeedsWarn(wp.rwyFt);
+        var icon = needsWarn ? makeWarnIcon(color, num) : makeIcon(color, num);
+        var pop = '<b style="color:'+color+'">' + wpLabel(wp.idx) + '</b>';
+        if (wp.icao) pop += '&nbsp;<span style="color:var(--accent)">' + wp.icao + '</span>';
+        pop += '<br>' + wp.name;
+        if (wp.rwyFt) pop += '<br><span style="color:var(--text);font-size:11px">Longest paved rwy: ' + wp.rwyFt.toLocaleString() + ' ft</span>';
+        wp.marker = L.marker([wp.lat, wp.lng], { icon:icon })
+          .bindPopup(pop, { autoPan:false }).addTo(map);
+      }
+      waypoints.push(wp);
+    });
+
+    // Aircraft A
+    var aA = state.acA || {};
+    if (aA.cust && aA.cSpd) {
+      custAOpen = true;
+      var custAEl = document.getElementById('custA');
+      if (custAEl) custAEl.style.display = 'flex';
+      var selAEl = document.getElementById('selA');
+      if (selAEl) selAEl.value = '';
+      ['spdRowA','gphRowA'].forEach(function(id) { var e=document.getElementById(id); if(e) e.style.display='none'; });
+      _setEl('custNameA', aA.cName); _setEl('custSpdA', aA.cSpd); _setEl('custGphA', aA.cGph);
+    } else if (aA.sel) {
+      custAOpen = false;
+      _setEl('selA', aA.sel); _setEl('spdA', aA.spd); _setEl('gphA', aA.gph);
+      ['spdRowA','gphRowA'].forEach(function(id) { var e=document.getElementById(id); if(e) e.style.display='flex'; });
+      var custAPane = document.getElementById('custA'); if (custAPane) custAPane.style.display = 'none';
+      if (typeof applyCostPreset === 'function') applyCostPreset(aA.sel);
+      if (typeof renderPayloadInputs === 'function') renderPayloadInputs(aA.sel);
+    }
+    if (typeof updateAircraftToggleLabel === 'function') updateAircraftToggleLabel();
+
+    // Aircraft B
+    var aB = state.acB || {};
+    if (aB.active) {
+      comparisonActive = true;
+      var compWrap = document.getElementById('comparisonWrap');
+      var addCompBtn = document.getElementById('addCompBtn');
+      if (compWrap) compWrap.style.display = '';
+      if (addCompBtn) addCompBtn.style.display = 'none';
+      if (aB.cust && aB.cSpd) {
+        custBOpen = true;
+        var custBEl = document.getElementById('custB'); if (custBEl) custBEl.style.display = 'flex';
+        _setEl('custNameB', aB.cName); _setEl('custSpdB', aB.cSpd); _setEl('custGphB', aB.cGph);
+      } else if (aB.sel) {
+        _setEl('selB', aB.sel); _setEl('spdB', aB.spd); _setEl('gphB', aB.gph);
+      }
+    }
+
+    // Pax
+    var pax = state.pax || {};
+    var paxN = Math.max(1, parseInt(pax.count) || 1);
+    ['paxCount','paxCountPanel'].forEach(function(id) { var e=document.getElementById(id); if(e) e.textContent=paxN; });
+    var lug = pax.lug !== false;
+    ['luggageToggle','luggageTogglePanel'].forEach(function(id) { var e=document.getElementById(id); if(e) e.checked=lug; });
+    if (paxN > 1) { paxUserAdjusted = true; if (typeof applyPaxToPayload==='function') applyPaxToPayload(); }
+
+    // Re-render
+    placingId = null;
+    drawAllLines(); renderWPList(); updateMode(); recalc();
+    if (typeof updateReturnUI === 'function') updateReturnUI();
+    var placed = waypoints.filter(function(w){ return w.lat!==null; });
+    if (placed.length && typeof fitRouteOrWaypoint === 'function') fitRouteOrWaypoint();
+    return true;
+  } catch(e) { console.warn('TripCalc restore failed:', e); return false; }
+}
+
+// Named saves
+function _getSaves() { try { return JSON.parse(localStorage.getItem(SAVES_KEY)||'[]'); } catch(e) { return []; } }
+function _putSaves(arr) { try { localStorage.setItem(SAVES_KEY, JSON.stringify(arr)); } catch(e) {} }
+
+window.openTripModal = function() {
+  _renderTripList();
+  document.getElementById('tripModal').style.display = 'flex';
+  var inp = document.getElementById('tripNameInput'); if (inp) inp.focus();
+};
+window.closeTripModal = function() { document.getElementById('tripModal').style.display = 'none'; };
+
+function _escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function _renderTripList() {
+  var saves = _getSaves();
+  var list  = document.getElementById('tripSaveList');
+  if (!list) return;
+  if (!saves.length) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:10px 0;text-align:center">No saved trips yet.</div>';
+    return;
+  }
+  list.innerHTML = saves.map(function(s, i) {
+    return '<div class="trip-save-item">' +
+      '<div class="trip-save-meta">' +
+        '<strong>' + _escHtml(s.name) + '</strong>' +
+        '<span>' + (s.date||'') + (s.stops ? ' &middot; ' + s.stops + ' stop' + (s.stops===1?'':'s') : '') + '</span>' +
+      '</div>' +
+      '<div class="trip-save-actions">' +
+        '<button class="trip-action-btn" onclick="loadTripSave('+i+')">Load</button>' +
+        '<button class="trip-action-btn trip-delete-btn" onclick="deleteTripSave('+i+')">Delete</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+window.saveTripFromModal = function() {
+  var inp = document.getElementById('tripNameInput');
+  var name = inp ? inp.value.trim() : '';
+  if (!name) { if (inp) { inp.focus(); inp.style.borderColor='#f59e0b'; } return; }
+  if (inp) { inp.value=''; inp.style.borderColor=''; }
+  var placed = waypoints.filter(function(w){ return w.lat!==null; });
+  var saves = _getSaves();
+  saves.unshift({ name:name, date:new Date().toLocaleDateString(), stops:placed.length, state:serializeState() });
+  if (saves.length > 30) saves = saves.slice(0, 30);
+  _putSaves(saves);
+  _renderTripList();
+};
+
+window.loadTripSave = function(idx) {
+  var saves = _getSaves();
+  if (saves[idx]) { restoreState(saves[idx].state); closeTripModal(); }
+};
+
+window.deleteTripSave = function(idx) {
+  var saves = _getSaves();
+  saves.splice(idx, 1);
+  _putSaves(saves);
+  _renderTripList();
+};
+
+// Hook auto-save into recalc
+var _origRecalc = window.recalc;
+window.recalc = function() { _origRecalc(); scheduleAutoSave(); };
+
 // Init
 initMetroDropdown();
 renderWPList();
 updateMode();
 initMobileLayout();
+// Restore last session
+setTimeout(function() {
+  try {
+    var saved = localStorage.getItem(AUTOSAVE_KEY);
+    if (saved) { var s = JSON.parse(saved); if (s && s.v === 1 && s.wps && s.wps.length) restoreState(s); }
+  } catch(e) {}
+}, 200);
 // Start with map guard active on all devices
 // Map starts locked; unlock on first interaction anywhere
 setTimeout(lockMap, 300);
