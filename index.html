@@ -980,7 +980,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.10';
+var APP_VERSION = 'v2026-04-27.11';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1279,10 +1279,12 @@ function renderWPList() {
       if (wp.icao) {
         var acA = getAC('A');
         var spdKey = acA ? String(Math.round(acA.speed)) : '';
+        if (i === 0) console.log('[fuel] renderWPList origin i=0 icao=', wp.icao, 'cache=', airportFuelCache[wp.icao]);
         if (i > 0 && spdKey && !airportHasFuel(wp, spdKey)) {
           subLine += '<br><span style="color:#f59e0b;font-family:var(--mono);font-size:9px">&#9888; NO FUEL SERVICES</span>';
         } else {
           var fuelLine = airportFuelLine(wp.icao, acA, true);
+          if (i === 0) console.log('[fuel] origin fuelLine=', fuelLine);
           if (fuelLine) subLine += '<br>' + fuelLine;
         }
       }
@@ -2296,15 +2298,17 @@ var FUEL_WORKER_URL = 'https://wandering-star-ec81.compilotrc.workers.dev/';
 var airportFuelCache = {}; // icao → { avgas_100ll, jet_a } | 'loading' | 'none'
 
 function fetchAirportFuel(icao) {
-  if (airportFuelCache[icao]) return;
+  if (airportFuelCache[icao]) { console.log('[fuel] cache hit for', icao, airportFuelCache[icao]); return; }
   airportFuelCache[icao] = 'loading';
+  console.log('[fuel] fetching', icao);
   fetch(FUEL_WORKER_URL + '?icao=' + icao)
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       airportFuelCache[icao] = (data && (data.avgas_100ll || data.jet_a)) ? data : 'none';
+      console.log('[fuel] result for', icao, airportFuelCache[icao]);
       renderWPList(); recalc();
     })
-    .catch(function() { airportFuelCache[icao] = 'none'; renderWPList(); recalc(); });
+    .catch(function(e) { console.log('[fuel] error for', icao, e); airportFuelCache[icao] = 'none'; renderWPList(); recalc(); });
 }
 
 function airportFuelLine(icao, acA, small) {
