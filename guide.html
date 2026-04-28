@@ -271,7 +271,16 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
     <div class="logo-divider"></div>
     <div class="logo-title">Trip<span>Calc</span></div>
   </a>
-  <a class="back-link" href="index.html">← Back to App</a>
+  <a class="back-link" href="index.html" id="back-btn">← Back to App</a>
+<script>
+  (function(){
+    var btn = document.getElementById('back-btn');
+    if (window.opener && !window.opener.closed) {
+      btn.href = '#';
+      btn.addEventListener('click', function(e){ e.preventDefault(); window.close(); });
+    }
+  })();
+</script>
 </header>
 
 <div class="page">
