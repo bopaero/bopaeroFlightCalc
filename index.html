@@ -664,7 +664,13 @@ select option { background:var(--surface2); }
         <button type="button" class="hdr-export-item" onclick="doPrint(); closeExportMenu()" role="menuitem">Print</button>
       </div>
     </div>
-    <a href="guide.html" class="guide-link">User Guide</a>
+    <div class="hdr-export" id="guideMenu">
+      <button type="button" class="guide-link" onclick="toggleGuideMenu(event)" style="background:none;border:1px solid var(--accent);font-family:var(--mono);cursor:pointer;">User Guide ▾</button>
+      <div class="hdr-export-menu" style="min-width:150px;">
+        <a href="guide.html" class="hdr-export-item">Same Page</a>
+        <a href="guide.html" target="_blank" class="hdr-export-item">New Window</a>
+      </div>
+    </div>
     <div class="hdr-right">
       <span><span class="pulse"></span>SYSTEM ONLINE</span>
       <span id="clk">--:--:-- UTC</span>
@@ -1034,7 +1040,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.28';
+var APP_VERSION = 'v2026-04-27.29';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -4982,6 +4988,16 @@ function copyRouteString() {
     ta.remove();
   }
 }
+function toggleGuideMenu(ev) {
+  if (ev) ev.stopPropagation();
+  var menu = document.getElementById('guideMenu');
+  if (menu) menu.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('guideMenu');
+  if (!menu || !menu.classList.contains('open')) return;
+  if (!menu.contains(e.target)) menu.classList.remove('open');
+});
 function toggleExportMenu(ev) {
   if (ev) ev.stopPropagation();
   var menu = document.getElementById('exportMenu');

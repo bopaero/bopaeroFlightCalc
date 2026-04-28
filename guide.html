@@ -271,7 +271,7 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
     <div class="logo-divider"></div>
     <div class="logo-title">Trip<span>Calc</span></div>
   </a>
-  <a class="back-link" href="index.html" onclick="event.preventDefault();history.back();">← Back to App</a>
+  <a class="back-link" href="index.html" onclick="event.preventDefault();if(history.length>1){history.back();}else{window.close();}">← Back to App</a>
 </header>
 
 <div class="page">
