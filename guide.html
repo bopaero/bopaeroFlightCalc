@@ -275,7 +275,7 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
 </header>
 <script>
   (function(){
-    if (window.opener && !window.opener.closed && window.innerWidth > 768) {
+    if (window.innerWidth > 768 && /src=newwindow/.test(window.location.search)) {
       var btn = document.getElementById('backBtn');
       if (btn) btn.style.display = 'none';
     }

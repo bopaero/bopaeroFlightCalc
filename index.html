@@ -673,7 +673,7 @@ select option { background:var(--surface2); }
       <button type="button" class="guide-link" onclick="toggleGuideMenu(event)" style="background:none;border:1px solid var(--accent);font-family:var(--mono);cursor:pointer;">User Guide ▾</button>
       <div class="hdr-export-menu" style="min-width:150px;">
         <a href="guide.html" class="hdr-export-item">Same Page</a>
-        <a href="guide.html" target="_blank" class="hdr-export-item">New Window</a>
+        <a href="guide.html?src=newwindow" target="_blank" class="hdr-export-item">New Window</a>
       </div>
     </div>
     <a href="guide.html" class="guide-link guide-mobile-only">User Guide</a>
@@ -1046,7 +1046,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.31';
+var APP_VERSION = 'v2026-04-27.32';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
