@@ -70,16 +70,16 @@ header {
   z-index: 100;
 }
 .logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
-.logo-diamond {
-  width:20px; height:20px; border:2px solid var(--accent);
-  transform:rotate(45deg); position:relative; flex-shrink:0;
-}
-.logo-diamond::after {
-  content:''; position:absolute; top:50%; left:50%;
-  transform:translate(-50%,-50%); width:6px; height:6px; background:var(--accent);
-}
 .logo-title { font-size:14px; font-weight:700; letter-spacing:2px; color:var(--text); }
 .logo-title span { color:var(--accent); }
+.logo-dark { display:block; }
+.logo-light { display:none; }
+.logo-divider { width:1px; height:24px; background:#fff; margin:0 2px; flex-shrink:0; align-self:center; }
+@media (prefers-color-scheme: light) {
+  .logo-dark { display:none; }
+  .logo-light { display:block; }
+  .logo-divider { background:#333; }
+}
 .hdr-right { font-family:var(--mono); font-size:11px; color:var(--text-muted); }
 .back-link {
   font-family:var(--mono); font-size:12px; color:var(--accent);
@@ -266,8 +266,10 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
 
 <header>
   <a class="logo" href="index.html">
-    <div class="logo-diamond"></div>
-    <span class="logo-title">bop&nbsp;<span>Aero</span>&nbsp;TripCalc</span>
+    <img src="bopAeroLogo.png" height="32" class="logo-dark" style="flex-shrink:0;width:auto" alt="bop Aero logo">
+    <img src="bopAeroLogoLight.png" height="38" class="logo-light" style="flex-shrink:0;width:auto" alt="bop Aero logo">
+    <div class="logo-divider"></div>
+    <div class="logo-title">Trip<span>Calc</span></div>
   </a>
   <a class="back-link" href="index.html">← Back to App</a>
 </header>
@@ -552,11 +554,11 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
         <thead><tr><th>Field</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td>Total Time</td><td>Flight time plus all ground time at intermediate stops.</td></tr>
-          <tr><td>Flight Time</td><td>Airborne time only (climb + cruise modeled separately).</td></tr>
+          <tr><td>Flight Time</td><td>Airborne time only (climb + cruise modeled separately). Conservatively averaged across all legs.</td></tr>
           <tr><td>Ground Time</td><td>Time on the ground at stops (configurable in Trip Cost).</td></tr>
           <tr><td>Total Distance</td><td>Sum of great-circle distances for all legs, in statute miles.</td></tr>
           <tr><td>Average Speed</td><td>Total distance divided by total flight time.</td></tr>
-          <tr><td>Total Fuel</td><td>Estimated fuel burn for the entire route (gallons).</td></tr>
+          <tr><td>Total Fuel</td><td>Estimated fuel burn for the entire route (gallons). Blended across climb and cruise burn rates.</td></tr>
         </tbody>
       </table>
 
