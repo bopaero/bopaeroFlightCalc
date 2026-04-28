@@ -85,6 +85,11 @@ header {
 .hdr-right { font-family:var(--mono); font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:16px; }
 .guide-link { color:var(--accent); text-decoration:none; border:1px solid var(--accent); border-radius:4px; padding:3px 8px; letter-spacing:0.5px; white-space:nowrap; }
 .guide-link:hover { background:rgba(0,212,255,0.08); }
+.guide-mobile-only { display:none; }
+@media (max-width: 768px) {
+  .guide-desktop-only { display:none !important; }
+  .guide-mobile-only { display:inline; }
+}
 #nasrCycle { text-shadow:0 0.5px 0 #000; }
 .pulse { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent2); margin-right:6px; animation:blink 2s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
@@ -664,13 +669,14 @@ select option { background:var(--surface2); }
         <button type="button" class="hdr-export-item" onclick="doPrint(); closeExportMenu()" role="menuitem">Print</button>
       </div>
     </div>
-    <div class="hdr-export" id="guideMenu">
+    <div class="hdr-export guide-desktop-only" id="guideMenu">
       <button type="button" class="guide-link" onclick="toggleGuideMenu(event)" style="background:none;border:1px solid var(--accent);font-family:var(--mono);cursor:pointer;">User Guide ▾</button>
       <div class="hdr-export-menu" style="min-width:150px;">
         <a href="guide.html" class="hdr-export-item">Same Page</a>
         <a href="guide.html" target="_blank" class="hdr-export-item">New Window</a>
       </div>
     </div>
+    <a href="guide.html" class="guide-link guide-mobile-only">User Guide</a>
     <div class="hdr-right">
       <span><span class="pulse"></span>SYSTEM ONLINE</span>
       <span id="clk">--:--:-- UTC</span>
@@ -1040,7 +1046,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-27.29';
+var APP_VERSION = 'v2026-04-27.30';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
