@@ -1054,7 +1054,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-29.8';
+var APP_VERSION = 'v2026-04-29.9';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2379,6 +2379,14 @@ var FBO_WORKER_URL  = 'https://fbo-fees.compilotrc.workers.dev/';
 var airportFBOCache  = {}; // faaId → { fbos: [...] } | 'loading' | 'none'
 var _fboAutoFilled   = {}; // wpId  → auto-filled amount string (to detect untouched fields)
 var _fboRenderToken  = 0;  // increments when new FBO data arrives, busts renderFBOInputs skip
+var _fboSelected     = {}; // wpId  → selected FBO index within fboData.fbos
+var _fboBreakdown    = {}; // wpId  → { fboName, components: [string] } for results table
+
+window.fboSelectFBO = function(wpId, idx) {
+  _fboSelected[wpId] = parseInt(idx) || 0;
+  delete _fboAutoFilled[wpId]; // clear so new selection pre-fills
+  recalc();
+};
 
 function fetchAirportFBO(faaId) {
   if (airportFBOCache[faaId]) return;
@@ -4689,9 +4697,14 @@ window.recalc = function() {
   placed.forEach(function(wp) {
     var inp = document.getElementById('fbo-' + wp.id);
     var fee = inp ? (parseFloat(inp.value) || 0) : 0;
-    if (fee > 0) rows += '<tr><td>FBO</td><td>' + truncate(wp.name, 18) + '</td><td>' + fmt$(fee) + '</td></tr>';
+    var bd  = _fboBreakdown[wp.id];
+    var stopLabel = wp.icao || truncate(wp.name, 14);
+    var detail = stopLabel;
+    if (bd && bd.fboName) detail += ' · ' + truncate(bd.fboName, 22);
+    if (bd && bd.components && bd.components.length) detail += ': ' + bd.components.join(' + ');
+    rows += '<tr><td>FBO</td><td style="font-size:10px">' + detail + '</td><td>' + fmt$(fee) + '</td></tr>';
   });
-  if (fboTotal === 0) rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:10px">No FBO fees entered</td></tr>';
+  if (fboTotal === 0) rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:10px">No FBO fees — adjust inputs above if applicable</td></tr>';
   rows += '<tr style="font-weight:bold;border-top:1px solid var(--border-bright)"><td colspan="2">Total</td><td style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</td></tr>';
   rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:9px;font-style:italic;padding-top:6px">Fuel prices based on current national average (source: AirNav.com' + (fuelPrices.updated ? ', updated ' + fuelPrices.updated : '') + ')</td></tr>';
   tbl.innerHTML = rows;
@@ -5168,7 +5181,7 @@ function renderFBOInputs(placed) {
   var stateKey  = neededIds.join(',')
     + '|' + _fboRenderToken
     + '|' + (isJet ? 'J' : 'P')
-    + '|' + placed.map(function(wp) { return wp.overnight ? '1' : '0'; }).join('')
+    + '|' + placed.map(function(wp) { return (wp.overnight ? '1' : '0') + (_fboSelected[wp.id] || 0); }).join('')
     + '|' + nightsPerStop;
   if (container.dataset.fboState === stateKey) return;
   container.dataset.fboState = stateKey;
@@ -5188,11 +5201,21 @@ function renderFBOInputs(placed) {
   placed.forEach(function(wp, idx) {
     var icao  = wp.icao || '';
     var faaId = wp.localCode || icao;
-    var fboData  = faaId ? airportFBOCache[faaId] : null;
+    var fboData   = faaId ? airportFBOCache[faaId] : null;
     var isLoading = fboData === 'loading';
     var hasFBO    = fboData && fboData !== 'loading' && fboData !== 'none';
     var nights    = wp.overnight ? nightsPerStop : 0;
-    var calc      = hasFBO ? calcFBOFee(fboData, isJet, nights) : null;
+    var fbos      = hasFBO ? (fboData.fbos || []) : [];
+    var selIdx    = Math.min(_fboSelected[wp.id] || 0, Math.max(fbos.length - 1, 0));
+    var selFboData = fbos.length > 0 ? { fbos: [fbos[selIdx]] } : null;
+    var calc      = selFboData ? calcFBOFee(selFboData, isJet, nights) : null;
+
+    // Store breakdown for results table
+    if (calc) {
+      _fboBreakdown[wp.id] = { fboName: calc.fboName, components: calc.breakdown.slice() };
+    } else {
+      delete _fboBreakdown[wp.id];
+    }
 
     // Determine displayed value — honour prior user edits, pre-fill only untouched fields
     var prevAutoFill = _fboAutoFilled[wp.id];
@@ -5200,7 +5223,7 @@ function renderFBOInputs(placed) {
     var val = currentSaved !== undefined ? currentSaved : '';
 
     if (calc !== null && (val === '' || val === String(prevAutoFill))) {
-      val = calc.amount > 0 ? String(calc.amount) : '0';
+      val = String(calc.amount);
       _fboAutoFilled[wp.id] = val;
     }
 
@@ -5210,12 +5233,26 @@ function renderFBOInputs(placed) {
               '<a href="https://webapp.aopa.org/destinations/airports/' + faaId + '/details" target="_blank" style="color:var(--text-muted);font-size:9px;text-decoration:none" title="AOPA Airport Directory">↗ AOPA</a>';
     }
 
+    // FBO selector dropdown — shown when airport has multiple FBOs
+    var selectorHtml = '';
+    if (fbos.length > 1) {
+      var opts = '';
+      fbos.forEach(function(fbo, fi) {
+        var fboCalc = calcFBOFee({ fbos: [fbo] }, isJet, nights);
+        var feeLabel = fboCalc && fboCalc.amount > 0 ? ' ($' + fboCalc.amount + ')' : ' (No Fee)';
+        opts += '<option value="' + fi + '"' + (fi === selIdx ? ' selected' : '') + '>' +
+          fbo.name + feeLabel + '</option>';
+      });
+      selectorHtml = '<div style="width:100%;margin-top:3px">' +
+        '<select style="font-size:10px;font-family:var(--mono);color:var(--text-muted);background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1px 3px;width:100%" ' +
+        'onchange="fboSelectFBO(\'' + wp.id + '\', this.value)">' + opts + '</select></div>';
+    }
+
     var autoNote = '';
     if (calc !== null) {
       var noteText = calc.breakdown.length ? calc.breakdown.join(' + ') : 'No Fee';
-      if (calc.fboName) noteText += ' · ' + calc.fboName;
       if (nights > 0 && !isJet && calc.amount > 0) noteText += ' (50% off w/fuel — SR22T)';
-      autoNote = '<div style="color:var(--text-muted);font-size:9px;margin-top:1px;line-height:1.3">↺ ' + noteText + '</div>';
+      autoNote = '<div style="color:var(--text-muted);font-size:9px;margin-top:2px;line-height:1.3">↺ ' + noteText + '</div>';
     } else if (isLoading) {
       autoNote = '<div style="color:var(--text-muted);font-size:9px;margin-top:1px">Looking up fees…</div>';
     }
@@ -5224,11 +5261,12 @@ function renderFBOInputs(placed) {
       '<span class="fbo-label" style="color:' + wpColor(idx) + '">' + (wp.icao || truncate(wp.name || ('WP'+(idx+1)), 18)) + links + '</span>' +
       '<span style="color:var(--text-muted);font-size:11px;margin-right:2px">$</span>' +
       '<input enterkeyhint="done" inputmode="decimal" type="number" id="fbo-' + wp.id + '" class="cost-input" style="width:70px" min="0" placeholder="0" value="' + val + '" oninput="recalc()">' +
+      (selectorHtml ? selectorHtml : '') +
       (autoNote ? '<div style="width:100%;padding-left:2px">' + autoNote + '</div>' : '') +
     '</div>';
   });
 
-  html += '<div style="color:var(--text-muted);font-size:9px;margin-top:6px;line-height:1.5">Fees from AOPA Airport Directory via ↗ AOPA links above. Adjust for your operator or overnight stay.</div>';
+  html += '<div style="color:var(--text-muted);font-size:9px;margin-top:6px;line-height:1.5">Fees from AOPA Airport Directory. Adjust for your operator or overnight stay.</div>';
   container.innerHTML = html;
 }
 
