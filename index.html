@@ -1054,7 +1054,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-29.2';
+var APP_VERSION = 'v2026-04-29.3';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2395,6 +2395,7 @@ function fetchAirportFBO(faaId) {
 
 // Returns the best pre-fill fee for a transient stop, or null if no data.
 // Picks the FBO with the lowest relevant total (most pilot-friendly).
+// Only counts fees with a disclosed fixed amount (skips "Fee Not Disclosed" and per-hour rates).
 function calcFBOFee(fboData, isJet, isOvernight) {
   if (!fboData || !fboData.fbos || !fboData.fbos.length) return null;
   var best = null;
@@ -2402,22 +2403,26 @@ function calcFBOFee(fboData, isJet, isOvernight) {
     var fees  = fbo.fees || {};
     var total = 0;
     var parts = [];
-    // Overnight: tie-down instead of ramp
+
+    function add(key, label) {
+      var f = fees[key];
+      if (f && f.amount > 0 && f.basis !== 'Fee Not Disclosed' && f.basis !== 'Hourly') {
+        total += f.amount; parts.push(label);
+      }
+    }
+
     if (isOvernight) {
-      var td = fees['tie_down'];
-      if (td && td.amount > 0) { total += td.amount; parts.push('Tie-down'); }
+      // AOPA uses both 'tie_down' and 'overnight' depending on the FBO
+      add('tie_down', 'Tie-down');
+      add('overnight', 'Overnight');
+      add('parking', 'Parking');
     } else {
-      var ramp = fees['ramp'];
-      if (ramp && ramp.amount > 0) { total += ramp.amount; parts.push('Ramp'); }
+      add('ramp', 'Ramp');
+      add('parking', 'Parking');
     }
-    // Landing fee — always
-    var landing = fees['landing'];
-    if (landing && landing.amount > 0) { total += landing.amount; parts.push('Landing'); }
-    // Handling — jets only
-    if (isJet) {
-      var handling = fees['handling'];
-      if (handling && handling.amount > 0) { total += handling.amount; parts.push('Handling'); }
-    }
+    add('landing', 'Landing');
+    if (isJet) add('handling', 'Handling');
+
     if (best === null || total < best.amount) {
       best = { amount: total, fboName: fbo.name, breakdown: parts, updated: fbo.updated };
     }
