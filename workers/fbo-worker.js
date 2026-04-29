@@ -1,17 +1,16 @@
 // Cloudflare Worker — AOPA FBO fee proxy
 // Deploy to: https://fbo-fees.compilotrc.workers.dev/
-// Query:     ?icao=GKT  or  ?icao=KGKT  (handles both forms)
+// Query:     ?icao=GKT  or  ?icao=KGKT  (handles both K-prefix forms)
 //
 // Two-step AOPA API chain:
 //   1. GET /AirportsAPI/airports/{id}       → list of businesses + hasFees
 //   2. GET /AirportsAPI/businesses/{bizId}  → fee line items per FBO
 //
-// AOPA's database is inconsistent about K-prefix: some airports are keyed
-// as "GKT", others as "KGKT". We try the provided form first, then the
-// alternate, and return whichever yields results.
+// Fee entries are returned as an array preserving aircraftType so TripCalc
+// can select the correct rate for SR22T vs SF50.
 
 const AOPA_BASE = 'https://webapp.aopa.org/AirportsAPI';
-const MAX_FBOS  = 4; // limit parallel requests
+const MAX_FBOS  = 4;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -30,41 +29,32 @@ async function handle(request) {
   const url  = new URL(request.url);
   const icao = (url.searchParams.get('icao') || '').trim().toUpperCase();
 
-  if (!icao) {
-    return json({ error: 'icao parameter required' }, 400);
-  }
+  if (!icao) return json({ error: 'icao parameter required' }, 400);
 
-  // Build candidate identifiers to try: provided form first, then alternate.
-  // e.g. GKT → [GKT, KGKT], KGKT → [KGKT, GKT], I67 → [I67, KI67]
+  // Try provided form first, then alternate K-prefix form
   const candidates = [icao];
-  if (/^K[A-Z0-9]{3}$/.test(icao)) {
-    candidates.push(icao.slice(1));           // KGKT → GKT
-  } else if (/^[A-Z0-9]{2,3}$/.test(icao)) {
-    candidates.push('K' + icao);             // GKT → KGKT, I67 → KI67
-  }
+  if (/^K[A-Z0-9]{3}$/.test(icao))        candidates.push(icao.slice(1));
+  else if (/^[A-Z0-9]{2,3}$/.test(icao))  candidates.push('K' + icao);
 
   try {
     for (const id of candidates) {
       const bizList = await getBusinessList(id);
       if (bizList.length > 0) {
-        const results = await Promise.all(bizList.map(biz => fetchFBO(biz)));
-        const fbos    = results.filter(Boolean);
-        return json({ fbos, resolvedId: id });
+        const results = await Promise.all(bizList.map(fetchFBO));
+        return json({ fbos: results.filter(Boolean), resolvedId: id });
       }
     }
     return json({ fbos: [] });
-
-  } catch (err) {
+  } catch {
     return json(null, 500);
   }
 }
 
-// Returns FBOs with fee data for the given airport identifier, or [] if none.
 async function getBusinessList(id) {
-  const apRes = await aopaFetch(`${AOPA_BASE}/airports/${id}`);
-  if (!apRes.ok) return [];
-  const apData = await apRes.json();
-  return (apData.businesses || []).filter(b => b.hasFees).slice(0, MAX_FBOS);
+  const r = await aopaFetch(`${AOPA_BASE}/airports/${id}`);
+  if (!r.ok) return [];
+  const d = await r.json();
+  return (d.businesses || []).filter(b => b.hasFees).slice(0, MAX_FBOS);
 }
 
 async function fetchFBO(biz) {
@@ -73,19 +63,19 @@ async function fetchFBO(biz) {
     if (!r.ok) return null;
     const d = await r.json();
 
-    // Normalise fee line items into a flat map keyed by fee type
-    const fees = {};
-    for (const svc of (d.businessServices || [])) {
-      const key    = (svc.description || '').toLowerCase().replace(/\s+/g, '_');
-      const amount = parseAmount(svc.fee);
-      fees[key] = { amount, basis: svc.feeBasis || '', note: svc.feeNote || '' };
-    }
+    // Return each fee line as its own entry — preserves aircraftType so TripCalc
+    // can select the right rate (e.g. SR22T = Single-Engine Piston, SF50 = Small Jet)
+    const fees = (d.businessServices || [])
+      .filter(s => s.fee != null)
+      .map(s => ({
+        type:        (s.description || '').toLowerCase().replace(/\s+/g, '_'),
+        amount:      parseAmount(s.fee),
+        basis:       s.feeBasis   || '',
+        aircraftType: s.aircraftType || 'All Aircraft',
+        note:        s.serviceNote || '',
+      }));
 
-    return {
-      name:    d.name || biz.businessName || '',
-      fees,
-      updated: d.feesLastUpdate || null,
-    };
+    return { name: d.name || biz.businessName || '', fees, updated: d.feesLastUpdate || null };
   } catch {
     return null;
   }
@@ -101,9 +91,8 @@ function aopaFetch(url) {
   });
 }
 
-function parseAmount(str) {
-  if (!str) return 0;
-  const n = parseFloat(String(str).replace(/[^0-9.]/g, ''));
+function parseAmount(v) {
+  const n = parseFloat(String(v ?? '').replace(/[^0-9.]/g, ''));
   return isNaN(n) ? 0 : n;
 }
 

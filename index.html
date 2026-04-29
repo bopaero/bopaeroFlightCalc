@@ -1054,7 +1054,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-29.7';
+var APP_VERSION = 'v2026-04-29.8';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2393,24 +2393,46 @@ function fetchAirportFBO(faaId) {
     .catch(function() { airportFBOCache[faaId] = 'none'; _fboRenderToken++; recalc(); });
 }
 
+// AOPA aircraft type strings that match each TripCalc aircraft
+var AOPA_AC_TYPES = {
+  piston: ['Single-Engine Piston', 'All Aircraft'],
+  jet:    ['Small Jet (up to 16K lbs.)', 'All Aircraft'],
+};
+
 // Returns the best pre-fill fee, or null if no data.
 // nights = 0 → transient (no overnight); nights > 0 → staying that many nights.
 // Picks the FBO with the lowest relevant total (most pilot-friendly).
-// Skips "Fee Not Disclosed" and hourly rates — only fixed per-use/per-night amounts.
+// Fees array from worker preserves aircraftType; we select matching entries only.
 function calcFBOFee(fboData, isJet, nights) {
   if (!fboData || !fboData.fbos || !fboData.fbos.length) return null;
+  var acTypes = isJet ? AOPA_AC_TYPES.jet : AOPA_AC_TYPES.piston;
   var best = null;
+
   fboData.fbos.forEach(function(fbo) {
-    var fees  = fbo.fees || {};
+    var fees  = fbo.fees || [];
     var total = 0;
     var parts = [];
 
-    function add(key, label, multiplier) {
-      var f = fees[key];
-      if (f && f.amount > 0 && f.basis !== 'Fee Not Disclosed' && f.basis !== 'Hourly') {
-        var amt = f.amount * (multiplier || 1);
-        total += amt;
-        parts.push(multiplier > 1 ? label + ' ×' + multiplier : label);
+    // Filter to fees relevant to this aircraft type, with a fixed disclosed amount
+    function add(type, label, multiplier) {
+      var match = null;
+      for (var i = 0; i < fees.length; i++) {
+        var f = fees[i];
+        if (f.type === type
+            && f.amount > 0
+            && f.basis !== 'Fee Not Disclosed'
+            && f.basis !== 'Hourly'
+            && acTypes.indexOf(f.aircraftType) >= 0) {
+          // Prefer the most specific match (not "All Aircraft")
+          if (!match || (f.aircraftType !== 'All Aircraft' && match.aircraftType === 'All Aircraft')) {
+            match = f;
+          }
+        }
+      }
+      if (match) {
+        var n = multiplier || 1;
+        total += match.amount * n;
+        parts.push(n > 1 ? label + ' \xd7' + n : label);
       }
     }
 
