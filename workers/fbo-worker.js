@@ -1,10 +1,14 @@
 // Cloudflare Worker — AOPA FBO fee proxy
-// Deploy to: https://YOUR-FBO-WORKER.workers.dev/
-// Query:     ?icao=I67  (FAA local code, no K prefix)
+// Deploy to: https://fbo-fees.compilotrc.workers.dev/
+// Query:     ?icao=GKT  or  ?icao=KGKT  (handles both forms)
 //
 // Two-step AOPA API chain:
-//   1. GET /AirportsAPI/airports/{faaId}      → list of businesses + hasFees
-//   2. GET /AirportsAPI/businesses/{bizId}    → fee line items per FBO
+//   1. GET /AirportsAPI/airports/{id}       → list of businesses + hasFees
+//   2. GET /AirportsAPI/businesses/{bizId}  → fee line items per FBO
+//
+// AOPA's database is inconsistent about K-prefix: some airports are keyed
+// as "GKT", others as "KGKT". We try the provided form first, then the
+// alternate, and return whichever yields results.
 
 const AOPA_BASE = 'https://webapp.aopa.org/AirportsAPI';
 const MAX_FBOS  = 4; // limit parallel requests
@@ -30,25 +34,37 @@ async function handle(request) {
     return json({ error: 'icao parameter required' }, 400);
   }
 
+  // Build candidate identifiers to try: provided form first, then alternate.
+  // e.g. GKT → [GKT, KGKT], KGKT → [KGKT, GKT], I67 → [I67, KI67]
+  const candidates = [icao];
+  if (/^K[A-Z0-9]{3}$/.test(icao)) {
+    candidates.push(icao.slice(1));           // KGKT → GKT
+  } else if (/^[A-Z0-9]{2,3}$/.test(icao)) {
+    candidates.push('K' + icao);             // GKT → KGKT, I67 → KI67
+  }
+
   try {
-    // Step 1: airport record → business list
-    const apRes = await aopaFetch(`${AOPA_BASE}/airports/${icao}`);
-    if (!apRes.ok) return json(null);
-
-    const apData  = await apRes.json();
-    const bizList = (apData.businesses || []).filter(b => b.hasFees).slice(0, MAX_FBOS);
-
-    if (!bizList.length) return json({ fbos: [] });
-
-    // Step 2: fetch fee details for each FBO in parallel
-    const results = await Promise.all(bizList.map(biz => fetchFBO(biz)));
-    const fbos    = results.filter(Boolean);
-
-    return json({ fbos });
+    for (const id of candidates) {
+      const bizList = await getBusinessList(id);
+      if (bizList.length > 0) {
+        const results = await Promise.all(bizList.map(biz => fetchFBO(biz)));
+        const fbos    = results.filter(Boolean);
+        return json({ fbos, resolvedId: id });
+      }
+    }
+    return json({ fbos: [] });
 
   } catch (err) {
     return json(null, 500);
   }
+}
+
+// Returns FBOs with fee data for the given airport identifier, or [] if none.
+async function getBusinessList(id) {
+  const apRes = await aopaFetch(`${AOPA_BASE}/airports/${id}`);
+  if (!apRes.ok) return [];
+  const apData = await apRes.json();
+  return (apData.businesses || []).filter(b => b.hasFees).slice(0, MAX_FBOS);
 }
 
 async function fetchFBO(biz) {
@@ -60,7 +76,7 @@ async function fetchFBO(biz) {
     // Normalise fee line items into a flat map keyed by fee type
     const fees = {};
     for (const svc of (d.businessServices || [])) {
-      const key    = (svc.description || '').toLowerCase().replace(/\s+/g, '_'); // e.g. "tie_down"
+      const key    = (svc.description || '').toLowerCase().replace(/\s+/g, '_');
       const amount = parseAmount(svc.fee);
       fees[key] = { amount, basis: svc.feeBasis || '', note: svc.feeNote || '' };
     }
