@@ -1054,7 +1054,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-29.6';
+var APP_VERSION = 'v2026-04-29.7';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2393,10 +2393,11 @@ function fetchAirportFBO(faaId) {
     .catch(function() { airportFBOCache[faaId] = 'none'; _fboRenderToken++; recalc(); });
 }
 
-// Returns the best pre-fill fee for a transient stop, or null if no data.
+// Returns the best pre-fill fee, or null if no data.
+// nights = 0 → transient (no overnight); nights > 0 → staying that many nights.
 // Picks the FBO with the lowest relevant total (most pilot-friendly).
-// Only counts fees with a disclosed fixed amount (skips "Fee Not Disclosed" and per-hour rates).
-function calcFBOFee(fboData, isJet, isOvernight) {
+// Skips "Fee Not Disclosed" and hourly rates — only fixed per-use/per-night amounts.
+function calcFBOFee(fboData, isJet, nights) {
   if (!fboData || !fboData.fbos || !fboData.fbos.length) return null;
   var best = null;
   fboData.fbos.forEach(function(fbo) {
@@ -2404,22 +2405,24 @@ function calcFBOFee(fboData, isJet, isOvernight) {
     var total = 0;
     var parts = [];
 
-    function add(key, label) {
+    function add(key, label, multiplier) {
       var f = fees[key];
       if (f && f.amount > 0 && f.basis !== 'Fee Not Disclosed' && f.basis !== 'Hourly') {
-        total += f.amount; parts.push(label);
+        var amt = f.amount * (multiplier || 1);
+        total += amt;
+        parts.push(multiplier > 1 ? label + ' ×' + multiplier : label);
       }
     }
 
-    if (isOvernight) {
-      add('tie_down', 'Tie-down');
-      add('overnight', 'Overnight');
-      add('parking', 'Parking');
+    if (nights > 0) {
+      add('tie_down', 'Tie-down', nights);
+      add('overnight', 'Overnight', nights);
+      add('parking',  'Parking',   nights);
     } else {
-      add('ramp', 'Ramp');
+      add('ramp',    'Ramp');
       add('parking', 'Parking');
     }
-    add('landing', 'Landing');
+    add('landing',  'Landing');
     if (isJet) add('handling', 'Handling');
 
     if (best === null || total < best.amount) {
@@ -5129,13 +5132,22 @@ function renderFBOInputs(placed) {
     }
   });
 
+  // Compute nights per overnight stop from trip days
+  var overnightCount = placed.filter(function(wp) { return wp.overnight; }).length;
+  var flyingDays  = parseFloat((document.getElementById('costFlyingDays') || {}).value) || (1 + overnightCount);
+  var tripDaysVal = (document.getElementById('costTripDays') || {}).value;
+  var tripDays    = tripDaysVal ? Math.max(parseFloat(tripDaysVal) || flyingDays, flyingDays) : flyingDays;
+  var totalNights = Math.max(tripDays - 1, overnightCount);
+  var nightsPerStop = overnightCount > 0 ? Math.ceil(totalNights / overnightCount) : 0;
+
   // Skip rebuild when nothing that affects display has changed (preserves keyboard focus).
-  // Key includes: waypoint IDs, FBO data token, aircraft type, overnight flags.
+  // Key includes: waypoint IDs, FBO data token, aircraft type, overnight flags, nights per stop.
   var neededIds = placed.map(function(wp) { return 'fbo-' + wp.id; });
   var stateKey  = neededIds.join(',')
     + '|' + _fboRenderToken
     + '|' + (isJet ? 'J' : 'P')
-    + '|' + placed.map(function(wp) { return wp.overnight ? '1' : '0'; }).join('');
+    + '|' + placed.map(function(wp) { return wp.overnight ? '1' : '0'; }).join('')
+    + '|' + nightsPerStop;
   if (container.dataset.fboState === stateKey) return;
   container.dataset.fboState = stateKey;
 
@@ -5157,7 +5169,8 @@ function renderFBOInputs(placed) {
     var fboData  = faaId ? airportFBOCache[faaId] : null;
     var isLoading = fboData === 'loading';
     var hasFBO    = fboData && fboData !== 'loading' && fboData !== 'none';
-    var calc      = hasFBO ? calcFBOFee(fboData, isJet, !!wp.overnight) : null;
+    var nights    = wp.overnight ? nightsPerStop : 0;
+    var calc      = hasFBO ? calcFBOFee(fboData, isJet, nights) : null;
 
     // Determine displayed value — honour prior user edits, pre-fill only untouched fields
     var prevAutoFill = _fboAutoFilled[wp.id];
@@ -5179,7 +5192,7 @@ function renderFBOInputs(placed) {
     if (calc !== null) {
       var noteText = calc.breakdown.length ? calc.breakdown.join(' + ') : 'No Fee';
       if (calc.fboName) noteText += ' · ' + calc.fboName;
-      if (wp.overnight && !isJet && calc.amount > 0) noteText += ' (50% off w/fuel — SR22T)';
+      if (nights > 0 && !isJet && calc.amount > 0) noteText += ' (50% off w/fuel — SR22T)';
       autoNote = '<div style="color:var(--text-muted);font-size:9px;margin-top:1px;line-height:1.3">↺ ' + noteText + '</div>';
     } else if (isLoading) {
       autoNote = '<div style="color:var(--text-muted);font-size:9px;margin-top:1px">Looking up fees…</div>';
