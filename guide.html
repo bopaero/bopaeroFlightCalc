@@ -622,12 +622,29 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
           <tr><td>Flying Days</td><td>Auto-calculated: 1 + number of overnight stops.</td></tr>
           <tr><td>Trip Days</td><td>Total days away from base (may differ from flying days).</td></tr>
           <tr><td>Ground Time Per Stop</td><td>Minutes budgeted at each intermediate stop. Default: 35 min.</td></tr>
-          <tr><td>FBO/Airport Fees</td><td>Per-airport fee rows — enter known fees or use the AirNav and AOPA links to look them up.</td></tr>
+          <tr><td>FBO/Airport Fees</td><td>Auto-filled from the AOPA Airport Directory for each airport waypoint. See details below.</td></tr>
         </tbody>
       </table>
 
+      <h3>FBO / Airport Fees</h3>
+      <p>TripCalc automatically looks up FBO fee data from the AOPA Airport Directory for each airport waypoint and pre-fills the fee input. Fees are selected based on your aircraft type and stop type:</p>
+      <ul>
+        <li><strong>SR22T (Single-Engine Piston):</strong> Ramp and landing fees for transient stops; tie-down and landing fees for overnight stops.</li>
+        <li><strong>SF50 (Jet):</strong> Same as above, plus handling fees where applicable.</li>
+        <li><strong>Overnight stays:</strong> Tie-down fees are multiplied by the number of nights, calculated automatically from Trip Days ÷ number of overnight stops.</li>
+        <li><strong>Multiple FBOs:</strong> When an airport has multiple FBOs, a dropdown lets you switch between operators. Each option shows the calculated fee for your aircraft type.</li>
+      </ul>
+      <p>All fees are editable — if the auto-filled amount is wrong, simply type the correct value. Pre-filled amounts will not overwrite a value you have manually entered.</p>
+
+      <div class="callout warn">
+        <div class="callout-icon">&#9888;</div>
+        <p><strong>Fee Not Disclosed:</strong> Some FBOs (e.g. Signature Aviation at busy airports) do not publish their fees in the AOPA directory. When this applies to a relevant fee type for your stop, TripCalc leaves the input blank and shows a warning: <em>"does not disclose fees — call before arrival."</em> The cost summary will also display a <strong>⚠</strong> next to FBO Fees to indicate the total may be incomplete. Always call ahead to confirm rates at FBOs that do not disclose.</p>
+      </div>
+
+      <p>Use the <strong>↗ AirNav</strong> and <strong>↗ AOPA</strong> links next to each stop to verify fees directly on those sites before your flight.</p>
+
       <h3>Cost Breakdown</h3>
-      <p>Click <strong>▼ Cost Breakdown</strong> inside the cost estimate card to see a line-by-line breakdown: aircraft cost, fuel cost, oil/consumables, pilot cost, and FBO fees.</p>
+      <p>Click <strong>▼ Cost Breakdown</strong> inside the cost estimate card to see a line-by-line breakdown: aircraft cost, fuel cost, oil/consumables, pilot cost, and FBO fees. The FBO row shows the stop, FBO name, and fee components (e.g. <em>KGKT · Gatlinburg Airport Authority: Tie-down ×1</em>).</p>
     </section>
 
     <!-- WARNINGS -->
