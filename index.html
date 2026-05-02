@@ -1054,7 +1054,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-02.4';
+var APP_VERSION = 'v2026-05-02.5';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2474,6 +2474,7 @@ function calcFBOFee(fboData, isJet, nights) {
       if (nights > 0) add(['tie_down', 'overnight'], 'Tie-down', nights);
       add(['ramp'], 'Ramp');
       add(['facility'], 'Facility');
+      add(['infrastructure'], 'Infrastructure');
       add(['handling'], 'Handling');
     }
 
