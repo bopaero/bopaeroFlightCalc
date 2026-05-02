@@ -740,6 +740,8 @@ select option { background:var(--surface2); }
       </label>
       <div class="clear-trips-row">
         <button class="clear-all-btn" onclick="clearAll()">&#x2715; Clear All</button>
+      </div>
+      <div class="clear-trips-row">
         <button class="trips-btn" onclick="openTripModal()">&#x1F4BE; Trips</button>
         <button class="trips-btn" onclick="openSettings()">&#x2699; Settings</button>
       </div>
@@ -1062,6 +1064,11 @@ select option { background:var(--surface2); }
       </div>
 
       <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;padding:8px;background:var(--surface);border-radius:6px">
+        <input type="checkbox" id="stgFuelOnly" style="cursor:pointer">
+        <span style="font-size:12px;color:var(--text)">&#x26FD; Only choose Airports with Fuel Services</span>
+      </label>
+
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;padding:8px;background:var(--surface);border-radius:6px">
         <input type="checkbox" id="stgPilotIsUser" onchange="stgOnPilotIsUserChange()" style="cursor:pointer">
         <span style="font-size:12px;color:var(--text)">I am the pilot &mdash; default pilot cost to $0</span>
       </label>
@@ -1121,7 +1128,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-02.7';
+var APP_VERSION = 'v2026-05-02.8';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5864,6 +5871,7 @@ function saveSettings() {
     pax:         _stgPax,
     aircraft:    _stgAircraft,
     userType:    _stgRole,
+    fuelOnly:    document.getElementById('stgFuelOnly').checked,
     pilotIsUser: pilotIsUser,
     pilotMin:    pilotIsUser ? 0 : (parseFloat(document.getElementById('stgPilotMin').value) || 0),
     pilotMax:    pilotIsUser ? 0 : (parseFloat(document.getElementById('stgPilotMax').value) || 0)
@@ -5880,6 +5888,10 @@ function applySettings(s) {
   if (s.userType) {
     if (s.aircraft) { var utr = document.getElementById('userTypeRow'); if (utr) utr.style.display = 'flex'; }
     if (typeof setUserType === 'function') setUserType(s.userType);
+  }
+  if (s.fuelOnly !== undefined) {
+    var ftEl = document.getElementById('fuelOnlyStopsToggle');
+    if (ftEl && ftEl.checked !== !!s.fuelOnly) { ftEl.checked = !!s.fuelOnly; if (typeof onFuelOnlyToggle === 'function') onFuelOnlyToggle(ftEl); }
   }
   // Pilot costs override preset values set by pickAircraft
   if (s.pilotMin !== undefined) _setEl('costPilotMin', String(s.pilotMin));
@@ -5938,6 +5950,8 @@ function openSettings() {
   document.getElementById('stgBtnOwner').classList.toggle('active',  _stgRole === 'owner');
   document.getElementById('stgBtnLessee').classList.toggle('active', _stgRole === 'lessee');
 
+  var foEl = document.getElementById('stgFuelOnly');
+  if (foEl) foEl.checked = !!s.fuelOnly;
   var piuEl = document.getElementById('stgPilotIsUser');
   if (piuEl) piuEl.checked = !!s.pilotIsUser;
   _setEl('stgPilotMin', String(s.pilotMin !== undefined ? s.pilotMin : (s.aircraft === '280' ? 1500 : 500)));
