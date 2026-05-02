@@ -1054,7 +1054,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-02.5';
+var APP_VERSION = 'v2026-05-02.6';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5313,7 +5313,7 @@ function renderFBOInputs(placed) {
     '</div>';
   });
 
-  html += '<div style="color:var(--text-muted);font-size:11px;margin-top:6px;line-height:1.6">Fees from AOPA Airport Directory. Adjust for your operator or overnight stay.</div>';
+  html += '<div style="color:var(--text-muted);font-size:11px;margin-top:6px;line-height:1.6">Fees from AOPA Airport Directory. Last published fees only — may not reflect current rates. Adjust for your operator or overnight stay.</div>';
   container.innerHTML = html;
 }
 
