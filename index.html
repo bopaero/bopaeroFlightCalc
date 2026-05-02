@@ -741,6 +741,7 @@ select option { background:var(--surface2); }
       <div class="clear-trips-row">
         <button class="clear-all-btn" onclick="clearAll()">&#x2715; Clear All</button>
         <button class="trips-btn" onclick="openTripModal()">&#x1F4BE; Trips</button>
+        <button class="trips-btn" onclick="openSettings()">&#x2699; Settings</button>
       </div>
       <div class="map-hint" id="mapHint">Add a stop, then click the map to place it</div>
     </div>
@@ -1017,6 +1018,72 @@ select option { background:var(--surface2); }
     </div>
   </div>
 
+  <div class="confirm-overlay" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+    <div class="trip-modal-panel" style="overflow-y:auto;max-height:85vh">
+      <div class="trip-modal-header">
+        <span>&#x2699; Default Settings</span>
+        <button onclick="closeSettings()">&#x2715;</button>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Origin</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="stgOriginInput" type="text" placeholder="ICAO (e.g. KSUS)" maxlength="6"
+                 style="font-family:var(--mono);font-size:13px;text-transform:uppercase;width:110px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:6px 8px"
+                 oninput="this.value=this.value.toUpperCase()" onblur="stgResolveOrigin()" onkeydown="if(event.key==='Enter')stgResolveOrigin()">
+          <button id="stgUseCurrentBtn" onclick="stgUseCurrent()" class="trips-btn" style="margin-top:0;flex:0;white-space:nowrap;padding:5px 10px">Use Current Origin</button>
+        </div>
+        <div id="stgOriginName" style="font-size:11px;color:var(--text-muted);margin-top:3px;min-height:15px"></div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Aircraft</div>
+        <div style="display:flex;gap:6px">
+          <button id="stgAcSR22T" onclick="stgPickAircraft('175')" class="layer-btn">SR22T</button>
+          <button id="stgAcSF50" onclick="stgPickAircraft('280')" class="layer-btn">Vision Jet</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Occupants</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button onclick="stgAdjPax(-1)" class="layer-btn" style="padding:2px 10px;font-size:16px;line-height:1.4">&#x2212;</button>
+          <span id="stgPaxCount" style="font-family:var(--mono);font-size:16px;min-width:22px;text-align:center">2</span>
+          <button onclick="stgAdjPax(1)" class="layer-btn" style="padding:2px 10px;font-size:16px;line-height:1.4">+</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Role</div>
+        <div style="display:flex;gap:6px">
+          <button id="stgBtnOwner" onclick="stgPickRole('owner')" class="layer-btn active">Owner</button>
+          <button id="stgBtnLessee" onclick="stgPickRole('lessee')" class="layer-btn">Lessee</button>
+        </div>
+      </div>
+
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;padding:8px;background:var(--surface);border-radius:6px">
+        <input type="checkbox" id="stgPilotIsUser" onchange="stgOnPilotIsUserChange()" style="cursor:pointer">
+        <span style="font-size:12px;color:var(--text)">I am the pilot &mdash; default pilot cost to $0</span>
+      </label>
+
+      <div id="stgPilotCostRow" style="margin-bottom:18px;transition:opacity .2s">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Pilot Cost ($/day)</div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Min
+            <input id="stgPilotMin" type="number" min="0" step="100"
+                   style="width:75px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
+          </label>
+          <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Max
+            <input id="stgPilotMax" type="number" min="0" step="100"
+                   style="width:75px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
+          </label>
+        </div>
+      </div>
+
+      <button onclick="saveSettings()" style="width:100%;padding:9px;background:var(--accent);color:#000;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px">Save Settings</button>
+    </div>
+  </div>
+
     <div class="map-helper-btns">
       <button class="map-helper-btn" id="zoomRouteBtn" onclick="zoomToRoute()" disabled title="Zoom to fit entire route"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="2" cy="2" r="1.5" fill="currentColor" stroke="none"/><circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="5" cy="7" r="1.5" fill="currentColor" stroke="none"/><line x1="2" y1="2" x2="5" y2="7"/><line x1="5" y1="7" x2="12" y2="5"/><line x1="12" y1="5" x2="7" y2="12"/></svg> ROUTE</button>
       <button class="map-helper-btn" id="zoomLastBtn" onclick="zoomToLastStop()" disabled title="Zoom to last added stop">&#x1F4CD; LAST</button>
@@ -1054,7 +1121,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-02.6';
+var APP_VERSION = 'v2026-05-02.7';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1213,6 +1280,7 @@ function doClearAll(clearPayload) {
   updateMode();
   recalc();
   updateHelperBtns();
+  if (typeof applySettings === 'function') applySettings(loadSettings());
 }
 
 function promptAircraft() {
@@ -1391,6 +1459,7 @@ function renderWPList() {
         '</div>' +
         '<div class="wp-actions">' +
           (isPlaced ? '<button class="wp-btn" title="Re-place" onclick="rePlaceWP('+wp.id+')" style="color:var(--text-muted)">&#x21BA;</button>' : '') +
+          (isFirst && isPlaced ? '<button class="wp-btn" title="Set as default origin" onclick="setDefaultOriginFromWP('+wp.id+')" style="color:var(--text-muted)">&#x2699;</button>' : '') +
           '<button class="wp-btn" title="Remove" onclick="removeWaypoint('+wp.id+')">&#x2715;</button>' +
         '</div>' +
       '</div>';
@@ -5561,6 +5630,7 @@ window.addFavoriteWP = function(icao) {
 var AUTOSAVE_KEY      = 'tripcalc_autosave';
 var CLEAN_EXIT_KEY    = 'tripcalc_clean_exit';
 var SAVES_KEY         = 'tripcalc_saves';
+var SETTINGS_KEY      = 'tripcalc_settings';
 var _autoSaveTimer    = null;
 var _bypassBeforeUnload = false; // set true before programmatic reloads (Clear All)
 
@@ -5776,6 +5846,188 @@ window.deleteTripSave = function(idx) {
 var _origRecalc = window.recalc;
 window.recalc = function() { _origRecalc(); scheduleAutoSave(); };
 
+// ── USER SETTINGS ────────────────────────────────────────────────────────────
+var _stgOriginResolved = null;
+var _stgAircraft = null;
+var _stgRole = 'owner';
+var _stgPax = 2;
+
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null') || {}; }
+  catch(e) { return {}; }
+}
+
+function saveSettings() {
+  var pilotIsUser = document.getElementById('stgPilotIsUser').checked;
+  var s = {
+    origin:      _stgOriginResolved || null,
+    pax:         _stgPax,
+    aircraft:    _stgAircraft,
+    userType:    _stgRole,
+    pilotIsUser: pilotIsUser,
+    pilotMin:    pilotIsUser ? 0 : (parseFloat(document.getElementById('stgPilotMin').value) || 0),
+    pilotMax:    pilotIsUser ? 0 : (parseFloat(document.getElementById('stgPilotMax').value) || 0)
+  };
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
+  applySettings(s);
+  closeSettings();
+  _stgToast('&#x2713; Settings saved');
+}
+
+function applySettings(s) {
+  if (!s) return;
+  if (s.aircraft) pickAircraft(s.aircraft, 'A');
+  if (s.userType) {
+    if (s.aircraft) { var utr = document.getElementById('userTypeRow'); if (utr) utr.style.display = 'flex'; }
+    if (typeof setUserType === 'function') setUserType(s.userType);
+  }
+  // Pilot costs override preset values set by pickAircraft
+  if (s.pilotMin !== undefined) _setEl('costPilotMin', String(s.pilotMin));
+  if (s.pilotMax !== undefined) _setEl('costPilotMax', String(s.pilotMax));
+  // Occupants
+  var currentPax = parseInt((document.getElementById('paxCountPanel')||{}).textContent) || 1;
+  var targetPax  = Math.max(1, s.pax || 1);
+  var delta = targetPax - currentPax;
+  for (var i = 0; i < Math.abs(delta); i++) adjustPax(delta > 0 ? 1 : -1);
+  // Origin — only on a fresh map with no placed waypoints
+  if (s.origin && s.origin.lat != null) {
+    var placed = waypoints.filter(function(w){ return w.lat !== null; });
+    if (!placed.length) applyDefaultOrigin(s.origin);
+  }
+  recalc();
+}
+
+function applyDefaultOrigin(origin) {
+  if (!origin || origin.lat == null) return;
+  waypoints.forEach(function(w) {
+    if (w.marker) { try { map.removeLayer(w.marker); } catch(e) {} }
+  });
+  waypoints = [];
+  var id = ++wpIdCounter;
+  var wp = { id:id, idx:0, lat:origin.lat, lng:origin.lng, name:origin.name||'',
+             icao:origin.icao||null, localCode:origin.localCode||null, icaoCode:null,
+             rwyFt:0, warn:false, overnight:false, marker:null,
+             driveLine:null, driveTimeLabel:null, homeMarker:null, airportIcon:null };
+  var icon = makeIcon(wpColor(0), 'O');
+  var pop  = '<b style="color:'+wpColor(0)+'">Origin</b>';
+  if (wp.icao) pop += '&nbsp;<span style="color:var(--accent)">'+wp.icao+'</span>';
+  pop += '<br>'+wp.name;
+  wp.marker = L.marker([wp.lat, wp.lng], { icon:icon }).bindPopup(pop, {autoPan:false}).addTo(map);
+  waypoints.push(wp);
+  placingId = null;
+  drawAllLines(); renderWPList(); updateMode(); recalc();
+  if (typeof updateReturnUI === 'function') updateReturnUI();
+  if (typeof fitRouteOrWaypoint === 'function') fitRouteOrWaypoint();
+}
+
+function openSettings() {
+  var s = loadSettings();
+  _stgOriginResolved = s.origin || null;
+  _stgAircraft       = s.aircraft || null;
+  _stgRole           = s.userType || 'owner';
+  _stgPax            = s.pax || 2;
+
+  var originInput = document.getElementById('stgOriginInput');
+  var originName  = document.getElementById('stgOriginName');
+  if (originInput) originInput.value = (s.origin && s.origin.icao) ? s.origin.icao : '';
+  if (originName)  { originName.textContent = (s.origin && s.origin.name) ? s.origin.name : ''; originName.style.color = 'var(--text-muted)'; }
+
+  document.getElementById('stgAcSR22T').classList.toggle('active', _stgAircraft === '175');
+  document.getElementById('stgAcSF50').classList.toggle('active',  _stgAircraft === '280');
+  document.getElementById('stgPaxCount').textContent = String(_stgPax);
+  document.getElementById('stgBtnOwner').classList.toggle('active',  _stgRole === 'owner');
+  document.getElementById('stgBtnLessee').classList.toggle('active', _stgRole === 'lessee');
+
+  var piuEl = document.getElementById('stgPilotIsUser');
+  if (piuEl) piuEl.checked = !!s.pilotIsUser;
+  _setEl('stgPilotMin', String(s.pilotMin !== undefined ? s.pilotMin : (s.aircraft === '280' ? 1500 : 500)));
+  _setEl('stgPilotMax', String(s.pilotMax !== undefined ? s.pilotMax : (s.aircraft === '280' ? 2500 : 1500)));
+
+  var firstWp = waypoints.length > 0 ? waypoints[0] : null;
+  var useBtn  = document.getElementById('stgUseCurrentBtn');
+  if (useBtn) useBtn.disabled = !(firstWp && firstWp.lat !== null);
+
+  stgOnPilotIsUserChange();
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+
+window.closeSettings = function() { document.getElementById('settingsModal').style.display = 'none'; };
+
+function stgResolveOrigin() {
+  var input  = document.getElementById('stgOriginInput');
+  var nameEl = document.getElementById('stgOriginName');
+  var code = input ? input.value.trim().toUpperCase() : '';
+  if (!code) { _stgOriginResolved = null; if (nameEl) nameEl.textContent = ''; return; }
+  var match = null;
+  for (var i = 0; i < OA_CACHE.length; i++) {
+    var a = OA_CACHE[i];
+    if (a.icao === code || (a.localCode && a.localCode.toUpperCase() === code)) { match = a; break; }
+  }
+  if (match) {
+    _stgOriginResolved = { icao: match.icao, name: match.name, lat: match.lat, lng: match.lng, localCode: match.localCode || null };
+    if (nameEl) { nameEl.textContent = match.name; nameEl.style.color = 'var(--text-muted)'; }
+  } else {
+    _stgOriginResolved = null;
+    if (nameEl) { nameEl.textContent = 'Airport not found'; nameEl.style.color = '#ff4444'; }
+  }
+}
+
+window.stgUseCurrent = function() {
+  var wp = waypoints.length > 0 ? waypoints[0] : null;
+  if (!wp || wp.lat === null) return;
+  _stgOriginResolved = { icao: wp.icao || null, name: wp.name || '', lat: wp.lat, lng: wp.lng, localCode: wp.localCode || null };
+  var input  = document.getElementById('stgOriginInput');
+  var nameEl = document.getElementById('stgOriginName');
+  if (input)  input.value = wp.icao || '';
+  if (nameEl) { nameEl.textContent = wp.name || ''; nameEl.style.color = 'var(--text-muted)'; }
+};
+
+window.setDefaultOriginFromWP = function(wpId) {
+  var wp = null;
+  for (var i = 0; i < waypoints.length; i++) { if (waypoints[i].id === wpId) { wp = waypoints[i]; break; } }
+  if (!wp || wp.lat === null) return;
+  var s = loadSettings();
+  s.origin = { icao: wp.icao || null, name: wp.name || '', lat: wp.lat, lng: wp.lng, localCode: wp.localCode || null };
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
+  _stgToast('&#x2713; Default origin saved: ' + (wp.icao || wp.name || 'this location'));
+};
+
+window.stgPickAircraft = function(val) {
+  _stgAircraft = val;
+  document.getElementById('stgAcSR22T').classList.toggle('active', val === '175');
+  document.getElementById('stgAcSF50').classList.toggle('active',  val === '280');
+  if (!document.getElementById('stgPilotIsUser').checked) {
+    var preset = acCostPresets[val];
+    if (preset) { _setEl('stgPilotMin', String(preset.pilotMin)); _setEl('stgPilotMax', String(preset.pilotMax)); }
+  }
+};
+
+window.stgPickRole = function(role) {
+  _stgRole = role;
+  document.getElementById('stgBtnOwner').classList.toggle('active',  role === 'owner');
+  document.getElementById('stgBtnLessee').classList.toggle('active', role === 'lessee');
+};
+
+window.stgAdjPax = function(delta) {
+  _stgPax = Math.max(1, Math.min(7, _stgPax + delta));
+  document.getElementById('stgPaxCount').textContent = String(_stgPax);
+};
+
+window.stgOnPilotIsUserChange = function() {
+  var checked = document.getElementById('stgPilotIsUser').checked;
+  var row = document.getElementById('stgPilotCostRow');
+  if (row) row.style.opacity = checked ? '0.35' : '1';
+  if (checked) { _setEl('stgPilotMin', '0'); _setEl('stgPilotMax', '0'); }
+};
+
+function _stgToast(msg) {
+  var t = document.createElement('div');
+  t.innerHTML = msg;
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:8px 18px;border-radius:20px;font-family:var(--mono);font-size:12px;font-weight:700;z-index:9999;pointer-events:none;white-space:nowrap';
+  document.body.appendChild(t);
+  setTimeout(function(){ t.style.transition='opacity .5s'; t.style.opacity='0'; setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 500); }, 2000);
+}
+
 // Init
 initMetroDropdown();
 renderWPList();
@@ -5787,20 +6039,19 @@ initMobileLayout();
 setTimeout(function() {
   try {
     var saved = localStorage.getItem(AUTOSAVE_KEY);
-    if (!saved) return;
+    if (!saved) { applySettings(loadSettings()); return; }
     if (_cleanExit) {
-      // User closed deliberately — discard autosave, begin fresh.
       localStorage.removeItem(AUTOSAVE_KEY);
+      applySettings(loadSettings());
       return;
     }
-    // Crash recovery path.
     var s = JSON.parse(saved);
-    if (!s || s.v !== 1 || !s.wps || !s.wps.length) return;
+    if (!s || s.v !== 1 || !s.wps || !s.wps.length) { applySettings(loadSettings()); return; }
     var placed = s.wps.filter(function(w){ return w.lat !== null && w.lat !== undefined; });
-    if (!placed.length) return;
+    if (!placed.length) { applySettings(loadSettings()); return; }
     showConfirmDialog('Restore Last Trip?', function(yes) {
       if (yes) restoreState(s);
-      else { try { localStorage.removeItem(AUTOSAVE_KEY); } catch(e) {} }
+      else { try { localStorage.removeItem(AUTOSAVE_KEY); } catch(e) {} applySettings(loadSettings()); }
     }, 'Restore Trip', 'Start New');
   } catch(e) {}
 }, 300);
