@@ -743,7 +743,7 @@ select option { background:var(--surface2); }
       </div>
       <div class="clear-trips-row">
         <button class="trips-btn" onclick="openTripModal()">&#x1F4BE; Trips</button>
-        <button class="trips-btn" onclick="openSettings()">&#x2699; Settings</button>
+        <button class="trips-btn" onclick="openSettings()" style="color:#fff;border-color:#fff">&#x2699; Settings</button>
       </div>
       <div class="map-hint" id="mapHint">Add a stop, then click the map to place it</div>
     </div>
@@ -1128,7 +1128,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-02.8';
+var APP_VERSION = 'v2026-05-02.9';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -6037,7 +6037,7 @@ window.stgOnPilotIsUserChange = function() {
 function _stgToast(msg) {
   var t = document.createElement('div');
   t.innerHTML = msg;
-  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:8px 18px;border-radius:20px;font-family:var(--mono);font-size:12px;font-weight:700;z-index:9999;pointer-events:none;white-space:nowrap';
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:8px 18px;border-radius:20px;font-family:var(--mono);font-size:12px;font-weight:700;z-index:9999;pointer-events:none;white-space:nowrap';
   document.body.appendChild(t);
   setTimeout(function(){ t.style.transition='opacity .5s'; t.style.opacity='0'; setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 500); }, 2000);
 }
