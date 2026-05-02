@@ -1054,7 +1054,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-02.2';
+var APP_VERSION = 'v2026-05-02.3';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2464,9 +2464,17 @@ function calcFBOFee(fboData, isJet, nights) {
       }
     }
 
-    if (nights > 0) add(['tie_down', 'overnight'], 'Tie-down', nights);
-    add(['facility'], 'Facility');
-    add(['handling'], 'Handling');
+    // Broad pre-scan: if ANY fee for this aircraft type is undisclosed, flag the
+    // whole FBO — the pilot can't trust the total is complete regardless of type.
+    if (fees.some(function(f) { return f.basis === 'Fee Not Disclosed' && isApplicable(f); })) {
+      hasUndisclosed = true;
+    }
+
+    if (!hasUndisclosed) {
+      if (nights > 0) add(['tie_down', 'overnight'], 'Tie-down', nights);
+      add(['facility'], 'Facility');
+      add(['handling'], 'Handling');
+    }
 
     if (hasUndisclosed) { total = 0; parts = []; }
     if (best === null || total < best.amount) {
