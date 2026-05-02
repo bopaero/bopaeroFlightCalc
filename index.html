@@ -1054,7 +1054,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-02.1';
+var APP_VERSION = 'v2026-05-02.2';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2422,20 +2422,30 @@ function calcFBOFee(fboData, isJet, nights) {
   var best = null;
 
   fboData.fbos.forEach(function(fbo) {
-    var fees         = fbo.fees || [];
-    var total        = 0;
-    var parts        = [];
+    var fees = fbo.fees || [];
+    var total = 0;
+    var parts = [];
     var hasUndisclosed = false;
 
-    function add(type, label, multiplier) {
-      var match      = null;
+    // For piston, skip "Converted" sub-category — SR22T is standard Single-Engine Piston
+    function isApplicable(f) {
+      if (acTypes.indexOf(f.aircraftType) < 0) return false;
+      if (!isJet && f.note && /converted/i.test(f.note)) return false;
+      return true;
+    }
+
+    // Try each type in order; use first one that has a relevant entry.
+    // Includes $0 "No Fee" entries (disclosed as free). Skips Hourly basis.
+    function add(types, label, multiplier) {
+      var match = null;
       var notDisclosed = false;
-      for (var i = 0; i < fees.length; i++) {
-        var f = fees[i];
-        if (f.type !== type || acTypes.indexOf(f.aircraftType) < 0) continue;
-        if (f.basis === 'Fee Not Disclosed') {
-          notDisclosed = true; // relevant fee exists but amount hidden
-        } else if (f.amount > 0 && f.basis !== 'Hourly') {
+      for (var ti = 0; ti < types.length && !match && !notDisclosed; ti++) {
+        var type = types[ti];
+        for (var i = 0; i < fees.length; i++) {
+          var f = fees[i];
+          if (f.type !== type || !isApplicable(f)) continue;
+          if (f.basis === 'Fee Not Disclosed') { notDisclosed = true; break; }
+          if (f.basis === 'Hourly') continue;
           if (!match || (f.aircraftType !== 'All Aircraft' && match.aircraftType === 'All Aircraft')) {
             match = f;
           }
@@ -2445,22 +2455,18 @@ function calcFBOFee(fboData, isJet, nights) {
         var n = multiplier || 1;
         var lineAmt = match.amount * n;
         total += lineAmt;
-        parts.push({ label: n > 1 ? label + ' \xd7' + n : label, amount: lineAmt });
+        var lbl = label + (n > 1 ? ' \xd7' + n : '');
+        var waiverMatch = match.note && match.note.match(/waived\b[^.—]*/i);
+        if (waiverMatch) lbl += ' (' + waiverMatch[0].trim() + ')';
+        parts.push({ label: lbl, amount: lineAmt });
       } else if (notDisclosed) {
-        hasUndisclosed = true; // can't calculate — don't show a partial total
+        hasUndisclosed = true;
       }
     }
 
-    if (nights > 0) {
-      add('tie_down', 'Tie-down', nights);
-      add('overnight', 'Overnight', nights);
-      add('parking',  'Parking',   nights);
-    } else {
-      add('ramp',    'Ramp');
-      add('parking', 'Parking');
-    }
-    add('landing',  'Landing');
-    if (isJet) add('handling', 'Handling');
+    if (nights > 0) add(['tie_down', 'overnight'], 'Tie-down', nights);
+    add(['facility'], 'Facility');
+    add(['handling'], 'Handling');
 
     if (hasUndisclosed) { total = 0; parts = []; }
     if (best === null || total < best.amount) {
@@ -5283,7 +5289,6 @@ function renderFBOInputs(placed) {
         '⚠ ' + (calc.fboName || 'FBO') + ' does not disclose fees — call before arrival and enter manually.</div>';
     } else if (calc !== null) {
       var noteText = calc.breakdown.length ? calc.breakdown.map(function(c){return c.label;}).join(' + ') : 'No Fee';
-      if (nights > 0 && !isJet && calc.amount > 0) noteText += ' · 50% off w/fuel (SR22T)';
       autoNote = '<div style="color:var(--text-muted);font-size:11px;margin-top:3px;line-height:1.4">↺ ' + noteText + '</div>';
     } else if (isLoading) {
       autoNote = '<div style="color:var(--text-muted);font-size:11px;margin-top:3px">Looking up fees…</div>';
