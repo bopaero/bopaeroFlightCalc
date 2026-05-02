@@ -1046,6 +1046,24 @@ select option { background:var(--surface2); }
         </div>
       </div>
 
+      <div id="stgAcDetails" style="margin-bottom:14px;display:none">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Aircraft Details</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Speed (mph)
+            <input id="stgAcSpd" type="number" min="1" max="9999" step="1"
+                   style="width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
+          </label>
+          <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Fuel (gph)
+            <input id="stgAcGph" type="number" min="0" max="9999" step="0.1"
+                   style="width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
+          </label>
+          <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Aircraft ($/hr)
+            <input id="stgAcPerHr" type="number" min="0" step="10"
+                   style="width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
+          </label>
+        </div>
+      </div>
+
       <div style="margin-bottom:14px">
         <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Occupants</div>
         <div style="display:flex;align-items:center;gap:10px">
@@ -1087,6 +1105,7 @@ select option { background:var(--surface2); }
         </div>
       </div>
 
+      <button onclick="resetSettings()" style="width:100%;padding:8px;background:none;color:var(--red,#ff4444);border:1px solid var(--red,#ff4444);border-radius:6px;font-family:var(--mono);font-size:12px;cursor:pointer;margin-bottom:8px;letter-spacing:.5px">&#x2715; Reset All Settings</button>
       <button onclick="saveSettings()" style="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px">Save Settings</button>
     </div>
   </div>
@@ -1128,7 +1147,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-02.11';
+var APP_VERSION = 'v2026-05-02.12';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2603,7 +2622,13 @@ function airportFuelLine(icao, acA, small) {
         console.log('Fuel prices loaded: 100LL $' + data.avgas_100ll + '/gal, Jet-A $' + data.jet_a + '/gal (' + data.updated + ')');
         // Re-apply cost preset for current aircraft
         var selA = document.getElementById('selA');
-        if (selA && selA.value) applyCostPreset(selA.value);
+        if (selA && selA.value) {
+          applyCostPreset(selA.value);
+          // Re-apply saved pilot costs — async fuel load must not overwrite settings
+          var _stg = loadSettings ? loadSettings() : null;
+          if (_stg && _stg.pilotIsUser) { _setEl('costPilotMin','0'); _setEl('costPilotMax','0'); }
+          else if (_stg && _stg.pilotMin !== undefined) { _setEl('costPilotMin', String(_stg.pilotMin)); _setEl('costPilotMax', String(_stg.pilotMax)); }
+        }
       }
     })
     .catch(function(e) { console.log('Fuel prices load failed:', e.message); });
@@ -5870,6 +5895,9 @@ function saveSettings() {
     origin:      _stgOriginResolved || null,
     pax:         _stgPax,
     aircraft:    _stgAircraft,
+    acSpd:       parseFloat(document.getElementById('stgAcSpd').value) || null,
+    acGph:       parseFloat(document.getElementById('stgAcGph').value) || null,
+    acPerHr:     parseFloat(document.getElementById('stgAcPerHr').value) || null,
     userType:    _stgRole,
     fuelOnly:    document.getElementById('stgFuelOnly').checked,
     pilotIsUser: pilotIsUser,
@@ -5886,6 +5914,12 @@ function applySettings(s) {
   if (!s) return;
   if (s.pax && s.pax >= 1) paxPopupDismissed = true;
   if (s.aircraft) pickAircraft(s.aircraft, 'A');
+  // Override preset aircraft details with saved values
+  if (s.aircraft) {
+    if (s.acSpd)   { _setEl('spdA', String(s.acSpd)); }
+    if (s.acGph)   { _setEl('gphA', String(s.acGph)); }
+    if (s.acPerHr) { _setEl('costAcPerHr', String(s.acPerHr)); }
+  }
   if (s.userType) {
     if (s.aircraft) { var utr = document.getElementById('userTypeRow'); if (utr) utr.style.display = 'flex'; }
     if (typeof setUserType === 'function') setUserType(s.userType);
@@ -5948,6 +5982,14 @@ function openSettings() {
 
   document.getElementById('stgAcSR22T').classList.toggle('active', _stgAircraft === '175');
   document.getElementById('stgAcSF50').classList.toggle('active',  _stgAircraft === '280');
+  var acDetails = document.getElementById('stgAcDetails');
+  if (acDetails) acDetails.style.display = _stgAircraft ? '' : 'none';
+  if (_stgAircraft) {
+    var preset = acCostPresets[_stgAircraft] || {};
+    _setEl('stgAcSpd',   String(s.acSpd   !== undefined && s.acSpd   !== null ? s.acSpd   : (acGph[_stgAircraft] ? (_stgAircraft === '280' ? 280 : 175) : '')));
+    _setEl('stgAcGph',   String(s.acGph   !== undefined && s.acGph   !== null ? s.acGph   : (acGph[_stgAircraft] || '')));
+    _setEl('stgAcPerHr', String(s.acPerHr !== undefined && s.acPerHr !== null ? s.acPerHr : (preset.acPerHr || '')));
+  }
   document.getElementById('stgPaxCount').textContent = String(_stgPax);
   document.getElementById('stgBtnOwner').classList.toggle('active',  _stgRole === 'owner');
   document.getElementById('stgBtnLessee').classList.toggle('active', _stgRole === 'lessee');
@@ -6012,9 +6054,15 @@ window.stgPickAircraft = function(val) {
   _stgAircraft = val;
   document.getElementById('stgAcSR22T').classList.toggle('active', val === '175');
   document.getElementById('stgAcSF50').classList.toggle('active',  val === '280');
+  var acDetails = document.getElementById('stgAcDetails');
+  if (acDetails) acDetails.style.display = '';
+  var preset = acCostPresets[val] || {};
+  // Populate detail fields from preset (user can override)
+  _setEl('stgAcSpd',   String(val === '280' ? 280 : 175));
+  _setEl('stgAcGph',   String(acGph[val] || ''));
+  _setEl('stgAcPerHr', String(preset.acPerHr || ''));
   if (!document.getElementById('stgPilotIsUser').checked) {
-    var preset = acCostPresets[val];
-    if (preset) { _setEl('stgPilotMin', String(preset.pilotMin)); _setEl('stgPilotMax', String(preset.pilotMax)); }
+    if (preset.pilotMin !== undefined) { _setEl('stgPilotMin', String(preset.pilotMin)); _setEl('stgPilotMax', String(preset.pilotMax)); }
   }
 };
 
@@ -6034,6 +6082,12 @@ window.stgOnPilotIsUserChange = function() {
   var row = document.getElementById('stgPilotCostRow');
   if (row) row.style.opacity = checked ? '0.35' : '1';
   if (checked) { _setEl('stgPilotMin', '0'); _setEl('stgPilotMax', '0'); }
+};
+
+window.resetSettings = function() {
+  try { localStorage.removeItem(SETTINGS_KEY); } catch(e) {}
+  closeSettings();
+  _stgToast('&#x2715; Settings reset to defaults');
 };
 
 function _stgToast(msg) {
