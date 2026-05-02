@@ -1054,7 +1054,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-04-29.10';
+var APP_VERSION = 'v2026-05-02.1';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2384,7 +2384,9 @@ var _fboBreakdown    = {}; // wpId  → { fboName, components: [string] } for re
 
 window.fboSelectFBO = function(wpId, idx) {
   _fboSelected[wpId] = parseInt(idx) || 0;
-  delete _fboAutoFilled[wpId]; // clear so new selection pre-fills
+  delete _fboAutoFilled[wpId];
+  var inp = document.getElementById('fbo-' + wpId);
+  if (inp) inp.value = '';
   recalc();
 };
 
@@ -2441,8 +2443,9 @@ function calcFBOFee(fboData, isJet, nights) {
       }
       if (match) {
         var n = multiplier || 1;
-        total += match.amount * n;
-        parts.push(n > 1 ? label + ' \xd7' + n : label);
+        var lineAmt = match.amount * n;
+        total += lineAmt;
+        parts.push({ label: n > 1 ? label + ' \xd7' + n : label, amount: lineAmt });
       } else if (notDisclosed) {
         hasUndisclosed = true; // can't calculate — don't show a partial total
       }
@@ -2459,6 +2462,7 @@ function calcFBOFee(fboData, isJet, nights) {
     add('landing',  'Landing');
     if (isJet) add('handling', 'Handling');
 
+    if (hasUndisclosed) { total = 0; parts = []; }
     if (best === null || total < best.amount) {
       best = { amount: total, fboName: fbo.name, breakdown: parts,
                updated: fbo.updated, undisclosed: hasUndisclosed };
@@ -4705,15 +4709,18 @@ window.recalc = function() {
     var fee = inp ? (parseFloat(inp.value) || 0) : 0;
     var bd  = _fboBreakdown[wp.id];
     var stopLabel = wp.icao || truncate(wp.name, 14);
-    var detail = stopLabel;
-    if (bd && bd.fboName) detail += ' · ' + truncate(bd.fboName, 22);
+    var headerLabel = bd && bd.fboName ? stopLabel + ' · ' + truncate(bd.fboName, 22) : stopLabel;
     if (bd && bd.undisclosed) {
-      detail += ': fees not disclosed — call before arrival';
       anyUndisclosed = true;
+      rows += '<tr><td>FBO</td><td style="font-size:10px">' + headerLabel + '</td><td style="color:var(--warn,#e6a817)">CALL FOR RATES</td></tr>';
     } else if (bd && bd.components && bd.components.length) {
-      detail += ': ' + bd.components.join(' + ');
+      rows += '<tr><td>FBO</td><td style="font-size:10px;font-weight:600">' + headerLabel + '</td><td>' + fmt$(fee) + '</td></tr>';
+      bd.components.forEach(function(c) {
+        rows += '<tr><td></td><td style="font-size:10px;color:var(--text-muted);padding-left:10px">' + c.label + '</td><td style="font-size:10px;color:var(--text-muted)">' + fmt$(c.amount) + '</td></tr>';
+      });
+    } else {
+      rows += '<tr><td>FBO</td><td style="font-size:10px">' + headerLabel + '</td><td>' + fmt$(fee) + '</td></tr>';
     }
-    rows += '<tr><td>FBO</td><td style="font-size:10px">' + detail + '</td><td>' + fmt$(fee) + '</td></tr>';
   });
   if (fboTotal === 0 && !anyUndisclosed) rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:10px">No FBO fees — adjust inputs above if applicable</td></tr>';
   if (anyUndisclosed) rows += '<tr><td colspan="3" style="color:var(--warn,#e6a817);font-size:10px">⚠ FBO total may be incomplete — one or more stops do not disclose fees</td></tr>';
@@ -5275,7 +5282,7 @@ function renderFBOInputs(placed) {
       autoNote = '<div style="color:var(--warn,#e6a817);font-size:11px;margin-top:3px;line-height:1.4">' +
         '⚠ ' + (calc.fboName || 'FBO') + ' does not disclose fees — call before arrival and enter manually.</div>';
     } else if (calc !== null) {
-      var noteText = calc.breakdown.length ? calc.breakdown.join(' + ') : 'No Fee';
+      var noteText = calc.breakdown.length ? calc.breakdown.map(function(c){return c.label;}).join(' + ') : 'No Fee';
       if (nights > 0 && !isJet && calc.amount > 0) noteText += ' · 50% off w/fuel (SR22T)';
       autoNote = '<div style="color:var(--text-muted);font-size:11px;margin-top:3px;line-height:1.4">↺ ' + noteText + '</div>';
     } else if (isLoading) {
