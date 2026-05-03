@@ -1147,7 +1147,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.9';
+var APP_VERSION = 'v2026-05-03.10';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5959,6 +5959,7 @@ function _getSaves() { try { return JSON.parse(localStorage.getItem(SAVES_KEY)||
 function _putSaves(arr) { try { localStorage.setItem(SAVES_KEY, JSON.stringify(arr)); } catch(e) {} }
 
 window.openTripModal = function() {
+  if (isMobile()) mobileTab('plan');
   _renderTripList();
   document.getElementById('tripModal').style.display = 'flex';
   var inp = document.getElementById('tripNameInput'); if (inp) inp.focus();
@@ -6133,6 +6134,7 @@ function applyDefaultOrigin(origin) {
 }
 
 function openSettings() {
+  if (isMobile()) mobileTab('plan');
   var s = loadSettings();
   _stgOriginResolved = s.origin || null;
   _stgAircraft       = s.aircraft || null;
