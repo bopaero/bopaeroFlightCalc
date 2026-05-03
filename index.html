@@ -1026,41 +1026,6 @@ select option { background:var(--surface2); }
   </div>
 </div>
 
-<!-- Cloud Sync: First-Launch Overlay -->
-<div class="confirm-overlay" id="syncFirstLaunchModal" style="display:none;z-index:10000">
-  <div class="trip-modal-panel" style="max-width:340px;text-align:center">
-    <h2 style="margin:0 0 10px;font-size:18px;font-weight:700">Welcome to TripCalc</h2>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 6px">Your trips save automatically to the cloud.</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 22px">Used TripCalc on another device before?</p>
-    <button onclick="syncShowLinkEntry()"
-            style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px;margin-bottom:10px">
-      Yes &mdash; Restore My Trips
-    </button>
-    <button onclick="syncStartFresh()"
-            style="width:100%;padding:10px;background:none;color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;letter-spacing:.5px">
-      No &mdash; Start Fresh
-    </button>
-    <div id="syncLinkEntrySection" style="display:none;margin-top:18px;text-align:left">
-      <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px">
-        On your other device, go to <strong>Settings &rarr; Get Sync Code</strong> and enter the code it shows you here.
-      </p>
-      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Sync code from your other device</div>
-      <div style="display:flex;gap:6px">
-        <input id="syncLinkCodeInput" type="text" maxlength="8" placeholder="e.g. AEFAW3QL"
-               style="flex:1;font-family:var(--mono);font-size:15px;text-transform:uppercase;letter-spacing:2px;text-align:center;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:8px"
-               oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
-               onpaste="setTimeout(function(){var i=document.getElementById('syncLinkCodeInput');i.value=i.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);},0)"
-               onkeydown="if(event.key==='Enter')syncDoRedeem()">
-        <button onclick="syncDoRedeem()"
-                style="padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700">
-          Restore
-        </button>
-      </div>
-      <p id="syncLinkError" style="color:#f55;font-size:12px;margin:6px 0 0;display:none">Code not found or expired. Try again.</p>
-    </div>
-  </div>
-</div>
-
 <!-- Cloud Sync: Get Sync Code Modal -->
 <div class="confirm-overlay" id="syncLinkModal" style="display:none;z-index:10000" onclick="if(event.target===this)closeSyncLinkModal()">
   <div class="trip-modal-panel" style="max-width:320px;text-align:center">
@@ -1072,7 +1037,7 @@ select option { background:var(--surface2); }
       Open TripCalc on your other device.
     </p>
     <p style="font-size:13px;color:var(--text-muted);margin:0 0 18px">
-      When asked, tap <strong>Yes &mdash; Restore My Trips</strong> and enter this code.
+      Open TripCalc on your other device, go to <strong>Trips &rarr; Link Another Device</strong>, and enter this code.
     </p>
     <div id="syncLinkCodeDisplay" onclick="syncCopyCode()"
          title="Tap to copy"
@@ -1101,6 +1066,23 @@ select option { background:var(--surface2); }
       <button onclick="saveTripFromModal()">Save</button>
     </div>
     <div class="trip-save-list" id="tripSaveList"></div>
+
+    <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px">
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Link Another Device</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button onclick="closeTripModal();openSyncLinkModal()" class="trips-btn" style="flex:1;margin:0">Get Sync Code</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Have a code from another device?</div>
+      <div style="display:flex;gap:6px">
+        <input id="syncLinkCodeInput" type="text" maxlength="8" placeholder="Enter code"
+               style="flex:1;font-family:var(--mono);font-size:14px;text-transform:uppercase;letter-spacing:2px;text-align:center;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:7px 8px"
+               oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+               onpaste="setTimeout(function(){var i=document.getElementById('syncLinkCodeInput');i.value=i.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);},0)"
+               onkeydown="if(event.key==='Enter')syncDoRedeem()">
+        <button onclick="syncDoRedeem()" class="trips-btn" style="margin:0;padding:7px 14px">Restore</button>
+      </div>
+      <p id="syncLinkError" style="color:#f55;font-size:12px;margin:6px 0 0;display:none">Code not found or expired. Try again.</p>
+    </div>
   </div>
 </div>
 
@@ -1222,7 +1204,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.16';
+var APP_VERSION = 'v2026-05-03.17';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5808,7 +5790,6 @@ var SETTINGS_KEY      = 'tripcalc_settings';
 // ── CLOUD SYNC ─────────────────────────────────────────────────────────────
 var SYNC_WORKER    = 'https://tripcalc-sync.compilotrc.workers.dev';
 var SYNC_TOKEN_KEY = 'tripcalc_sync_token';
-var SYNC_SEEN_KEY  = 'tripcalc_sync_seen';
 var _syncLinkExpTimer = null;
 
 function _syncToken() {
@@ -5894,31 +5875,10 @@ function _updateSyncBadge(ok) {
   el.style.color = ok ? 'var(--accent)' : 'var(--text-muted)';
 }
 
-function checkFirstLaunch() {
-  var seen = false;
-  try { seen = !!localStorage.getItem(SYNC_SEEN_KEY); } catch(e) {}
-  if (!seen) {
-    if (isMobile()) mobileTab('plan');
-    var modal = document.getElementById('syncFirstLaunchModal');
-    if (modal) modal.style.display = 'flex';
-  } else {
-    _ensureSyncToken();
-    syncPull(null);
-  }
-}
-
-window.syncStartFresh = function() {
+function initSync() {
   _ensureSyncToken();
-  try { localStorage.setItem(SYNC_SEEN_KEY, '1'); } catch(e) {}
-  var modal = document.getElementById('syncFirstLaunchModal');
-  if (modal) modal.style.display = 'none';
-  syncPush();
-};
-
-window.syncShowLinkEntry = function() {
-  var sec = document.getElementById('syncLinkEntrySection');
-  if (sec) { sec.style.display = ''; setTimeout(function() { var i = document.getElementById('syncLinkCodeInput'); if (i) i.focus(); }, 50); }
-};
+  syncPull(null);
+}
 
 window.syncDoRedeem = function() {
   var input = document.getElementById('syncLinkCodeInput');
@@ -5935,9 +5895,8 @@ window.syncDoRedeem = function() {
   .then(function(d) {
     if (d.syncToken) {
       try { localStorage.setItem(SYNC_TOKEN_KEY, d.syncToken); } catch(e) {}
-      try { localStorage.setItem(SYNC_SEEN_KEY, '1'); } catch(e) {}
-      var modal = document.getElementById('syncFirstLaunchModal');
-      if (modal) modal.style.display = 'none';
+      var inp = document.getElementById('syncLinkCodeInput');
+      if (inp) inp.value = '';
       syncPull(function(pulled) {
         if (typeof _renderTripList === 'function') _renderTripList();
         _stgToast(pulled ? '&#x2713; Account linked &mdash; your trips are ready' : '&#x2713; Account linked');
@@ -6556,8 +6515,8 @@ initMetroDropdown();
 renderWPList();
 updateMode();
 initMobileLayout();
-// Cloud sync: show first-launch screen or silently pull data
-checkFirstLaunch();
+// Cloud sync: silently init and pull on every load
+initSync();
 // On intentional quit: autosave is present but clean-exit marker was set —
 // honour the user's choice and start fresh. On crash: no clean-exit marker,
 // offer to restore.
