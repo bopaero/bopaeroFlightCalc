@@ -487,38 +487,54 @@ select option { background:var(--surface2); }
 
   /* Touch-friendly tap targets */
   .wp-btn { width:28px; height:28px; }
-  .fav-btn { padding:7px 6px; font-size:13px; }
-  .fav-btn .fav-icao { font-size:14px; }
-  .fav-btn .fav-name { font-size:12px; }
-  .add-wp-btn, .clear-all-btn { padding:9px 12px; font-size:13px; }
-  .custom-btn { font-size:13px; }
+  .fav-btn { padding:7px 6px; font-size:15px; }
+  .fav-btn .fav-icao { font-size:16px; }
+  .fav-btn .fav-name { font-size:14px; }
+  .add-wp-btn, .clear-all-btn { padding:9px 12px; font-size:15px; }
+  .custom-btn { font-size:15px; }
 
   /* Increase font sizes on mobile for readability */
-  .sec-title { font-size:14px; }
+  .sec-title { font-size:16px; }
   .wp-name { font-size:16px; }
-  .wp-name.empty { font-size:15px; }
-  .wp-coords { font-size:13px; }
-  .wp-num { font-size:13px; width:24px; height:24px; }
-  .wp-drive { font-size:13px; }
-  .wp-drive-val { font-size:13px; }
-  .wp-addr-btn { font-size:13px; }
-  .leg-connector { font-size:13px; }
-  .leg-dist { font-size:13px; }
-  .leg-details { font-size:13px; }
-  .leg-range-warn { font-size:13px; }
-  .ac-slot-lbl { font-size:14px; }
-  .spd-unit { font-size:14px; }
-  .cost-lbl { font-size:13px; }
-  .cost-row { font-size:13px; }
-  .map-hint { font-size:13px; }
+  .wp-name.empty { font-size:16px; }
+  .wp-coords { font-size:15px; }
+  .wp-num { font-size:14px; width:26px; height:26px; }
+  .wp-drive { font-size:15px; }
+  .wp-drive-val { font-size:15px; }
+  .wp-addr-btn { font-size:15px; }
+  .leg-connector { font-size:15px; }
+  .leg-dist { font-size:15px; }
+  .leg-details { font-size:15px; }
+  .leg-range-warn { font-size:15px; }
+  .ac-slot-lbl { font-size:16px; }
+  .spd-unit { font-size:16px; }
+  .cost-lbl { font-size:15px; }
+  .cost-row { font-size:15px; }
+  .map-hint { font-size:14px; }
   .res-name { font-size:16px; }
-  .res-item-lbl { font-size:13px; }
-  .res-item-val { font-size:20px; }
-  .res-item-val .u { font-size:13px; }
-  .empty-msg { font-size:14px; }
-  .legs-toggle { font-size:13px; }
-  .fbo-label { font-size:13px; }
-  .fbo-title { font-size:13px; }
+  .res-item-lbl { font-size:15px; }
+  .res-item-val { font-size:22px; }
+  .res-item-val .u { font-size:15px; }
+  .empty-msg { font-size:15px; }
+  .legs-toggle { font-size:15px; }
+  .fbo-label { font-size:15px; }
+  .fbo-title { font-size:15px; }
+  .predict-item { font-size:14px; }
+  .predict-item .predict-type { font-size:11px; }
+  .fav-btn .fav-name { font-size:13px; }
+  .payload-row label { font-size:15px; }
+  .payload-status { font-size:14px; }
+  .payload-summary { font-size:14px; }
+  .payload-std-btn { font-size:14px; }
+  .payload-details-btn { font-size:14px; }
+  .legs-table { font-size:13px; }
+  .legs-table th { font-size:12px; }
+  .dist-lbl { font-size:13px; }
+  .dist-val { font-size:15px; }
+  .trip-save-meta strong { font-size:15px; }
+  .trip-save-meta span { font-size:13px; }
+  .trip-action-btn { font-size:14px; }
+  .add-wp-btn, .clear-all-btn, .trips-btn { font-size:15px; }
   .layer-btn { font-size:11px; }
 
   /* 16px minimum on mobile inputs prevents iOS auto-zoom */
@@ -1214,7 +1230,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.18';
+var APP_VERSION = 'v2026-05-03.19';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
