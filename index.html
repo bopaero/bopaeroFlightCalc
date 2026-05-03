@@ -960,28 +960,6 @@ select option { background:var(--surface2); }
 
   </div>
 
-  <!-- AIRCRAFT PICKER (mobile) -->
-  <div class="confirm-overlay" id="acPickerOverlay">
-    <div class="confirm-box">
-      <div class="confirm-msg">Choose an aircraft</div>
-      <div class="confirm-btns">
-        <button class="primary" onclick="pickAircraftFromPrompt('175')">SR22T</button>
-        <button class="primary" onclick="pickAircraftFromPrompt('280')">SF50</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CONFIRM DIALOG -->
-  <div class="confirm-overlay" id="confirmOverlay">
-    <div class="confirm-box">
-      <div class="confirm-msg" id="confirmMsg"></div>
-      <div class="confirm-btns">
-        <button id="confirmNo">No</button>
-        <button id="confirmYes" class="primary">Yes</button>
-      </div>
-    </div>
-  </div>
-
   <!-- MAP -->
   <div class="map-wrap mobile-active" id="mobileMapPanel">
     <div id="map"></div>
@@ -1004,182 +982,6 @@ select option { background:var(--surface2); }
       </div>
     </div>
 
-  <!-- Cloud Sync: First-Launch Overlay -->
-  <div class="confirm-overlay" id="syncFirstLaunchModal" style="display:none;z-index:10000">
-    <div class="trip-modal-panel" style="max-width:340px;text-align:center">
-      <h2 style="margin:0 0 10px;font-size:18px;font-weight:700">Welcome to TripCalc</h2>
-      <p style="font-size:13px;color:var(--text-muted);margin:0 0 6px">Your trips save automatically to the cloud.</p>
-      <p style="font-size:13px;color:var(--text-muted);margin:0 0 22px">Used TripCalc on another device before?</p>
-      <button onclick="syncShowLinkEntry()"
-              style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px;margin-bottom:10px">
-        Yes &mdash; Restore My Trips
-      </button>
-      <button onclick="syncStartFresh()"
-              style="width:100%;padding:10px;background:none;color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;letter-spacing:.5px">
-        No &mdash; Start Fresh
-      </button>
-      <div id="syncLinkEntrySection" style="display:none;margin-top:18px;text-align:left">
-        <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px">
-          On your other device, go to <strong>Settings &rarr; Get Sync Code</strong> and enter the code it shows you here.
-        </p>
-        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Sync code from your other device</div>
-        <div style="display:flex;gap:6px">
-          <input id="syncLinkCodeInput" type="text" maxlength="8" placeholder="e.g. AEFAW3QL"
-                 style="flex:1;font-family:var(--mono);font-size:15px;text-transform:uppercase;letter-spacing:2px;text-align:center;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:8px"
-                 oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
-                 onpaste="setTimeout(function(){var i=document.getElementById('syncLinkCodeInput');i.value=i.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);},0)"
-                 onkeydown="if(event.key==='Enter')syncDoRedeem()">
-          <button onclick="syncDoRedeem()"
-                  style="padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700">
-            Restore
-          </button>
-        </div>
-        <p id="syncLinkError" style="color:#f55;font-size:12px;margin:6px 0 0;display:none">Code not found or expired. Try again.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Cloud Sync: Get Sync Code Modal -->
-  <div class="confirm-overlay" id="syncLinkModal" style="display:none;z-index:10000" onclick="if(event.target===this)closeSyncLinkModal()">
-    <div class="trip-modal-panel" style="max-width:320px;text-align:center">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <span style="font-weight:700;font-size:14px">Get Sync Code</span>
-        <button onclick="closeSyncLinkModal()" style="background:none;border:none;color:var(--text);font-size:18px;cursor:pointer;line-height:1">&#x2715;</button>
-      </div>
-      <p style="font-size:13px;color:var(--text-muted);margin:0 0 6px">
-        Open TripCalc on your other device.
-      </p>
-      <p style="font-size:13px;color:var(--text-muted);margin:0 0 18px">
-        When asked, tap <strong>Yes &mdash; Restore My Trips</strong> and enter this code.
-      </p>
-      <div id="syncLinkCodeDisplay" onclick="syncCopyCode()"
-           title="Tap to copy"
-           style="font-size:30px;font-weight:700;letter-spacing:5px;background:var(--surface);border-radius:8px;padding:18px 10px;margin-bottom:4px;font-family:var(--mono);cursor:pointer;user-select:all">
-        --------
-      </div>
-      <p style="font-size:11px;color:var(--text-muted);margin:0 0 6px">Tap code to copy</p>
-      <p id="syncLinkExpiry" style="font-size:12px;color:var(--text-muted);margin:0 0 20px">Generating&hellip;</p>
-      <button onclick="closeSyncLinkModal()"
-              style="width:100%;padding:9px;background:none;color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer">
-        Done
-      </button>
-    </div>
-  </div>
-
-  <!-- Trip Save/Load Modal -->
-  <div class="confirm-overlay" id="tripModal" onclick="if(event.target===this)closeTripModal()">
-    <div class="trip-modal-panel">
-      <div class="trip-modal-header">
-        <span>&#x1F4BE; Saved Trips</span>
-        <button onclick="closeTripModal()">&#x2715;</button>
-      </div>
-      <div class="trip-name-row">
-        <input id="tripNameInput" type="text" placeholder="Name this trip..." maxlength="60"
-               onkeydown="if(event.key==='Enter')saveTripFromModal()">
-        <button onclick="saveTripFromModal()">Save</button>
-      </div>
-      <div class="trip-save-list" id="tripSaveList"></div>
-    </div>
-  </div>
-
-  <div class="confirm-overlay" id="settingsModal" onclick="if(event.target===this)closeSettings()">
-    <div class="trip-modal-panel" style="overflow-y:auto;max-height:85vh">
-      <div class="trip-modal-header">
-        <span>&#x2699; Default Settings</span>
-        <button onclick="closeSettings()">&#x2715;</button>
-      </div>
-
-      <div style="margin-bottom:14px">
-        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Origin</div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <input id="stgOriginInput" type="text" placeholder="ICAO (e.g. KSUS)" maxlength="6"
-                 style="font-family:var(--mono);font-size:13px;text-transform:uppercase;width:110px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:6px 8px"
-                 oninput="this.value=this.value.toUpperCase()" onblur="stgResolveOrigin()" onkeydown="if(event.key==='Enter')stgResolveOrigin()">
-          <button id="stgUseCurrentBtn" onclick="stgUseCurrent()" class="trips-btn" style="margin-top:0;flex:0;white-space:nowrap;padding:5px 10px">Use Current Origin</button>
-        </div>
-        <div id="stgOriginName" style="font-size:11px;color:var(--text-muted);margin-top:3px;min-height:15px"></div>
-      </div>
-
-      <div style="margin-bottom:14px">
-        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Aircraft</div>
-        <div style="display:flex;gap:6px">
-          <button id="stgAcSR22T" onclick="stgPickAircraft('175')" class="layer-btn">SR22T</button>
-          <button id="stgAcSF50" onclick="stgPickAircraft('280')" class="layer-btn">Vision Jet</button>
-        </div>
-      </div>
-
-      <div id="stgAcDetails" style="margin-bottom:14px;display:none">
-        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Aircraft Details</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Speed (mph)
-            <input id="stgAcSpd" type="number" min="1" max="9999" step="1"
-                   style="width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
-          </label>
-          <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Fuel (gph)
-            <input id="stgAcGph" type="number" min="0" max="9999" step="0.1"
-                   style="width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
-          </label>
-          <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Aircraft ($/hr)
-            <input id="stgAcPerHr" type="number" min="0" step="10"
-                   style="width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
-          </label>
-        </div>
-      </div>
-
-      <div style="margin-bottom:14px">
-        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Occupants</div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <button onclick="stgAdjPax(-1)" class="layer-btn" style="padding:2px 10px;font-size:16px;line-height:1.4">&#x2212;</button>
-          <span id="stgPaxCount" style="font-family:var(--mono);font-size:16px;min-width:22px;text-align:center">2</span>
-          <button onclick="stgAdjPax(1)" class="layer-btn" style="padding:2px 10px;font-size:16px;line-height:1.4">+</button>
-        </div>
-      </div>
-
-      <div style="margin-bottom:14px">
-        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Role</div>
-        <div style="display:flex;gap:6px">
-          <button id="stgBtnOwner" onclick="stgPickRole('owner')" class="layer-btn active">Owner</button>
-          <button id="stgBtnLessee" onclick="stgPickRole('lessee')" class="layer-btn">Lessee</button>
-        </div>
-      </div>
-
-      <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;padding:8px;background:var(--surface);border-radius:6px">
-        <input type="checkbox" id="stgFuelOnly" style="cursor:pointer">
-        <span style="font-size:12px;color:var(--text)">&#x26FD; Only choose Airports with Fuel Services</span>
-      </label>
-
-      <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;padding:8px;background:var(--surface);border-radius:6px">
-        <input type="checkbox" id="stgPilotIsUser" onchange="stgOnPilotIsUserChange()" style="cursor:pointer">
-        <span style="font-size:12px;color:var(--text)">I am the pilot &mdash; default pilot cost to $0</span>
-      </label>
-
-      <div id="stgPilotCostRow" style="margin-bottom:18px;transition:opacity .2s">
-        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Pilot Cost ($/day)</div>
-        <div style="display:flex;gap:12px;align-items:center">
-          <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Min
-            <input id="stgPilotMin" type="number" min="0" step="100"
-                   style="width:75px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
-          </label>
-          <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Max
-            <input id="stgPilotMax" type="number" min="0" step="100"
-                   style="width:75px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
-          </label>
-        </div>
-      </div>
-
-      <div style="border-top:1px solid var(--border);margin:4px 0 16px;padding-top:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-          <span style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Cloud Sync</span>
-          <span id="syncStatusBadge" style="font-size:11px;color:var(--text-muted)">Checking&hellip;</span>
-        </div>
-        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">Your trips and settings are saved to the cloud automatically.</p>
-        <button onclick="closeSettings();openSyncLinkModal()" class="trips-btn" style="width:100%;margin-top:0">Get Sync Code</button>
-      </div>
-
-      <button onclick="resetSettings()" style="width:100%;padding:8px;background:none;color:var(--red,#ff4444);border:1px solid var(--red,#ff4444);border-radius:6px;font-family:var(--mono);font-size:12px;cursor:pointer;margin-bottom:8px;letter-spacing:.5px">&#x2715; Reset All Settings</button>
-      <button onclick="saveSettings()" style="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px">Save Settings</button>
-    </div>
-  </div>
 
     <div class="map-helper-btns">
       <button class="map-helper-btn" id="zoomRouteBtn" onclick="zoomToRoute()" disabled title="Zoom to fit entire route"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="2" cy="2" r="1.5" fill="currentColor" stroke="none"/><circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="5" cy="7" r="1.5" fill="currentColor" stroke="none"/><line x1="2" y1="2" x2="5" y2="7"/><line x1="5" y1="7" x2="12" y2="5"/><line x1="12" y1="5" x2="7" y2="12"/></svg> ROUTE</button>
@@ -1200,6 +1002,208 @@ select option { background:var(--surface2); }
 
 </div>
 
+<!-- ALL OVERLAYS/MODALS — direct children of body so position:fixed works correctly on iOS -->
+
+<!-- AIRCRAFT PICKER (mobile) -->
+<div class="confirm-overlay" id="acPickerOverlay">
+  <div class="confirm-box">
+    <div class="confirm-msg">Choose an aircraft</div>
+    <div class="confirm-btns">
+      <button class="primary" onclick="pickAircraftFromPrompt('175')">SR22T</button>
+      <button class="primary" onclick="pickAircraftFromPrompt('280')">SF50</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button id="confirmNo">No</button>
+      <button id="confirmYes" class="primary">Yes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cloud Sync: First-Launch Overlay -->
+<div class="confirm-overlay" id="syncFirstLaunchModal" style="display:none;z-index:10000">
+  <div class="trip-modal-panel" style="max-width:340px;text-align:center">
+    <h2 style="margin:0 0 10px;font-size:18px;font-weight:700">Welcome to TripCalc</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 6px">Your trips save automatically to the cloud.</p>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 22px">Used TripCalc on another device before?</p>
+    <button onclick="syncShowLinkEntry()"
+            style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px;margin-bottom:10px">
+      Yes &mdash; Restore My Trips
+    </button>
+    <button onclick="syncStartFresh()"
+            style="width:100%;padding:10px;background:none;color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;letter-spacing:.5px">
+      No &mdash; Start Fresh
+    </button>
+    <div id="syncLinkEntrySection" style="display:none;margin-top:18px;text-align:left">
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px">
+        On your other device, go to <strong>Settings &rarr; Get Sync Code</strong> and enter the code it shows you here.
+      </p>
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Sync code from your other device</div>
+      <div style="display:flex;gap:6px">
+        <input id="syncLinkCodeInput" type="text" maxlength="8" placeholder="e.g. AEFAW3QL"
+               style="flex:1;font-family:var(--mono);font-size:15px;text-transform:uppercase;letter-spacing:2px;text-align:center;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:8px"
+               oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+               onpaste="setTimeout(function(){var i=document.getElementById('syncLinkCodeInput');i.value=i.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);},0)"
+               onkeydown="if(event.key==='Enter')syncDoRedeem()">
+        <button onclick="syncDoRedeem()"
+                style="padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700">
+          Restore
+        </button>
+      </div>
+      <p id="syncLinkError" style="color:#f55;font-size:12px;margin:6px 0 0;display:none">Code not found or expired. Try again.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Cloud Sync: Get Sync Code Modal -->
+<div class="confirm-overlay" id="syncLinkModal" style="display:none;z-index:10000" onclick="if(event.target===this)closeSyncLinkModal()">
+  <div class="trip-modal-panel" style="max-width:320px;text-align:center">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-weight:700;font-size:14px">Get Sync Code</span>
+      <button onclick="closeSyncLinkModal()" style="background:none;border:none;color:var(--text);font-size:18px;cursor:pointer;line-height:1">&#x2715;</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 6px">
+      Open TripCalc on your other device.
+    </p>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 18px">
+      When asked, tap <strong>Yes &mdash; Restore My Trips</strong> and enter this code.
+    </p>
+    <div id="syncLinkCodeDisplay" onclick="syncCopyCode()"
+         title="Tap to copy"
+         style="font-size:30px;font-weight:700;letter-spacing:5px;background:var(--surface);border-radius:8px;padding:18px 10px;margin-bottom:4px;font-family:var(--mono);cursor:pointer;user-select:all">
+      --------
+    </div>
+    <p style="font-size:11px;color:var(--text-muted);margin:0 0 6px">Tap code to copy</p>
+    <p id="syncLinkExpiry" style="font-size:12px;color:var(--text-muted);margin:0 0 20px">Generating&hellip;</p>
+    <button onclick="closeSyncLinkModal()"
+            style="width:100%;padding:9px;background:none;color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer">
+      Done
+    </button>
+  </div>
+</div>
+
+<!-- Trip Save/Load Modal -->
+<div class="confirm-overlay" id="tripModal" onclick="if(event.target===this)closeTripModal()">
+  <div class="trip-modal-panel">
+    <div class="trip-modal-header">
+      <span>&#x1F4BE; Saved Trips</span>
+      <button onclick="closeTripModal()">&#x2715;</button>
+    </div>
+    <div class="trip-name-row">
+      <input id="tripNameInput" type="text" placeholder="Name this trip..." maxlength="60"
+             onkeydown="if(event.key==='Enter')saveTripFromModal()">
+      <button onclick="saveTripFromModal()">Save</button>
+    </div>
+    <div class="trip-save-list" id="tripSaveList"></div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="confirm-overlay" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+  <div class="trip-modal-panel" style="overflow-y:auto;max-height:85vh">
+    <div class="trip-modal-header">
+      <span>&#x2699; Default Settings</span>
+      <button onclick="closeSettings()">&#x2715;</button>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Origin</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="stgOriginInput" type="text" placeholder="ICAO (e.g. KSUS)" maxlength="6"
+               style="font-family:var(--mono);font-size:13px;text-transform:uppercase;width:110px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:6px 8px"
+               oninput="this.value=this.value.toUpperCase()" onblur="stgResolveOrigin()" onkeydown="if(event.key==='Enter')stgResolveOrigin()">
+        <button id="stgUseCurrentBtn" onclick="stgUseCurrent()" class="trips-btn" style="margin-top:0;flex:0;white-space:nowrap;padding:5px 10px">Use Current Origin</button>
+      </div>
+      <div id="stgOriginName" style="font-size:11px;color:var(--text-muted);margin-top:3px;min-height:15px"></div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Aircraft</div>
+      <div style="display:flex;gap:6px">
+        <button id="stgAcSR22T" onclick="stgPickAircraft('175')" class="layer-btn">SR22T</button>
+        <button id="stgAcSF50" onclick="stgPickAircraft('280')" class="layer-btn">Vision Jet</button>
+      </div>
+    </div>
+
+    <div id="stgAcDetails" style="margin-bottom:14px;display:none">
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Aircraft Details</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Speed (mph)
+          <input id="stgAcSpd" type="number" min="1" max="9999" step="1"
+                 style="width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
+        </label>
+        <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Fuel (gph)
+          <input id="stgAcGph" type="number" min="0" max="9999" step="0.1"
+                 style="width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
+        </label>
+        <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Aircraft ($/hr)
+          <input id="stgAcPerHr" type="number" min="0" step="10"
+                 style="width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
+        </label>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Occupants</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="stgAdjPax(-1)" class="layer-btn" style="padding:2px 10px;font-size:16px;line-height:1.4">&#x2212;</button>
+        <span id="stgPaxCount" style="font-family:var(--mono);font-size:16px;min-width:22px;text-align:center">2</span>
+        <button onclick="stgAdjPax(1)" class="layer-btn" style="padding:2px 10px;font-size:16px;line-height:1.4">+</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Role</div>
+      <div style="display:flex;gap:6px">
+        <button id="stgBtnOwner" onclick="stgPickRole('owner')" class="layer-btn active">Owner</button>
+        <button id="stgBtnLessee" onclick="stgPickRole('lessee')" class="layer-btn">Lessee</button>
+      </div>
+    </div>
+
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;padding:8px;background:var(--surface);border-radius:6px">
+      <input type="checkbox" id="stgFuelOnly" style="cursor:pointer">
+      <span style="font-size:12px;color:var(--text)">&#x26FD; Only choose Airports with Fuel Services</span>
+    </label>
+
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;padding:8px;background:var(--surface);border-radius:6px">
+      <input type="checkbox" id="stgPilotIsUser" onchange="stgOnPilotIsUserChange()" style="cursor:pointer">
+      <span style="font-size:12px;color:var(--text)">I am the pilot &mdash; default pilot cost to $0</span>
+    </label>
+
+    <div id="stgPilotCostRow" style="margin-bottom:18px;transition:opacity .2s">
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Pilot Cost ($/day)</div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Min
+          <input id="stgPilotMin" type="number" min="0" step="100"
+                 style="width:75px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
+        </label>
+        <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Max
+          <input id="stgPilotMax" type="number" min="0" step="100"
+                 style="width:75px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
+        </label>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);margin:4px 0 16px;padding-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Cloud Sync</span>
+        <span id="syncStatusBadge" style="font-size:11px;color:var(--text-muted)">Checking&hellip;</span>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">Your trips and settings are saved to the cloud automatically.</p>
+      <button onclick="closeSettings();openSyncLinkModal()" class="trips-btn" style="width:100%;margin-top:0">Get Sync Code</button>
+    </div>
+
+    <button onclick="resetSettings()" style="width:100%;padding:8px;background:none;color:var(--red,#ff4444);border:1px solid var(--red,#ff4444);border-radius:6px;font-family:var(--mono);font-size:12px;cursor:pointer;margin-bottom:8px;letter-spacing:.5px">&#x2715; Reset All Settings</button>
+    <button onclick="saveSettings()" style="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px">Save Settings</button>
+  </div>
+</div>
+
 <!-- MOBILE BOTTOM NAV -->
 <nav class="mobile-nav" id="mobileNav">
   <button class="mobile-nav-btn" id="mnavPlan" onclick="mobileTab('plan')">
@@ -1218,7 +1222,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.14';
+var APP_VERSION = 'v2026-05-03.15';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
