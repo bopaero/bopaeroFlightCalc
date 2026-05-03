@@ -1174,11 +1174,21 @@ select option { background:var(--surface2); }
 
     <div style="border-top:1px solid var(--border);margin:4px 0 16px;padding-top:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-        <span style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Cloud Sync</span>
+        <span style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Link Another Device</span>
         <span id="syncStatusBadge" style="font-size:11px;color:var(--text-muted)">Checking&hellip;</span>
       </div>
       <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">Your trips and settings are saved to the cloud automatically.</p>
-      <button onclick="closeSettings();openSyncLinkModal()" class="trips-btn" style="width:100%;margin-top:0">Get Sync Code</button>
+      <button onclick="closeSettings();openSyncLinkModal()" class="trips-btn" style="width:100%;margin-top:0;margin-bottom:10px">Get Sync Code</button>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Have a code from another device?</div>
+      <div style="display:flex;gap:6px">
+        <input id="syncLinkCodeInputStg" type="text" maxlength="8" placeholder="Enter code"
+               style="flex:1;font-family:var(--mono);font-size:14px;text-transform:uppercase;letter-spacing:2px;text-align:center;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:7px 8px"
+               oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+               onpaste="setTimeout(function(){var i=document.getElementById('syncLinkCodeInputStg');i.value=i.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);},0)"
+               onkeydown="if(event.key==='Enter')syncDoRedeemStg()">
+        <button onclick="syncDoRedeemStg()" class="trips-btn" style="margin:0;padding:7px 14px">Restore</button>
+      </div>
+      <p id="syncLinkErrorStg" style="color:#f55;font-size:12px;margin:6px 0 0;display:none">Code not found or expired. Try again.</p>
     </div>
 
     <button onclick="resetSettings()" style="width:100%;padding:8px;background:none;color:var(--red,#ff4444);border:1px solid var(--red,#ff4444);border-radius:6px;font-family:var(--mono);font-size:12px;cursor:pointer;margin-bottom:8px;letter-spacing:.5px">&#x2715; Reset All Settings</button>
@@ -1204,7 +1214,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.17';
+var APP_VERSION = 'v2026-05-03.18';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5899,6 +5909,35 @@ window.syncDoRedeem = function() {
       if (inp) inp.value = '';
       syncPull(function(pulled) {
         if (typeof _renderTripList === 'function') _renderTripList();
+        _stgToast(pulled ? '&#x2713; Account linked &mdash; your trips are ready' : '&#x2713; Account linked');
+      });
+    } else {
+      if (errEl) { errEl.textContent = 'Code not found or expired. Try again.'; errEl.style.display = ''; }
+    }
+  }).catch(function() {
+    if (errEl) { errEl.textContent = 'Connection error. Check your internet and try again.'; errEl.style.display = ''; }
+  });
+};
+
+window.syncDoRedeemStg = function() {
+  var input = document.getElementById('syncLinkCodeInputStg');
+  var errEl = document.getElementById('syncLinkErrorStg');
+  if (!input) return;
+  var code = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length !== 8) { if (errEl) { errEl.textContent = 'Enter all 8 characters.'; errEl.style.display = ''; } return; }
+  if (errEl) errEl.style.display = 'none';
+  fetch(SYNC_WORKER + '/link/redeem', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: code })
+  }).then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.syncToken) {
+      try { localStorage.setItem(SYNC_TOKEN_KEY, d.syncToken); } catch(e) {}
+      input.value = '';
+      syncPull(function(pulled) {
+        if (typeof _renderTripList === 'function') _renderTripList();
+        closeSettings();
         _stgToast(pulled ? '&#x2713; Account linked &mdash; your trips are ready' : '&#x2713; Account linked');
       });
     } else {
