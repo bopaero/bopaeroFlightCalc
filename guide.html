@@ -327,6 +327,7 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
     <div class="nav-section">
       <div class="nav-label">Trips</div>
       <a class="nav-link" href="#saving">Saving Trips</a>
+      <a class="nav-link" href="#cloud-sync">Cloud Sync</a>
       <a class="nav-link" href="#export">Export & Print</a>
     </div>
     <div class="nav-section">
@@ -359,6 +360,7 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
         <li><a href="#warnings">Warnings</a></li>
         <li><a href="#settings">Default Settings</a></li>
         <li><a href="#saving">Saving Trips</a></li>
+        <li><a href="#cloud-sync">Cloud Sync</a></li>
         <li><a href="#export">Export &amp; Print</a></li>
         <li><a href="#aircraft-specs">Aircraft Specs</a></li>
         <li><a href="#data-sources">Data Sources</a></li>
@@ -744,13 +746,58 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
         <li>To remove a saved trip, click <strong>Delete</strong>. Up to 30 trips can be saved.</li>
       </ol>
 
-      <div class="callout warn">
-        <div class="callout-icon">&#9888;</div>
-        <p>Saved trips live in your browser's local storage. Clearing browser data or switching browsers will remove them. For permanent storage, use <strong>Export → Export TXT</strong> to save a text copy of the route.</p>
+      <h3>What Gets Saved</h3>
+      <p>Every named save (and the auto-save) captures a complete snapshot of the trip, including:</p>
+      <ul>
+        <li><strong>All waypoints</strong> — airport, coordinates, runway data, overnight flags</li>
+        <li><strong>Aircraft selection</strong> — model, speed, GPH, and any custom overrides</li>
+        <li><strong>Occupants &amp; luggage</strong></li>
+        <li><strong>Payload &amp; weight details</strong> — individual seat and baggage weights (SR22T)</li>
+        <li><strong>Trip Cost fields</strong> — aircraft cost, fuel/consumables, pilot cost range, Trip Days, ground time per stop</li>
+        <li><strong>Owner / Lessee role</strong> and lease hours (SF50 Lessee)</li>
+        <li><strong>FBO selections</strong> — the selected FBO at each stop and the fee entered</li>
+      </ul>
+      <div class="callout tip">
+        <div class="callout-icon">&#128161;</div>
+        <p>When a saved trip is loaded, FBO fees and fuel prices are refreshed from current data automatically — so recalled trips always reflect today's rates, not the rates at the time of saving.</p>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon">&#9729;</div>
+        <p>Saved trips are also backed up to the cloud automatically — so they're safe even if you clear your browser. See <a href="#cloud-sync">Cloud Sync</a> to access your trips on another device.</p>
       </div>
 
       <h3>Clear All</h3>
       <p>Click <strong>✕ Clear All</strong> to reset the entire trip. You'll be asked to confirm before anything is removed.</p>
+    </section>
+
+    <!-- CLOUD SYNC -->
+    <section class="guide-section" id="cloud-sync">
+      <h2>Cloud Sync</h2>
+      <p>TripCalc automatically backs up your saved trips and settings to the cloud every time you save. Nothing to configure — it happens silently in the background.</p>
+
+      <h3>Accessing Your Trips on Another Device</h3>
+      <p>To bring your trips to a second phone, tablet, or computer:</p>
+      <ol class="steps">
+        <li>On your <strong>existing device</strong>, open the <strong>💾 Trips</strong> modal and scroll to the <strong>Link Another Device</strong> section. Tap <strong>Get Sync Code</strong>.</li>
+        <li>A unique 8-character code appears (e.g. <code>AEFA-W3QL</code>). Tap it to copy. The code is valid for <strong>10 minutes</strong>.</li>
+        <li>On your <strong>new device</strong>, open TripCalc and go to <strong>💾 Trips → Link Another Device</strong>. Enter the code in the <em>Have a code from another device?</em> field and tap <strong>Restore</strong>.</li>
+        <li>Your trips will appear in the Trips list on the new device automatically.</li>
+      </ol>
+
+      <div class="callout note">
+        <div class="callout-icon">&#9432;</div>
+        <p>The same Link Another Device section is also available in <strong>⚙ Settings</strong> — useful if you want to link before saving any trips.</p>
+      </div>
+
+      <h3>How It Works</h3>
+      <p>Each device has a silent sync token stored in browser storage. When you save a trip or change settings, a copy is pushed to the cloud. When you open the app, the latest cloud data is merged into your local storage — so trips saved on any linked device are always available everywhere.</p>
+      <p>Linking two devices gives them the same sync token, so they share a single pool of trips and settings going forward. Any trip saved on either device will appear on the other the next time the app is opened.</p>
+
+      <div class="callout tip">
+        <div class="callout-icon">&#128161;</div>
+        <p>You can link as many devices as you like — just generate a fresh code from any already-linked device each time.</p>
+      </div>
     </section>
 
     <!-- EXPORT -->
