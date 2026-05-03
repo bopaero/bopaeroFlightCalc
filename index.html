@@ -1147,7 +1147,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.8';
+var APP_VERSION = 'v2026-05-03.9';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1300,6 +1300,7 @@ function doClearAll(clearPayload) {
   wpIdCounter = 0;
   placingId = null;
   routeClosed = false;
+  _fboSelected = {}; _fboAutoFilled = {}; _fboBreakdown = {}; _fboRestoredValues = {};
   drawAllLines();
   renderWPList();
   updateReturnUI();
@@ -2476,6 +2477,7 @@ var _fboAutoFilled   = {}; // wpId  → auto-filled amount string (to detect unt
 var _fboRenderToken  = 0;  // increments when new FBO data arrives, busts renderFBOInputs skip
 var _fboSelected     = {}; // wpId  → selected FBO index within fboData.fbos
 var _fboBreakdown    = {}; // wpId  → { fboName, components: [string] } for results table
+var _fboRestoredValues = {}; // wpId → value saved from a named trip load (consumed by renderFBOInputs)
 
 window.fboSelectFBO = function(wpId, idx) {
   _fboSelected[wpId] = parseInt(idx) || 0;
@@ -5419,6 +5421,11 @@ function renderFBOInputs(placed) {
     // Never pre-fill when fees are undisclosed — leave blank so user calls the FBO.
     var prevAutoFill = _fboAutoFilled[wp.id];
     var currentSaved = saved[wp.id];
+    // Fall back to a value restored from a named trip load when the DOM input doesn't exist yet
+    if (currentSaved === undefined && _fboRestoredValues[wp.id] !== undefined) {
+      currentSaved = _fboRestoredValues[wp.id];
+      _fboAutoFilled[wp.id] = currentSaved; // treat as auto-filled so fresh AOPA data can update it
+    }
     var val = currentSaved !== undefined ? currentSaved : '';
 
     if (calc !== null && !isUndisclosed && (val === '' || val === String(prevAutoFill))) {
@@ -5748,6 +5755,17 @@ function _elChk(id)  { var e=document.getElementById(id); return e ? e.checked :
 function _setEl(id, v) { var e=document.getElementById(id); if (e && v!=null) e.value = v; }
 
 function serializeState() {
+  // FBO fee input values keyed by waypoint id
+  var fboVals = {};
+  waypoints.forEach(function(w) {
+    var inp = document.getElementById('fbo-' + w.id);
+    if (inp) fboVals[w.id] = inp.value;
+  });
+  // Seat/baggage weight inputs
+  var weights = {};
+  document.querySelectorAll('#payloadInputs input[id^="payloadSeat_"], #payloadInputs input[id^="payloadBag_"]').forEach(function(el) {
+    weights[el.id] = el.value;
+  });
   return {
     v: 1,
     wps: waypoints.map(function(w) {
@@ -5764,7 +5782,20 @@ function serializeState() {
     acB: { sel:_elVal('selB'), spd:_elVal('spdB'), gph:_elVal('gphB'),
            cust:custBOpen, cName:_elVal('custNameB'), cSpd:_elVal('custSpdB'), cGph:_elVal('custGphB'),
            active:comparisonActive },
-    pax: { count: parseInt(_elText('paxCountPanel'))||1, lug:_elChk('luggageTogglePanel') }
+    pax: { count: parseInt(_elText('paxCountPanel'))||1, lug:_elChk('luggageTogglePanel') },
+    costs: {
+      acPerHr:    _elVal('costAcPerHr'),
+      consumables:_elVal('costConsumables'),
+      pilotMin:   _elVal('costPilotMin'),
+      pilotMax:   _elVal('costPilotMax'),
+      tripDays:   _elVal('costTripDays'),
+      groundMins: _elVal('groundMinsPerStop')
+    },
+    userType:   userType,
+    leaseHrs:   _elVal('leaseHoursIncl'),
+    fboSelected: JSON.parse(JSON.stringify(_fboSelected || {})),
+    fboValues:  fboVals,
+    weights:    weights
   };
 }
 
@@ -5880,6 +5911,38 @@ function restoreState(state) {
     var lug = pax.lug !== false;
     ['luggageToggle','luggageTogglePanel'].forEach(function(id) { var e=document.getElementById(id); if(e) e.checked=lug; });
     if (paxN > 1) { paxUserAdjusted = true; if (typeof applyPaxToPayload==='function') applyPaxToPayload(); }
+
+    // User type (owner / lessee)
+    if (state.userType && typeof setUserType === 'function') {
+      document.getElementById('userTypeRow').style.display = 'flex';
+      setUserType(state.userType);
+    }
+    if (state.leaseHrs !== undefined) _setEl('leaseHoursIncl', state.leaseHrs);
+
+    // Cost inputs — restore before recalc so results use saved values
+    var c = state.costs || {};
+    if (c.acPerHr    !== undefined) _setEl('costAcPerHr',      c.acPerHr);
+    if (c.consumables!== undefined) _setEl('costConsumables',  c.consumables);
+    if (c.pilotMin   !== undefined) _setEl('costPilotMin',     c.pilotMin);
+    if (c.pilotMax   !== undefined) _setEl('costPilotMax',     c.pilotMax);
+    if (c.tripDays   !== undefined) _setEl('costTripDays',     c.tripDays);
+    if (c.groundMins !== undefined) _setEl('groundMinsPerStop',c.groundMins);
+
+    // FBO selections and saved fee values
+    if (state.fboSelected) _fboSelected = JSON.parse(JSON.stringify(state.fboSelected));
+    if (state.fboValues)   _fboRestoredValues = JSON.parse(JSON.stringify(state.fboValues));
+
+    // Weight details — restored after renderPayloadInputs runs (inside restoreState aircraft block above)
+    if (state.weights) {
+      Object.keys(state.weights).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = state.weights[id];
+      });
+      if (typeof updatePayloadSummary === 'function') {
+        var _selA = document.getElementById('selA');
+        if (_selA && _selA.value) updatePayloadSummary(_selA.value);
+      }
+    }
 
     // Re-render
     placingId = null;
