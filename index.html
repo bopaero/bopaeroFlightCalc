@@ -1147,7 +1147,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.3';
+var APP_VERSION = 'v2026-05-03.4';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -3074,6 +3074,38 @@ function applyRunwayData() {
     return true;
   });
   console.log('Runway paved filter: ' + before + ' → ' + OA_CACHE.length + ' airports');
+  // Backfill rwyFt for any waypoints placed before runway data was ready
+  refreshWaypointRunwayData();
+}
+
+function refreshWaypointRunwayData() {
+  var updated = false;
+  waypoints.forEach(function(wp) {
+    if (wp.lat === null || wp.rwyFt > 0) return;
+    var match = null;
+    for (var i = 0; i < OA_CACHE.length; i++) {
+      var a = OA_CACHE[i];
+      if ((wp.icao && a.icao === wp.icao) ||
+          (wp.localCode && a.localCode && a.localCode.toUpperCase() === wp.localCode.toUpperCase())) {
+        match = a; break;
+      }
+    }
+    if (!match) {
+      var bestD = 0.05;
+      for (var j = 0; j < OA_CACHE.length; j++) {
+        var d = Math.abs(OA_CACHE[j].lat - wp.lat) + Math.abs(OA_CACHE[j].lng - wp.lng);
+        if (d < bestD) { bestD = d; match = OA_CACHE[j]; }
+      }
+    }
+    if (match) {
+      wp.rwyFt = getMaxPavedRwyFt(match) || 0;
+      updated = true;
+    }
+  });
+  if (updated && typeof refreshWarnIcons === 'function') {
+    refreshWarnIcons();
+    if (typeof renderWPList === 'function') renderWPList();
+  }
 }
 
 // FAA public-use airport identifiers — loaded from NASR APT_BASE.csv
