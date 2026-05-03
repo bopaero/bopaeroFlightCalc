@@ -1218,7 +1218,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.13';
+var APP_VERSION = 'v2026-05-03.14';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5854,14 +5854,18 @@ function syncPull(cb) {
     var cloudNewer = cloud.updatedAt && (!localTs || cloud.updatedAt > localTs);
 
     if (cloudNewer) {
-      // Merge cloud trips: add any trips not present locally
+      // Merge cloud trips: add any trips not present locally (match by id, fall back to name)
       if (Array.isArray(cloud.trips) && cloud.trips.length) {
         var local = _getSaves();
-        var localIds = {};
-        local.forEach(function(s) { if (s.id) localIds[s.id] = true; });
+        var localKeys = {};
+        local.forEach(function(s) {
+          if (s.id) localKeys[s.id] = true;
+          if (s.name) localKeys['n:' + s.name] = true;
+        });
         var merged = local.slice();
         cloud.trips.forEach(function(s) {
-          if (s.id && !localIds[s.id]) merged.push(s);
+          var known = (s.id && localKeys[s.id]) || (s.name && localKeys['n:' + s.name]);
+          if (!known) merged.push(s);
         });
         if (merged.length !== local.length) _putSavesLocal(merged);
       }
@@ -5898,6 +5902,7 @@ function checkFirstLaunch() {
   var seen = false;
   try { seen = !!localStorage.getItem(SYNC_SEEN_KEY); } catch(e) {}
   if (!seen) {
+    if (isMobile()) mobileTab('plan');
     var modal = document.getElementById('syncFirstLaunchModal');
     if (modal) modal.style.display = 'flex';
   } else {
@@ -5952,6 +5957,7 @@ window.syncDoRedeem = function() {
 };
 
 window.openSyncLinkModal = function() {
+  if (isMobile()) mobileTab('plan');
   var modal = document.getElementById('syncLinkModal');
   var disp  = document.getElementById('syncLinkCodeDisplay');
   var expEl = document.getElementById('syncLinkExpiry');
@@ -6283,7 +6289,7 @@ window.saveTripFromModal = function() {
   if (inp) { inp.value=''; inp.style.borderColor=''; }
   var placed = waypoints.filter(function(w){ return w.lat!==null; });
   var saves = _getSaves();
-  saves.unshift({ name:name, date:new Date().toLocaleDateString(), stops:placed.length, state:serializeState() });
+  saves.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), name:name, date:new Date().toLocaleDateString(), stops:placed.length, state:serializeState() });
   if (saves.length > 30) saves = saves.slice(0, 30);
   _putSaves(saves);
   _renderTripList();
