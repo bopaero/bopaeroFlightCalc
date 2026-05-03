@@ -12,6 +12,7 @@
 //   POST /link/redeem  body: { code }        → { syncToken } or { error: "expired" }
 
 const CORS_ORIGINS = [
+  'https://tripcalc.bopaero.com',
   'https://bopaero.github.io',
   'http://localhost',
   'http://127.0.0.1',
