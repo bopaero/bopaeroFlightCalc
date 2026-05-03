@@ -1004,6 +1004,58 @@ select option { background:var(--surface2); }
       </div>
     </div>
 
+  <!-- Cloud Sync: First-Launch Overlay -->
+  <div class="confirm-overlay" id="syncFirstLaunchModal" style="display:none;z-index:10000">
+    <div class="trip-modal-panel" style="max-width:340px;text-align:center">
+      <h2 style="margin:0 0 10px;font-size:18px;font-weight:700">Welcome to TripCalc</h2>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 22px">Have an existing account on another device?</p>
+      <button onclick="syncShowLinkEntry()"
+              style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px;margin-bottom:10px">
+        Link Existing Device
+      </button>
+      <button onclick="syncStartFresh()"
+              style="width:100%;padding:10px;background:none;color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;letter-spacing:.5px">
+        Start Fresh
+      </button>
+      <div id="syncLinkEntrySection" style="display:none;margin-top:18px;text-align:left">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Enter your 8-character code</div>
+        <div style="display:flex;gap:6px">
+          <input id="syncLinkCodeInput" type="text" maxlength="8" placeholder="e.g. BRAVO47X"
+                 style="flex:1;font-family:var(--mono);font-size:15px;text-transform:uppercase;letter-spacing:2px;text-align:center;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:8px"
+                 oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+                 onkeydown="if(event.key==='Enter')syncDoRedeem()">
+          <button onclick="syncDoRedeem()"
+                  style="padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700">
+            Link
+          </button>
+        </div>
+        <p id="syncLinkError" style="color:#f55;font-size:12px;margin:6px 0 0;display:none">Code not found or expired. Try again.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cloud Sync: Link a New Device Modal -->
+  <div class="confirm-overlay" id="syncLinkModal" style="display:none" onclick="if(event.target===this)closeSyncLinkModal()">
+    <div class="trip-modal-panel" style="max-width:320px;text-align:center">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-weight:700;font-size:14px">Link a New Device</span>
+        <button onclick="closeSyncLinkModal()" style="background:none;border:none;color:var(--text);font-size:18px;cursor:pointer;line-height:1">&#x2715;</button>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 18px">
+        On your new device, tap <strong>Link Existing Device</strong> and enter this code.
+      </p>
+      <div id="syncLinkCodeDisplay"
+           style="font-size:30px;font-weight:700;letter-spacing:5px;background:var(--surface);border-radius:8px;padding:18px 10px;margin-bottom:8px;font-family:var(--mono)">
+        --------
+      </div>
+      <p id="syncLinkExpiry" style="font-size:12px;color:var(--text-muted);margin:0 0 20px">Generating&hellip;</p>
+      <button onclick="closeSyncLinkModal()"
+              style="width:100%;padding:9px;background:none;color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer">
+        Done
+      </button>
+    </div>
+  </div>
+
   <!-- Trip Save/Load Modal -->
   <div class="confirm-overlay" id="tripModal" onclick="if(event.target===this)closeTripModal()">
     <div class="trip-modal-panel">
@@ -1105,6 +1157,15 @@ select option { background:var(--surface2); }
         </div>
       </div>
 
+      <div style="border-top:1px solid var(--border);margin:4px 0 16px;padding-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Cloud Sync</span>
+          <span id="syncStatusBadge" style="font-size:11px;color:var(--text-muted)">Checking&hellip;</span>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">Your trips and settings are saved to the cloud automatically.</p>
+        <button onclick="openSyncLinkModal()" class="trips-btn" style="width:100%;margin-top:0">Link a New Device</button>
+      </div>
+
       <button onclick="resetSettings()" style="width:100%;padding:8px;background:none;color:var(--red,#ff4444);border:1px solid var(--red,#ff4444);border-radius:6px;font-family:var(--mono);font-size:12px;cursor:pointer;margin-bottom:8px;letter-spacing:.5px">&#x2715; Reset All Settings</button>
       <button onclick="saveSettings()" style="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px">Save Settings</button>
     </div>
@@ -1147,7 +1208,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.10';
+var APP_VERSION = 'v2026-05-03.11';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5729,6 +5790,201 @@ var AUTOSAVE_KEY      = 'tripcalc_autosave';
 var CLEAN_EXIT_KEY    = 'tripcalc_clean_exit';
 var SAVES_KEY         = 'tripcalc_saves';
 var SETTINGS_KEY      = 'tripcalc_settings';
+
+// ── CLOUD SYNC ─────────────────────────────────────────────────────────────
+var SYNC_WORKER    = 'https://tripcalc-sync.compilotrc.workers.dev';
+var SYNC_TOKEN_KEY = 'tripcalc_sync_token';
+var SYNC_SEEN_KEY  = 'tripcalc_sync_seen';
+var SYNC_TS_KEY    = 'tripcalc_sync_ts';
+var _syncLinkExpTimer = null;
+
+function _syncToken() {
+  try { return localStorage.getItem(SYNC_TOKEN_KEY) || null; } catch(e) { return null; }
+}
+
+function _ensureSyncToken() {
+  var t = _syncToken();
+  if (t) return t;
+  try {
+    t = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : Array.from({length:32}, function() { return Math.floor(Math.random()*16).toString(16); }).join('');
+    localStorage.setItem(SYNC_TOKEN_KEY, t);
+  } catch(e) {}
+  return t;
+}
+
+function syncPush() {
+  var token = _syncToken();
+  if (!token) return;
+  var payload = { trips: _getSaves(), settings: loadSettings() };
+  fetch(SYNC_WORKER + '/data', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Sync-Token': token },
+    body: JSON.stringify(payload)
+  }).then(function(r) {
+    if (r.ok) {
+      try { localStorage.setItem(SYNC_TS_KEY, new Date().toISOString()); } catch(e) {}
+      _updateSyncBadge(true);
+    }
+  }).catch(function() {});
+}
+
+function syncPull(cb) {
+  var token = _syncToken();
+  if (!token) { if (cb) cb(false); return; }
+  fetch(SYNC_WORKER + '/data', {
+    headers: { 'X-Sync-Token': token }
+  }).then(function(r) { return r.ok ? r.json() : null; })
+  .then(function(cloud) {
+    if (!cloud) { if (cb) cb(false); return; }
+
+    var localTs  = null;
+    try { localTs = localStorage.getItem(SYNC_TS_KEY); } catch(e) {}
+    var cloudNewer = cloud.updatedAt && (!localTs || cloud.updatedAt > localTs);
+
+    if (cloudNewer) {
+      // Merge cloud trips: add any trips not present locally
+      if (Array.isArray(cloud.trips) && cloud.trips.length) {
+        var local = _getSaves();
+        var localIds = {};
+        local.forEach(function(s) { if (s.id) localIds[s.id] = true; });
+        var merged = local.slice();
+        cloud.trips.forEach(function(s) {
+          if (s.id && !localIds[s.id]) merged.push(s);
+        });
+        if (merged.length !== local.length) _putSavesLocal(merged);
+      }
+      // Apply cloud settings only if user has no local settings yet
+      var hasLocal = false;
+      try { hasLocal = !!localStorage.getItem(SETTINGS_KEY); } catch(e) {}
+      if (!hasLocal && cloud.settings && Object.keys(cloud.settings).length) {
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloud.settings)); } catch(e) {}
+      }
+      try { localStorage.setItem(SYNC_TS_KEY, cloud.updatedAt); } catch(e) {}
+      _updateSyncBadge(true);
+      if (cb) cb(true);
+    } else {
+      // Local is same or newer — push to seed/update cloud
+      syncPush();
+      if (cb) cb(false);
+    }
+  }).catch(function() { if (cb) cb(false); });
+}
+
+// Low-level save that doesn't trigger another syncPush (avoids loop)
+function _putSavesLocal(arr) {
+  try { localStorage.setItem(SAVES_KEY, JSON.stringify(arr)); } catch(e) {}
+}
+
+function _updateSyncBadge(ok) {
+  var el = document.getElementById('syncStatusBadge');
+  if (!el) return;
+  el.textContent = ok ? '● Active' : '○ Offline';
+  el.style.color = ok ? 'var(--accent)' : 'var(--text-muted)';
+}
+
+function checkFirstLaunch() {
+  var seen = false;
+  try { seen = !!localStorage.getItem(SYNC_SEEN_KEY); } catch(e) {}
+  if (!seen) {
+    var modal = document.getElementById('syncFirstLaunchModal');
+    if (modal) modal.style.display = 'flex';
+  } else {
+    _ensureSyncToken();
+    syncPull(null);
+  }
+}
+
+window.syncStartFresh = function() {
+  _ensureSyncToken();
+  try { localStorage.setItem(SYNC_SEEN_KEY, '1'); } catch(e) {}
+  var modal = document.getElementById('syncFirstLaunchModal');
+  if (modal) modal.style.display = 'none';
+  syncPush();
+};
+
+window.syncShowLinkEntry = function() {
+  var sec = document.getElementById('syncLinkEntrySection');
+  if (sec) { sec.style.display = ''; setTimeout(function() { var i = document.getElementById('syncLinkCodeInput'); if (i) i.focus(); }, 50); }
+};
+
+window.syncDoRedeem = function() {
+  var input = document.getElementById('syncLinkCodeInput');
+  var errEl = document.getElementById('syncLinkError');
+  if (!input) return;
+  var code = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length !== 8) { if (errEl) { errEl.textContent = 'Enter all 8 characters.'; errEl.style.display = ''; } return; }
+  if (errEl) errEl.style.display = 'none';
+  fetch(SYNC_WORKER + '/link/redeem', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: code })
+  }).then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.syncToken) {
+      try { localStorage.setItem(SYNC_TOKEN_KEY, d.syncToken); } catch(e) {}
+      try { localStorage.setItem(SYNC_SEEN_KEY, '1'); } catch(e) {}
+      var modal = document.getElementById('syncFirstLaunchModal');
+      if (modal) modal.style.display = 'none';
+      syncPull(function(pulled) {
+        if (pulled) {
+          _renderTripList && _renderTripList();
+          _stgToast('&#x2713; Account linked &mdash; your trips are ready');
+        }
+      });
+    } else {
+      if (errEl) { errEl.textContent = 'Code not found or expired. Try again.'; errEl.style.display = ''; }
+    }
+  }).catch(function() {
+    if (errEl) { errEl.textContent = 'Connection error. Check your internet and try again.'; errEl.style.display = ''; }
+  });
+};
+
+window.openSyncLinkModal = function() {
+  var modal = document.getElementById('syncLinkModal');
+  var disp  = document.getElementById('syncLinkCodeDisplay');
+  var expEl = document.getElementById('syncLinkExpiry');
+  if (!modal) return;
+  if (disp) disp.textContent = '--------';
+  if (expEl) expEl.textContent = 'Generating…';
+  modal.style.display = 'flex';
+  if (_syncLinkExpTimer) clearInterval(_syncLinkExpTimer);
+
+  var token = _ensureSyncToken();
+  fetch(SYNC_WORKER + '/link/create', {
+    method: 'POST',
+    headers: { 'X-Sync-Token': token }
+  }).then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (!d.code) { if (expEl) expEl.textContent = 'Could not generate code. Try again.'; return; }
+    if (disp) disp.textContent = d.code.slice(0,4) + '-' + d.code.slice(4);
+    var secs = 600;
+    function tick() {
+      if (!document.getElementById('syncLinkModal') || document.getElementById('syncLinkModal').style.display === 'none') {
+        clearInterval(_syncLinkExpTimer); return;
+      }
+      var m = Math.floor(secs / 60), s = secs % 60;
+      if (expEl) expEl.textContent = 'Expires in ' + m + ':' + (s < 10 ? '0' : '') + s;
+      if (secs <= 0) {
+        clearInterval(_syncLinkExpTimer);
+        if (disp) disp.textContent = 'Expired';
+        if (expEl) expEl.textContent = 'Code expired. Close and reopen to get a new one.';
+      }
+      secs--;
+    }
+    tick();
+    _syncLinkExpTimer = setInterval(tick, 1000);
+  }).catch(function() {
+    if (expEl) expEl.textContent = 'Connection error. Try again.';
+  });
+};
+
+window.closeSyncLinkModal = function() {
+  var modal = document.getElementById('syncLinkModal');
+  if (modal) modal.style.display = 'none';
+  if (_syncLinkExpTimer) { clearInterval(_syncLinkExpTimer); _syncLinkExpTimer = null; }
+};
 var _autoSaveTimer    = null;
 var _bypassBeforeUnload = false; // set true before programmatic reloads (Clear All)
 
@@ -5956,7 +6212,7 @@ function restoreState(state) {
 
 // Named saves
 function _getSaves() { try { return JSON.parse(localStorage.getItem(SAVES_KEY)||'[]'); } catch(e) { return []; } }
-function _putSaves(arr) { try { localStorage.setItem(SAVES_KEY, JSON.stringify(arr)); } catch(e) {} }
+function _putSaves(arr) { try { localStorage.setItem(SAVES_KEY, JSON.stringify(arr)); } catch(e) {} syncPush(); }
 
 window.openTripModal = function() {
   if (isMobile()) mobileTab('plan');
@@ -6049,6 +6305,7 @@ function saveSettings() {
   applySettings(s);
   closeSettings();
   _stgToast('&#x2713; Settings saved');
+  syncPush();
 }
 
 function applySettings(s) {
@@ -6269,6 +6526,8 @@ initMetroDropdown();
 renderWPList();
 updateMode();
 initMobileLayout();
+// Cloud sync: show first-launch screen or silently pull data
+checkFirstLaunch();
 // On intentional quit: autosave is present but clean-exit marker was set —
 // honour the user's choice and start fresh. On crash: no clean-exit marker,
 // offer to restore.
