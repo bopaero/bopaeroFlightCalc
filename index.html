@@ -1147,7 +1147,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.6';
+var APP_VERSION = 'v2026-05-03.7';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2624,12 +2624,13 @@ function airportFuelLine(icao, acA, small) {
         var selA = document.getElementById('selA');
         if (selA && selA.value) {
           applyCostPreset(selA.value);
-          // Re-apply saved pilot costs only if the user has not changed aircraft
-          // from the settings default — prevents overwriting the new aircraft's preset.
+          // pilotIsUser is a personal role — always apply it regardless of aircraft.
+          // Only re-apply saved dollar amounts when aircraft matches settings.
           var _stg = loadSettings ? loadSettings() : null;
-          if (_stg && _stg.aircraft === selA.value) {
-            if (_stg.pilotIsUser) { _setEl('costPilotMin','0'); _setEl('costPilotMax','0'); }
-            else if (_stg.pilotMin !== undefined) { _setEl('costPilotMin', String(_stg.pilotMin)); _setEl('costPilotMax', String(_stg.pilotMax)); }
+          if (_stg && _stg.pilotIsUser) {
+            _setEl('costPilotMin','0'); _setEl('costPilotMax','0');
+          } else if (_stg && _stg.aircraft === selA.value && _stg.pilotMin !== undefined) {
+            _setEl('costPilotMin', String(_stg.pilotMin)); _setEl('costPilotMax', String(_stg.pilotMax));
           }
         }
       }
@@ -3931,8 +3932,15 @@ function applyCostPreset(spdKey) {
   document.getElementById('costAcPerHr').value = preset.acPerHr;
   document.getElementById('costConsumables').value = computeConsumPerHr(spdKey);
   document.getElementById('consumablesLbl').textContent = preset.consumLabel + ' ($/hr)';
-  document.getElementById('costPilotMin').value = preset.pilotMin;
-  document.getElementById('costPilotMax').value = preset.pilotMax;
+  // Respect owner-pilot setting — always $0 regardless of aircraft preset
+  var _stg = loadSettings ? loadSettings() : null;
+  if (_stg && _stg.pilotIsUser) {
+    document.getElementById('costPilotMin').value = 0;
+    document.getElementById('costPilotMax').value = 0;
+  } else {
+    document.getElementById('costPilotMin').value = preset.pilotMin;
+    document.getElementById('costPilotMax').value = preset.pilotMax;
+  }
   var flyDays = document.getElementById('costFlyingDays');
   if (!flyDays.value) flyDays.value = 1;
 }
