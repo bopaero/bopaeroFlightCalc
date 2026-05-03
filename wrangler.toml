@@ -1,0 +1,11 @@
+name = "tripcalc-sync"
+main = "workers/tripcalc-sync.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "TRIPCALC_SYNC"
+id = "6a70ef560f5d4337bcbde0ff28ec4d57"
+
+[[kv_namespaces]]
+binding = "TRIPCALC_LINK"
+id = "b0401d1b3c50435eb48fa92c5611c356"
