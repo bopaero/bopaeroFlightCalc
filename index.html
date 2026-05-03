@@ -1147,7 +1147,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-02.13';
+var APP_VERSION = 'v2026-05-03.1';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2624,10 +2624,13 @@ function airportFuelLine(icao, acA, small) {
         var selA = document.getElementById('selA');
         if (selA && selA.value) {
           applyCostPreset(selA.value);
-          // Re-apply saved pilot costs — async fuel load must not overwrite settings
+          // Re-apply saved pilot costs only if the user has not changed aircraft
+          // from the settings default — prevents overwriting the new aircraft's preset.
           var _stg = loadSettings ? loadSettings() : null;
-          if (_stg && _stg.pilotIsUser) { _setEl('costPilotMin','0'); _setEl('costPilotMax','0'); }
-          else if (_stg && _stg.pilotMin !== undefined) { _setEl('costPilotMin', String(_stg.pilotMin)); _setEl('costPilotMax', String(_stg.pilotMax)); }
+          if (_stg && _stg.aircraft === selA.value) {
+            if (_stg.pilotIsUser) { _setEl('costPilotMin','0'); _setEl('costPilotMax','0'); }
+            else if (_stg.pilotMin !== undefined) { _setEl('costPilotMin', String(_stg.pilotMin)); _setEl('costPilotMax', String(_stg.pilotMax)); }
+          }
         }
       }
     })
@@ -3908,7 +3911,7 @@ function getConsumablesLabel() {
   return text.replace(' ($/hr)', '');
 }
 
-window.pickAircraft = function(val, s) {
+window.pickAircraft = function(val, s, _fromSettings) {
   var sel = document.getElementById('sel' + s);
   sel.value = val;
   // Clear all aircraft pick buttons, then activate the selected one
@@ -3927,6 +3930,23 @@ window.pickAircraft = function(val, s) {
     lesseeBtn.style.display = '';
   }
   onSel(s);
+  // Force warn-icon and list refresh after spdA is set — guards against any
+  // timing edge where recalc's renderWPList ran before spdA was committed.
+  if (s === 'A') setTimeout(function() { refreshWarnIcons(); renderWPList(); }, 0);
+  // Notify when manually switching aircraft if saved pilot costs differ from preset
+  if (s === 'A' && !_fromSettings) {
+    setTimeout(function() {
+      var _stg = loadSettings ? loadSettings() : null;
+      var preset = acCostPresets[val];
+      if (_stg && preset && _stg.aircraft) {
+        var stgMin = _stg.pilotIsUser ? 0 : (_stg.pilotMin || 0);
+        var stgMax = _stg.pilotIsUser ? 0 : (_stg.pilotMax || 0);
+        if (stgMin !== preset.pilotMin || stgMax !== preset.pilotMax) {
+          _stgToast('&#x2139; Pilot costs from your Settings are applied &mdash; update Settings to change');
+        }
+      }
+    }, 50);
+  }
   if (s === 'A' && !isMobile()) setTimeout(fitRouteOrWaypoint, 50);
   if (s === 'A' && !paxPopupDismissed) {
     var placed = waypoints.filter(function(w){ return w.lat !== null; });
@@ -5912,7 +5932,7 @@ function saveSettings() {
 function applySettings(s) {
   if (!s) return;
   if (s.pax && s.pax >= 1) paxPopupDismissed = true;
-  if (s.aircraft) pickAircraft(s.aircraft, 'A');
+  if (s.aircraft) pickAircraft(s.aircraft, 'A', true);
   // Override preset aircraft details with saved values
   if (s.aircraft) {
     if (s.acSpd)   { _setEl('spdA', String(s.acSpd)); }
