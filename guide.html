@@ -321,6 +321,10 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
       <a class="nav-link" href="#warnings">Warnings</a>
     </div>
     <div class="nav-section">
+      <div class="nav-label">Settings</div>
+      <a class="nav-link" href="#settings">Default Settings</a>
+    </div>
+    <div class="nav-section">
       <div class="nav-label">Trips</div>
       <a class="nav-link" href="#saving">Saving Trips</a>
       <a class="nav-link" href="#export">Export & Print</a>
@@ -353,6 +357,7 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
         <li><a href="#fuel-prices">Fuel Prices</a></li>
         <li><a href="#costs">Trip Cost</a></li>
         <li><a href="#warnings">Warnings</a></li>
+        <li><a href="#settings">Default Settings</a></li>
         <li><a href="#saving">Saving Trips</a></li>
         <li><a href="#export">Export &amp; Print</a></li>
         <li><a href="#aircraft-specs">Aircraft Specs</a></li>
@@ -629,10 +634,10 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
       <h3>FBO / Airport Fees</h3>
       <p>TripCalc automatically looks up FBO fee data from the AOPA Airport Directory for each airport waypoint and pre-fills the fee input. Fees are selected based on your aircraft type and stop type:</p>
       <ul>
-        <li><strong>SR22T (Single-Engine Piston):</strong> Ramp and landing fees for transient stops; tie-down and landing fees for overnight stops.</li>
+        <li><strong>SR22T (Single-Engine Piston):</strong> Ramp and facility fees for transient stops; tie-down fees for overnight stops.</li>
         <li><strong>SF50 (Jet):</strong> Same as above, plus handling fees where applicable.</li>
         <li><strong>Overnight stays:</strong> Tie-down fees are multiplied by the number of nights, calculated automatically from Trip Days ÷ number of overnight stops.</li>
-        <li><strong>Multiple FBOs:</strong> When an airport has multiple FBOs, a dropdown lets you switch between operators. Each option shows the calculated fee for your aircraft type.</li>
+        <li><strong>FBO Selector:</strong> Every stop with AOPA data shows a dropdown listing available FBOs. Select your preferred operator — the fee input and breakdown update immediately. Airports with a single FBO show a one-item dropdown confirming which operator is being used.</li>
       </ul>
       <p>All fees are editable — if the auto-filled amount is wrong, simply type the correct value. Pre-filled amounts will not overwrite a value you have manually entered.</p>
 
@@ -671,6 +676,51 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
           <tr><td>SF50</td><td>4,000 ft</td><td>3,000 ft</td></tr>
         </tbody>
       </table>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="guide-section" id="settings">
+      <h2>Default Settings</h2>
+      <p>Click the <strong>⚙ Settings</strong> button (below Clear All in the sidebar) to open the Default Settings panel. Preferences saved here are applied automatically every time the app loads or the trip is cleared — eliminating the need to re-enter your common values each session.</p>
+
+      <h3>Default Origin</h3>
+      <p>Type an ICAO or FAA identifier (e.g., <kbd>KSUS</kbd>, <kbd>I67</kbd>) into the Origin field. TripCalc resolves it to an airport name and coordinates; the name is confirmed below the field. The origin is placed automatically on every fresh load and after Clear All — with full runway data and warnings active from the start.</p>
+      <p>Two shortcuts for setting your default origin:</p>
+      <ul>
+        <li><strong>Use Current Origin button</strong> — copies the first waypoint from your active trip into the origin field. Only enabled when at least one waypoint is placed.</li>
+        <li><strong>⚙ gear icon on the origin row</strong> — in the waypoint list, click the gear icon on the origin waypoint to save that airport as your default origin with a single tap.</li>
+      </ul>
+
+      <h3>Default Aircraft</h3>
+      <p>Select <strong>SR22T</strong> or <strong>Vision Jet</strong> to pre-select the aircraft on every load. When an aircraft is chosen, an <strong>Aircraft Details</strong> row appears allowing you to override the default cruise speed (mph), fuel burn (GPH), and aircraft cost ($/hr) — useful if your aircraft's performance differs from the factory defaults.</p>
+
+      <h3>Default Occupants</h3>
+      <p>Set your typical total occupant count (pilot included) using the <strong>−</strong> and <strong>+</strong> buttons. This count is applied on load and after Clear All, suppressing the occupant prompt that would otherwise appear when adding the first stop.</p>
+
+      <h3>Default Role</h3>
+      <p>Choose <strong>OWNER</strong> or <strong>LESSEE</strong> to pre-select your operator role. The SF50 does not support the Lessee option; it defaults to Owner regardless.</p>
+
+      <h3>Fuel Services Filter</h3>
+      <p>Check <strong>Only choose Airports with Fuel Services</strong> to enable the fuel-only stop filter by default on every load, so TripCalc only snaps to airports carrying the right fuel type for your aircraft.</p>
+
+      <h3>Owner-Pilot (Pilot Cost = $0)</h3>
+      <p>Check <strong>I am the pilot</strong> to save a $0 pilot cost as your default. This setting is respected across aircraft changes — switching from SR22T to SF50 will not override the $0 value with the SF50 preset rates. If this option is saved, pilot cost fields default to $0 and the preset aircraft rates are not applied.</p>
+
+      <h3>Pilot Cost ($/day)</h3>
+      <p>If you are not the pilot, enter your typical <strong>Min</strong> and <strong>Max</strong> daily pilot cost. These values are applied on load as long as the selected aircraft matches your saved default aircraft. If you switch to a different aircraft, the new aircraft's preset rates are used instead, and a notification toast will appear reminding you to update Settings if the change was intentional.</p>
+
+      <div class="callout tip">
+        <div class="callout-icon">&#128161;</div>
+        <p><strong>Pilot cost notification:</strong> When you manually switch aircraft and your saved Settings have pilot costs that differ from the new aircraft's preset, a brief toast message appears: <em>"Pilot costs from your Settings are applied — update Settings to change."</em> This is a reminder that your saved personal rates are active.</p>
+      </div>
+
+      <h3>Reset All Settings</h3>
+      <p>Click <strong>Reset All Settings</strong> at the bottom of the Settings panel to clear all saved defaults. The app will revert to blank defaults on the next load.</p>
+
+      <div class="callout note">
+        <div class="callout-icon">&#9432;</div>
+        <p>Settings are stored in your browser's local storage. They persist across sessions but are specific to the browser and device you are using.</p>
+      </div>
     </section>
 
     <!-- SAVING -->
