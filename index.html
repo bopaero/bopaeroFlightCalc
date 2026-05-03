@@ -1147,7 +1147,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.1';
+var APP_VERSION = 'v2026-05-03.2';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5971,14 +5971,27 @@ function applyDefaultOrigin(origin) {
   });
   waypoints = [];
   var id = ++wpIdCounter;
+  // Look up runway data from OA_CACHE so warnings fire correctly
+  var oaMatch = null;
+  if (origin.icao) {
+    for (var oi = 0; oi < OA_CACHE.length; oi++) {
+      if (OA_CACHE[oi].icao === origin.icao) { oaMatch = OA_CACHE[oi]; break; }
+    }
+  }
+  var rwyFt = oaMatch ? getMaxPavedRwyFt(oaMatch) : 0;
+  var warn  = rwyFt > 0 && wpNeedsWarn(rwyFt);
   var wp = { id:id, idx:0, lat:origin.lat, lng:origin.lng, name:origin.name||'',
              icao:origin.icao||null, localCode:origin.localCode||null, icaoCode:null,
-             rwyFt:0, warn:false, overnight:false, marker:null,
+             rwyFt:rwyFt, warn:warn, overnight:false, marker:null,
              driveLine:null, driveTimeLabel:null, homeMarker:null, airportIcon:null };
-  var icon = makeIcon(wpColor(0), 'O');
+  var icon = warn ? makeWarnIcon(wpColor(0), 'O') : makeIcon(wpColor(0), 'O');
   var pop  = '<b style="color:'+wpColor(0)+'">Origin</b>';
   if (wp.icao) pop += '&nbsp;<span style="color:var(--accent)">'+wp.icao+'</span>';
   pop += '<br>'+wp.name;
+  if (rwyFt) {
+    var rc = warn ? '#f59e0b' : 'var(--text-muted)';
+    pop += '<br><span style="color:'+rc+';font-size:11px">'+(warn?'⚠ SHORT ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
+  }
   wp.marker = L.marker([wp.lat, wp.lng], { icon:icon }).bindPopup(pop, {autoPan:false}).addTo(map);
   waypoints.push(wp);
   placingId = null;
