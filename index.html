@@ -1222,7 +1222,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.15';
+var APP_VERSION = 'v2026-05-03.16';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5809,7 +5809,6 @@ var SETTINGS_KEY      = 'tripcalc_settings';
 var SYNC_WORKER    = 'https://tripcalc-sync.compilotrc.workers.dev';
 var SYNC_TOKEN_KEY = 'tripcalc_sync_token';
 var SYNC_SEEN_KEY  = 'tripcalc_sync_seen';
-var SYNC_TS_KEY    = 'tripcalc_sync_ts';
 var _syncLinkExpTimer = null;
 
 function _syncToken() {
@@ -5838,7 +5837,6 @@ function syncPush() {
     body: JSON.stringify(payload)
   }).then(function(r) {
     if (r.ok) {
-      try { localStorage.setItem(SYNC_TS_KEY, new Date().toISOString()); } catch(e) {}
       _updateSyncBadge(true);
     }
   }).catch(function() {});
@@ -5851,42 +5849,36 @@ function syncPull(cb) {
     headers: { 'X-Sync-Token': token }
   }).then(function(r) { return r.ok ? r.json() : null; })
   .then(function(cloud) {
-    if (!cloud) { if (cb) cb(false); return; }
+    if (!cloud) { syncPush(); if (cb) cb(false); return; }
 
-    var localTs  = null;
-    try { localTs = localStorage.getItem(SYNC_TS_KEY); } catch(e) {}
-    var cloudNewer = cloud.updatedAt && (!localTs || cloud.updatedAt > localTs);
-
-    if (cloudNewer) {
-      // Merge cloud trips: add any trips not present locally (match by id, fall back to name)
-      if (Array.isArray(cloud.trips) && cloud.trips.length) {
-        var local = _getSaves();
-        var localKeys = {};
-        local.forEach(function(s) {
-          if (s.id) localKeys[s.id] = true;
-          if (s.name) localKeys['n:' + s.name] = true;
-        });
-        var merged = local.slice();
-        cloud.trips.forEach(function(s) {
-          var known = (s.id && localKeys[s.id]) || (s.name && localKeys['n:' + s.name]);
-          if (!known) merged.push(s);
-        });
-        if (merged.length !== local.length) _putSavesLocal(merged);
-      }
-      // Apply cloud settings only if user has no local settings yet
-      var hasLocal = false;
-      try { hasLocal = !!localStorage.getItem(SETTINGS_KEY); } catch(e) {}
-      if (!hasLocal && cloud.settings && Object.keys(cloud.settings).length) {
-        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloud.settings)); } catch(e) {}
-      }
-      try { localStorage.setItem(SYNC_TS_KEY, cloud.updatedAt); } catch(e) {}
-      _updateSyncBadge(true);
-      if (cb) cb(true);
-    } else {
-      // Local is same or newer — push to seed/update cloud
-      syncPush();
-      if (cb) cb(false);
+    // Always merge cloud trips into local (additive — never removes)
+    var added = false;
+    if (Array.isArray(cloud.trips) && cloud.trips.length) {
+      var local = _getSaves();
+      var localKeys = {};
+      local.forEach(function(s) {
+        if (s.id) localKeys[s.id] = true;
+        if (s.name) localKeys['n:' + s.name] = true;
+      });
+      var merged = local.slice();
+      cloud.trips.forEach(function(s) {
+        var known = (s.id && localKeys[s.id]) || (s.name && localKeys['n:' + s.name]);
+        if (!known) { merged.push(s); added = true; }
+      });
+      if (added) _putSavesLocal(merged);
     }
+
+    // Apply cloud settings only if no local settings exist yet
+    var hasLocal = false;
+    try { hasLocal = !!localStorage.getItem(SETTINGS_KEY); } catch(e) {}
+    if (!hasLocal && cloud.settings && Object.keys(cloud.settings).length) {
+      try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloud.settings)); } catch(e) {}
+    }
+
+    _updateSyncBadge(true);
+    // Push so cloud always has the union of both devices' trips
+    syncPush();
+    if (cb) cb(added);
   }).catch(function() { if (cb) cb(false); });
 }
 
@@ -5947,10 +5939,8 @@ window.syncDoRedeem = function() {
       var modal = document.getElementById('syncFirstLaunchModal');
       if (modal) modal.style.display = 'none';
       syncPull(function(pulled) {
-        if (pulled) {
-          _renderTripList && _renderTripList();
-          _stgToast('&#x2713; Account linked &mdash; your trips are ready');
-        }
+        if (typeof _renderTripList === 'function') _renderTripList();
+        _stgToast(pulled ? '&#x2713; Account linked &mdash; your trips are ready' : '&#x2713; Account linked');
       });
     } else {
       if (errEl) { errEl.textContent = 'Code not found or expired. Try again.'; errEl.style.display = ''; }
