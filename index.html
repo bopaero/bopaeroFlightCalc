@@ -1230,7 +1230,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.19';
+var APP_VERSION = 'v2026-05-03.20';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2777,7 +2777,7 @@ var AC_RANGE = {
 // Per-aircraft weight/payload data
 var AC_WEIGHT = {
   '175': {  // SR22T — 4 seats (pilot + 3 pax)
-    mtow: 3600, emptyWt: 2520, maxFuelGal: 92, fuelDensity: 6.0, mrcGph: 14.5,
+    mtow: 3600, emptyWt: 2560, maxFuelGal: 92, fuelDensity: 6.0, mrcGph: 14.5,
     defaultPax: 1, stdPaxWt: 190, stdBagPerPax: 30, maxPax: 3,
     paxOrder: [2, 1, 3], // fill order: rear left, front, rear right
     seats: [
@@ -2789,7 +2789,7 @@ var AC_WEIGHT = {
     baggage: [{ label: 'Baggage', default: 30, std: 30, max: 130 }]
   },
   '280': {  // SF50 — 7 seats (pilot + 4 adults + 2 children)
-    mtow: 6000, emptyWt: 3900, maxFuelGal: 296, fuelDensity: 6.7, mrcGph: 46,
+    mtow: 6000, emptyWt: 3995, maxFuelGal: 296, fuelDensity: 6.7, mrcGph: 46,
     defaultPax: 1, stdPaxWt: 190, stdChildWt: 80, stdBagPerPax: 25, maxPax: 6,
     paxOrder: [1, 2, 3, 4, 5], // fill order: front, mid L, mid R, rear L, rear R
     seats: [
