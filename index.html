@@ -1147,7 +1147,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.2';
+var APP_VERSION = 'v2026-05-03.3';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5758,9 +5758,27 @@ function restoreState(state) {
     if (fuelToggle) fuelToggle.checked = fuelOnlyStops;
 
     (state.wps || []).forEach(function(s) {
+      // Re-lookup rwyFt from OA_CACHE in case it was 0 when originally saved
+      var _rsRwy = s.rwyFt || 0;
+      if (!_rsRwy && OA_CACHE.length) {
+        var _rsMatch = null;
+        for (var _ri = 0; _ri < OA_CACHE.length; _ri++) {
+          var _ra = OA_CACHE[_ri];
+          if ((s.icao && _ra.icao === s.icao) || (s.localCode && _ra.localCode && _ra.localCode.toUpperCase() === (s.localCode||'').toUpperCase())) { _rsMatch = _ra; break; }
+        }
+        if (!_rsMatch && s.lat != null) {
+          var _rbd = 0.05;
+          for (var _ri2 = 0; _ri2 < OA_CACHE.length; _ri2++) {
+            var _ra2 = OA_CACHE[_ri2];
+            var _rd = Math.abs(_ra2.lat - s.lat) + Math.abs(_ra2.lng - s.lng);
+            if (_rd < _rbd) { _rbd = _rd; _rsMatch = _ra2; }
+          }
+        }
+        if (_rsMatch) _rsRwy = getMaxPavedRwyFt(_rsMatch) || 0;
+      }
       var wp = { id:s.id, idx:s.idx, lat:s.lat, lng:s.lng, name:s.name||'',
                  icao:s.icao||null, localCode:s.localCode||null, icaoCode:s.icaoCode||null,
-                 rwyFt:s.rwyFt||0, warn:!!s.warn, overnight:!!s.overnight,
+                 rwyFt:_rsRwy, warn:!!s.warn, overnight:!!s.overnight,
                  originLat:s.originLat||null, originLng:s.originLng||null,
                  driveMi:s.driveMi||null, marker:null,
                  driveLine:null, driveTimeLabel:null, homeMarker:null, airportIcon:null };
@@ -5973,9 +5991,20 @@ function applyDefaultOrigin(origin) {
   var id = ++wpIdCounter;
   // Look up runway data from OA_CACHE so warnings fire correctly
   var oaMatch = null;
-  if (origin.icao) {
-    for (var oi = 0; oi < OA_CACHE.length; oi++) {
-      if (OA_CACHE[oi].icao === origin.icao) { oaMatch = OA_CACHE[oi]; break; }
+  for (var oi = 0; oi < OA_CACHE.length; oi++) {
+    var _oa = OA_CACHE[oi];
+    if ((origin.icao && _oa.icao === origin.icao) ||
+        (origin.localCode && _oa.localCode && _oa.localCode.toUpperCase() === origin.localCode.toUpperCase())) {
+      oaMatch = _oa; break;
+    }
+  }
+  // Fallback: nearest airport within 0.05° (~3 mi) of saved coordinates
+  if (!oaMatch && origin.lat != null) {
+    var _bestD = 0.05;
+    for (var oi2 = 0; oi2 < OA_CACHE.length; oi2++) {
+      var _oa2 = OA_CACHE[oi2];
+      var _d = Math.abs(_oa2.lat - origin.lat) + Math.abs(_oa2.lng - origin.lng);
+      if (_d < _bestD) { _bestD = _d; oaMatch = _oa2; }
     }
   }
   var rwyFt = oaMatch ? getMaxPavedRwyFt(oaMatch) : 0;
