@@ -1147,7 +1147,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.4';
+var APP_VERSION = 'v2026-05-03.5';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -5428,9 +5428,9 @@ function renderFBOInputs(placed) {
               '<a href="https://webapp.aopa.org/destinations/airports/' + faaId + '/details" target="_blank" style="color:var(--text-muted);font-size:11px;text-decoration:none" title="AOPA Airport Directory">↗ AOPA</a>';
     }
 
-    // FBO selector dropdown — shown when airport has multiple FBOs
+    // FBO selector dropdown — shown whenever FBO data is available
     var selectorHtml = '';
-    if (fbos.length > 1) {
+    if (fbos.length >= 1) {
       var opts = '';
       fbos.forEach(function(fbo, fi) {
         var fboCalc = calcFBOFee({ fbos: [fbo] }, isJet, nights);
