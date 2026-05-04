@@ -1238,7 +1238,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.30';
+var APP_VERSION = 'v2026-05-03.31';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -6636,9 +6636,46 @@ window.stgOnPilotIsUserChange = function() {
 };
 
 window.resetSettings = function() {
-  try { localStorage.removeItem(SETTINGS_KEY); } catch(e) {}
+  // Write empty settings object so the reset persists and syncs to cloud
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({})); } catch(e) {}
+  syncPush();
+
+  // Reset live app state
+  paxPopupDismissed = false;
+  paxUserAdjusted = false;
+
+  // Reset occupant counts to blank (unknown)
+  ['paxCount', 'paxCountPanel'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.textContent = '1';
+  });
+  ['luggageToggle', 'luggageTogglePanel'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.checked = true;
+  });
+
+  // Reset aircraft selection
+  var selA = document.getElementById('selA');
+  if (selA) { selA.value = ''; }
+  document.querySelectorAll('.ac-pick-btn').forEach(function(b) { b.classList.remove('active'); });
+  var userTypeRow = document.getElementById('userTypeRow');
+  if (userTypeRow) userTypeRow.style.display = 'none';
+  var payloadSection = document.getElementById('payloadSection');
+  if (payloadSection) payloadSection.style.display = 'none';
+  var spdRowA = document.getElementById('spdRowA');
+  if (spdRowA) spdRowA.style.display = 'none';
+  var gphRowA = document.getElementById('gphRowA');
+  if (gphRowA) gphRowA.style.display = 'none';
+  if (acPaneOpen) toggleAircraftPane();
+  updateAircraftToggleLabel();
+
+  // Reset internal settings state
+  _stgOriginResolved = null;
+  _stgAircraft = null;
+  _stgRole = 'owner';
+  _stgPax = 2;
+
+  recalc();
   closeSettings();
-  _stgToast('&#x2715; Settings reset to defaults');
+  _stgToast('&#x2715; Settings reset');
 };
 
 function _stgToast(msg) {
