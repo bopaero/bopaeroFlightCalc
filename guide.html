@@ -465,18 +465,19 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
 
     <!-- PAYLOAD -->
     <section class="guide-section" id="payload">
-      <h2>Payload &amp; Weight (SR22T)</h2>
-      <p>The SR22T includes a seat-by-seat payload calculator to help you stay within max takeoff weight.</p>
+      <h2>Payload &amp; Weight</h2>
+      <p>Both the SR22T and SF50 include a seat-by-seat payload calculator to help you stay within max takeoff weight. Basic aircraft empty weight and TKS fluid are included automatically as fixed entries.</p>
 
       <h3>Setting Occupants</h3>
-      <p>Click the occupant count to open a popup with <strong>−</strong> and <strong>+</strong> buttons. TripCalc fills seats in order: pilot → rear left → front passenger → rear right. Toggle <strong>Luggage</strong> to add standard baggage weight.</p>
+      <p>Click the occupant count to open a popup with <strong>−</strong> and <strong>+</strong> buttons. TripCalc fills seats in order (SR22T: pilot → rear left → front passenger → rear right; SF50: pilot → front → mid left → mid right → rear). Toggle <strong>Luggage</strong> to add standard baggage weight.</p>
 
       <h3>Weight Details</h3>
-      <p>Click <strong>▼ Weight Details</strong> to edit individual seat weights and baggage. The payload bar turns red when total weight exceeds the SR22T's max takeoff weight. Click <strong>Use Standard Weights</strong> to reset all seats to standard FAA weights (190 lbs per adult, 80 lbs per child).</p>
+      <p>Click <strong>▼ Weight Details</strong> to edit individual seat weights, baggage, and TKS fluid. The payload bar turns red when total weight exceeds the aircraft's max takeoff weight. Click <strong>Use Standard Weights</strong> to reset all seats to standard FAA weights (190 lbs per adult, 80 lbs per child).</p>
 
+      <p><strong>SR22T default weights:</strong></p>
       <table class="spec-table">
         <thead>
-          <tr><th>Seat</th><th>Default</th><th>Standard</th><th>Max</th></tr>
+          <tr><th>Item</th><th>Default</th><th>Standard</th><th>Max</th></tr>
         </thead>
         <tbody>
           <tr><td>Pilot</td><td>190 lbs</td><td>190 lbs</td><td>300 lbs</td></tr>
@@ -484,8 +485,29 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
           <tr><td>Rear left</td><td>190 lbs</td><td>190 lbs</td><td>300 lbs</td></tr>
           <tr><td>Rear right</td><td>0 lbs</td><td>190 lbs</td><td>300 lbs</td></tr>
           <tr><td>Baggage</td><td>30 lbs</td><td>30 lbs</td><td>130 lbs</td></tr>
+          <tr><td>TKS fluid</td><td>5.4 gal (~50 lbs)</td><td>—</td><td>20 gal</td></tr>
         </tbody>
       </table>
+
+      <p><strong>SF50 default weights:</strong></p>
+      <table class="spec-table">
+        <thead>
+          <tr><th>Item</th><th>Default</th><th>Standard</th><th>Max</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Pilot</td><td>190 lbs</td><td>190 lbs</td><td>300 lbs</td></tr>
+          <tr><td>Front passenger</td><td>190 lbs</td><td>190 lbs</td><td>300 lbs</td></tr>
+          <tr><td>Mid left</td><td>0 lbs</td><td>190 lbs</td><td>300 lbs</td></tr>
+          <tr><td>Mid right</td><td>0 lbs</td><td>190 lbs</td><td>300 lbs</td></tr>
+          <tr><td>Rear left (child)</td><td>0 lbs</td><td>80 lbs</td><td>200 lbs</td></tr>
+          <tr><td>Rear right (child)</td><td>0 lbs</td><td>80 lbs</td><td>200 lbs</td></tr>
+          <tr><td>Nose baggage</td><td>25 lbs</td><td>20 lbs</td><td>100 lbs</td></tr>
+          <tr><td>Aft baggage</td><td>0 lbs</td><td>30 lbs</td><td>150 lbs</td></tr>
+          <tr><td>TKS fluid</td><td>3.3 gal (~30 lbs)</td><td>—</td><td>20 gal</td></tr>
+        </tbody>
+      </table>
+
+      <p>TKS fluid weighs 9.2 lbs/gal. The gallons value you enter is converted to pounds automatically in all payload and range calculations.</p>
 
       <div class="callout warn">
         <div class="callout-icon">&#9888;</div>
@@ -695,6 +717,7 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
 
       <h3>Default Aircraft</h3>
       <p>Select <strong>SR22T</strong> or <strong>Vision Jet</strong> to pre-select the aircraft on every load. When an aircraft is chosen, an <strong>Aircraft Details</strong> row appears allowing you to override the default cruise speed (mph), fuel burn (GPH), and aircraft cost ($/hr) — useful if your aircraft's performance differs from the factory defaults.</p>
+      <p>Below the performance fields, click <strong>▼ Weight Details</strong> to expand an editable list of all seat, baggage, and TKS fluid weights for that aircraft. Values pre-fill from your previously saved settings, or from the current payload panel if that aircraft is active. Edit any field and click <strong>Save Settings</strong> — exactly what you see in the dropdown is what gets saved and applied on every load.</p>
 
       <h3>Default Occupants</h3>
       <p>Set your typical total occupant count (pilot included) using the <strong>−</strong> and <strong>+</strong> buttons. This count is applied on load and after Clear All, suppressing the occupant prompt that would otherwise appear when adding the first stop.</p>
@@ -752,7 +775,7 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
         <li><strong>All waypoints</strong> — airport, coordinates, runway data, overnight flags</li>
         <li><strong>Aircraft selection</strong> — model, speed, GPH, and any custom overrides</li>
         <li><strong>Occupants &amp; luggage</strong></li>
-        <li><strong>Payload &amp; weight details</strong> — individual seat and baggage weights (SR22T)</li>
+        <li><strong>Payload &amp; weight details</strong> — individual seat, baggage, and TKS fluid weights</li>
         <li><strong>Trip Cost fields</strong> — aircraft cost, fuel/consumables, pilot cost range, Trip Days, ground time per stop</li>
         <li><strong>Owner / Lessee role</strong> and lease hours (SF50 Lessee)</li>
         <li><strong>FBO selections</strong> — the selected FBO at each stop and the fee entered</li>
