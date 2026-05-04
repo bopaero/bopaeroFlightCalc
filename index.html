@@ -1145,6 +1145,9 @@ select option { background:var(--surface2); }
                  style="width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
         </label>
       </div>
+      <div id="stgWeightNote" style="font-size:11px;color:var(--text-muted);margin-top:7px;display:none">
+        &#x2696; Current weight details (seats, baggage, TKS) will be saved as defaults for this aircraft.
+      </div>
     </div>
 
     <div style="margin-bottom:14px">
@@ -1230,7 +1233,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.22';
+var APP_VERSION = 'v2026-05-03.23';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -6343,6 +6346,16 @@ function loadSettings() {
 
 function saveSettings() {
   var pilotIsUser = document.getElementById('stgPilotIsUser').checked;
+  // Merge existing saved weights with current aircraft's payload inputs (if visible)
+  var existing = loadSettings();
+  var savedWeights = existing.acWeights || {};
+  var selA = document.getElementById('selA');
+  var paySection = document.getElementById('payloadSection');
+  if (_stgAircraft && selA && selA.value === _stgAircraft && paySection && paySection.style.display !== 'none') {
+    var wts = {};
+    document.querySelectorAll('#payloadInputs input[type="number"]').forEach(function(el) { wts[el.id] = el.value; });
+    if (Object.keys(wts).length) savedWeights[_stgAircraft] = wts;
+  }
   var s = {
     origin:      _stgOriginResolved || null,
     pax:         _stgPax,
@@ -6354,7 +6367,8 @@ function saveSettings() {
     fuelOnly:    document.getElementById('stgFuelOnly').checked,
     pilotIsUser: pilotIsUser,
     pilotMin:    pilotIsUser ? 0 : (parseFloat(document.getElementById('stgPilotMin').value) || 0),
-    pilotMax:    pilotIsUser ? 0 : (parseFloat(document.getElementById('stgPilotMax').value) || 0)
+    pilotMax:    pilotIsUser ? 0 : (parseFloat(document.getElementById('stgPilotMax').value) || 0),
+    acWeights:   savedWeights
   };
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
   applySettings(s);
@@ -6372,6 +6386,15 @@ function applySettings(s) {
     if (s.acSpd)   { _setEl('spdA', String(s.acSpd)); }
     if (s.acGph)   { _setEl('gphA', String(s.acGph)); }
     if (s.acPerHr) { _setEl('costAcPerHr', String(s.acPerHr)); }
+    // Restore saved weight details for this aircraft
+    if (s.acWeights && s.acWeights[s.aircraft]) {
+      var wts = s.acWeights[s.aircraft];
+      Object.keys(wts).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = wts[id];
+      });
+      if (typeof updatePayloadSummary === 'function') updatePayloadSummary(s.aircraft);
+    }
   }
   if (s.userType) {
     if (s.aircraft) { var utr = document.getElementById('userTypeRow'); if (utr) utr.style.display = 'flex'; }
@@ -6541,6 +6564,14 @@ window.stgPickAircraft = function(val) {
   _setEl('stgAcPerHr', String(preset.acPerHr || ''));
   if (!document.getElementById('stgPilotIsUser').checked) {
     if (preset.pilotMin !== undefined) { _setEl('stgPilotMin', String(preset.pilotMin)); _setEl('stgPilotMax', String(preset.pilotMax)); }
+  }
+  // Show weight note if this aircraft's payload panel is currently active
+  var weightNote = document.getElementById('stgWeightNote');
+  if (weightNote) {
+    var paySection = document.getElementById('payloadSection');
+    var selA = document.getElementById('selA');
+    var weightsAvailable = paySection && paySection.style.display !== 'none' && selA && selA.value === val;
+    weightNote.style.display = weightsAvailable ? '' : 'none';
   }
 };
 
