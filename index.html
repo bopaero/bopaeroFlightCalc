@@ -1230,7 +1230,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.20';
+var APP_VERSION = 'v2026-05-03.21';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -2786,7 +2786,8 @@ var AC_WEIGHT = {
       { label: 'Rear Left', default: 190, std: 190, max: 300 },
       { label: 'Rear Right', default: 0, std: 190, max: 300 }
     ],
-    baggage: [{ label: 'Baggage', default: 30, std: 30, max: 130 }]
+    baggage: [{ label: 'Baggage', default: 30, std: 30, max: 130 }],
+    tksGal: 5.4
   },
   '280': {  // SF50 — 7 seats (pilot + 4 adults + 2 children)
     mtow: 6000, emptyWt: 3995, maxFuelGal: 296, fuelDensity: 6.7, mrcGph: 46,
@@ -2803,7 +2804,8 @@ var AC_WEIGHT = {
     baggage: [
       { label: 'Nose Baggage', default: 25, std: 20, max: 100 },
       { label: 'Aft Baggage', default: 0, std: 30, max: 150 }
-    ]
+    ],
+    tksGal: 3.3
   }
 };
 
@@ -4142,7 +4144,11 @@ function airportHasFuel(wp, spdKey) {
 function getPayloadTotal() {
   var total = 0;
   var inputs = document.querySelectorAll('#payloadInputs input[type="number"]');
-  for (var i = 0; i < inputs.length; i++) total += parseFloat(inputs[i].value) || 0;
+  for (var i = 0; i < inputs.length; i++) {
+    var el = inputs[i];
+    var val = parseFloat(el.value) || 0;
+    total += (el.id === 'payloadTks') ? val * 9.2 : val;
+  }
   return total;
 }
 
@@ -4233,6 +4239,11 @@ function renderPayloadInputs(spdKey) {
       '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadBag_' + i + '" min="0" max="' + b.max + '" value="' + b.default + '" oninput="onPayloadDetailInput()">' +
       '<span class="spd-unit">lbs</span></div>';
   });
+  if (w.tksGal != null) {
+    html += '<div class="payload-row"><label>TKS fluid</label>' +
+      '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadTks" min="0" max="20" step="0.1" value="' + w.tksGal + '" oninput="onPayloadDetailInput()">' +
+      '<span class="spd-unit">gal</span></div>';
+  }
   container.innerHTML = html;
 
   // Collapse details by default
@@ -6063,7 +6074,7 @@ function serializeState() {
   });
   // Seat/baggage weight inputs
   var weights = {};
-  document.querySelectorAll('#payloadInputs input[id^="payloadSeat_"], #payloadInputs input[id^="payloadBag_"]').forEach(function(el) {
+  document.querySelectorAll('#payloadInputs input[id^="payloadSeat_"], #payloadInputs input[id^="payloadBag_"], #payloadInputs input[id="payloadTks"]').forEach(function(el) {
     weights[el.id] = el.value;
   });
   return {
