@@ -407,9 +407,9 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
     <section class="guide-section" id="quickstart">
       <h2>Quick Start</h2>
       <ol class="steps">
-        <li><strong>Add your origin.</strong> Click <strong>+ Add Origin</strong> in the sidebar, then click your departure airport on the map — or type its ICAO code (e.g., <kbd>KFCM</kbd>) in the search field and press <kbd>Enter</kbd>.</li>
-        <li><strong>Add stops.</strong> After the origin is placed, each map click adds the next stop. You can also type an ICAO code or city name into any waypoint's search field.</li>
-        <li><strong>Select an aircraft.</strong> Click <strong>SR22T</strong> or <strong>SF50</strong> in the Aircraft section. Flight times and fuel calculations appear immediately.</li>
+        <li><strong>Add your origin.</strong> Select your Program Area from the dropdown and tap your home airport — or click <strong>+ Enter Origin Manually</strong> and click the map (or type an ICAO code). An aircraft picker popup will appear automatically.</li>
+        <li><strong>Select an aircraft.</strong> Choose <strong>SR22T</strong> or <strong>SF50</strong> in the popup or in the Aircraft section. The aircraft details pane opens automatically.</li>
+        <li><strong>Add stops.</strong> Each map click adds the next stop. You can also type an ICAO code or city name into any waypoint's search field.</li>
         <li><strong>Review results.</strong> The Results section shows total time, flight time, distance, and fuel. Expand <strong>▼ Route Details</strong> for a leg-by-leg breakdown.</li>
         <li><strong>Close the loop (optional).</strong> Click <strong>↻ Return to Origin</strong> to add a return leg back to your departure airport.</li>
       </ol>
@@ -422,6 +422,12 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
     <!-- WAYPOINTS -->
     <section class="guide-section" id="waypoints">
       <h2>Adding Stops</h2>
+      <h3>Program Area Shortcuts</h3>
+      <p>Select your <strong>Program Area</strong> from the dropdown at the top of the sidebar. A grid of your home airports appears — tap any one to instantly place it as the origin. An aircraft picker popup appears immediately after placement.</p>
+
+      <h3>Enter Origin Manually</h3>
+      <p>Click <strong>+ Enter Origin Manually</strong> to add the origin yourself. A flashing badge appears in the sidebar — click anywhere on the map to snap to the nearest airport, or type an ICAO code or address into the search field.</p>
+
       <h3>Map Click</h3>
       <p>When a waypoint is pending (shown by the flashing badge in the sidebar), click anywhere on the map to place it. TripCalc snaps it to the nearest public-use airport within a reasonable radius.</p>
 
@@ -452,7 +458,8 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
     <section class="guide-section" id="aircraft">
       <h2>Aircraft</h2>
       <h3>Primary Aircraft</h3>
-      <p>Click <strong>SR22T</strong> or <strong>SF50</strong> to load factory defaults for speed and fuel burn. You can override either value by typing directly into the Speed (mph) or GPH fields.</p>
+      <p>After placing your origin, an aircraft picker popup appears automatically — choose <strong>SR22T</strong> or <strong>SF50</strong> to get started. You can also tap either button directly in the Aircraft section at any time. When an aircraft is selected, the details pane expands automatically to show speed, GPH, and payload fields.</p>
+      <p>You can override the default cruise speed or fuel burn by typing directly into the Speed (mph) or GPH fields in the expanded pane.</p>
 
       <h3>Custom Aircraft</h3>
       <p>Click <strong>+ Custom Aircraft</strong> under the primary slot to define a fully custom aircraft — enter a name, cruise speed, and fuel burn rate.</p>
@@ -746,7 +753,7 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
       </div>
 
       <h3>Reset All Settings</h3>
-      <p>Click <strong>Reset All Settings</strong> at the bottom of the Settings panel to clear all saved defaults. The app will revert to blank defaults on the next load.</p>
+      <p>Click <strong>Reset All Settings</strong> at the bottom of the Settings panel to immediately clear all saved defaults — including aircraft selection, origin, occupant count, pilot costs, and weight details. The reset takes effect instantly and is persisted to cloud sync, so reloading the app (or opening it on another linked device) starts completely fresh.</p>
 
       <div class="callout note">
         <div class="callout-icon">&#9432;</div>
