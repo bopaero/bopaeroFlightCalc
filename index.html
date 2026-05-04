@@ -1145,8 +1145,13 @@ select option { background:var(--surface2); }
                  style="width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
         </label>
       </div>
-      <div id="stgWeightNote" style="font-size:11px;color:var(--text-muted);margin-top:7px;display:none">
-        &#x2696; Current weight details (seats, baggage, TKS) will be saved as defaults for this aircraft.
+      <div style="margin-top:8px">
+        <button id="stgWeightToggle" onclick="stgToggleWeights()" style="background:none;border:none;color:var(--text-muted);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px">
+          <span id="stgWeightCaret">&#x25BC;</span> Weight Details
+        </button>
+        <div id="stgWeightSection" style="margin-top:8px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:5px;display:none">
+          <div id="stgWeightInputs"></div>
+        </div>
       </div>
     </div>
 
@@ -1233,7 +1238,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.23';
+var APP_VERSION = 'v2026-05-03.24';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -6346,14 +6351,15 @@ function loadSettings() {
 
 function saveSettings() {
   var pilotIsUser = document.getElementById('stgPilotIsUser').checked;
-  // Merge existing saved weights with current aircraft's payload inputs (if visible)
+  // Read weight inputs from the settings modal weight section
   var existing = loadSettings();
   var savedWeights = existing.acWeights || {};
-  var selA = document.getElementById('selA');
-  var paySection = document.getElementById('payloadSection');
-  if (_stgAircraft && selA && selA.value === _stgAircraft && paySection && paySection.style.display !== 'none') {
+  if (_stgAircraft) {
     var wts = {};
-    document.querySelectorAll('#payloadInputs input[type="number"]').forEach(function(el) { wts[el.id] = el.value; });
+    document.querySelectorAll('#stgWeightInputs input[type="number"]').forEach(function(el) {
+      // Strip the stgWt_ prefix to match the payloadInputs IDs used at runtime
+      wts[el.id.replace('stgWt_', '')] = el.value;
+    });
     if (Object.keys(wts).length) savedWeights[_stgAircraft] = wts;
   }
   var s = {
@@ -6490,6 +6496,7 @@ function openSettings() {
     _setEl('stgAcSpd',   String(s.acSpd   !== undefined && s.acSpd   !== null ? s.acSpd   : (acGph[_stgAircraft] ? (_stgAircraft === '280' ? 280 : 175) : '')));
     _setEl('stgAcGph',   String(s.acGph   !== undefined && s.acGph   !== null ? s.acGph   : (acGph[_stgAircraft] || '')));
     _setEl('stgAcPerHr', String(s.acPerHr !== undefined && s.acPerHr !== null ? s.acPerHr : (preset.acPerHr || '')));
+    stgRenderWeightInputs(_stgAircraft);
   }
   document.getElementById('stgPaxCount').textContent = String(_stgPax);
   document.getElementById('stgBtnOwner').classList.toggle('active',  _stgRole === 'owner');
@@ -6558,22 +6565,58 @@ window.stgPickAircraft = function(val) {
   var acDetails = document.getElementById('stgAcDetails');
   if (acDetails) acDetails.style.display = '';
   var preset = acCostPresets[val] || {};
-  // Populate detail fields from preset (user can override)
   _setEl('stgAcSpd',   String(val === '280' ? 280 : 175));
   _setEl('stgAcGph',   String(acGph[val] || ''));
   _setEl('stgAcPerHr', String(preset.acPerHr || ''));
   if (!document.getElementById('stgPilotIsUser').checked) {
     if (preset.pilotMin !== undefined) { _setEl('stgPilotMin', String(preset.pilotMin)); _setEl('stgPilotMax', String(preset.pilotMax)); }
   }
-  // Show weight note if this aircraft's payload panel is currently active
-  var weightNote = document.getElementById('stgWeightNote');
-  if (weightNote) {
-    var paySection = document.getElementById('payloadSection');
-    var selA = document.getElementById('selA');
-    var weightsAvailable = paySection && paySection.style.display !== 'none' && selA && selA.value === val;
-    weightNote.style.display = weightsAvailable ? '' : 'none';
-  }
+  stgRenderWeightInputs(val);
 };
+
+window.stgToggleWeights = function() {
+  var sec = document.getElementById('stgWeightSection');
+  var caret = document.getElementById('stgWeightCaret');
+  if (!sec) return;
+  var open = sec.style.display !== 'none';
+  sec.style.display = open ? 'none' : '';
+  if (caret) caret.innerHTML = open ? '&#x25BC;' : '&#x25B2;';
+};
+
+function stgRenderWeightInputs(val) {
+  var container = document.getElementById('stgWeightInputs');
+  if (!container) return;
+  var w = AC_WEIGHT[val];
+  if (!w) { container.innerHTML = ''; return; }
+  // Determine starting values: saved settings → current payload inputs (if same aircraft) → AC_WEIGHT defaults
+  var saved = (loadSettings().acWeights || {})[val] || {};
+  var selA = document.getElementById('selA');
+  var payActive = selA && selA.value === val && document.getElementById('payloadSection') && document.getElementById('payloadSection').style.display !== 'none';
+  function getVal(id, def) {
+    if (saved[id] !== undefined) return saved[id];
+    var live = payActive ? document.getElementById(id) : null;
+    return live ? live.value : def;
+  }
+  var inputStyle = 'width:60px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 6px;font-family:var(--mono);font-size:13px;text-align:right';
+  var rowStyle = 'display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;color:var(--text-muted)';
+  var html = '';
+  w.seats.forEach(function(s, i) {
+    html += '<div style="' + rowStyle + '"><span style="flex:1">' + s.label + '</span>' +
+      '<input type="number" id="stgWt_payloadSeat_' + i + '" min="0" max="' + s.max + '" value="' + getVal('payloadSeat_' + i, s.default) + '" style="' + inputStyle + '">' +
+      '<span style="min-width:22px">lbs</span></div>';
+  });
+  w.baggage.forEach(function(b, i) {
+    html += '<div style="' + rowStyle + '"><span style="flex:1">' + b.label + '</span>' +
+      '<input type="number" id="stgWt_payloadBag_' + i + '" min="0" max="' + b.max + '" value="' + getVal('payloadBag_' + i, b.default) + '" style="' + inputStyle + '">' +
+      '<span style="min-width:22px">lbs</span></div>';
+  });
+  if (w.tksGal != null) {
+    html += '<div style="' + rowStyle + '"><span style="flex:1">TKS fluid</span>' +
+      '<input type="number" id="stgWt_payloadTks" min="0" max="20" step="0.1" value="' + getVal('payloadTks', w.tksGal) + '" style="' + inputStyle + '">' +
+      '<span style="min-width:22px">gal</span></div>';
+  }
+  container.innerHTML = html;
+}
 
 window.stgPickRole = function(role) {
   _stgRole = role;
