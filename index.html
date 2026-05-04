@@ -1238,7 +1238,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.28';
+var APP_VERSION = 'v2026-05-03.29';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -4082,7 +4082,8 @@ window.pickAircraft = function(val, s, _fromSettings) {
       }
     }, 50);
   }
-  if (s === 'A' && !isMobile()) setTimeout(fitRouteOrWaypoint, 50);
+  if (s === 'A') setTimeout(fitRouteOrWaypoint, 50);
+  if (s === 'A' && !acPaneOpen) toggleAircraftPane();
   if (s === 'A' && !paxPopupDismissed) {
     var placed = waypoints.filter(function(w){ return w.lat !== null; });
     if (placed.length > 0) setTimeout(showPaxPopup, 100);
