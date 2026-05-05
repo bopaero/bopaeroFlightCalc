@@ -555,6 +555,21 @@ select option { background:var(--surface2); }
   .map-helper-btns { top:80px; }
 }
 
+.map-empty-hint { display:none; }
+@media (max-width:768px) {
+  .map-empty-hint {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:absolute; inset:0; z-index:900; pointer-events:none;
+    gap:6px;
+  }
+  .map-empty-hint-box {
+    background:rgba(0,0,0,0.55); border:1px solid rgba(255,255,255,0.12); border-radius:8px;
+    padding:14px 22px; text-align:center; backdrop-filter:blur(4px);
+    font-family:var(--mono); font-size:13px; color:rgba(255,255,255,0.75); letter-spacing:0.5px;
+    line-height:1.7;
+  }
+  .map-empty-hint-arrow { font-size:22px; color:rgba(255,255,255,0.5); animation:blink 1.5s infinite; }
+}
 .map-badge {
   position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:1000; white-space:nowrap;
   background:var(--surface); border:1px solid var(--border); border-radius:3px;
@@ -991,6 +1006,10 @@ select option { background:var(--surface2); }
   <!-- MAP -->
   <div class="map-wrap mobile-active" id="mobileMapPanel">
     <div id="map"></div>
+    <div class="map-empty-hint" id="mapEmptyHint">
+      <div class="map-empty-hint-box">TAP PLAN TO ADD YOUR FIRST STOP</div>
+      <div class="map-empty-hint-arrow">↓</div>
+    </div>
     <div id="paxOverlay" class="pax-overlay" style="display:none">
       <div class="pax-popup">
         <div class="pax-title">Total Occupants</div>
@@ -1250,7 +1269,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.1';
+var APP_VERSION = 'v2026-05-05.2';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -1483,6 +1502,8 @@ function renderWPList() {
   list.innerHTML = '';
   var addBtn = document.getElementById('addWpBtn');
   var originHint = document.getElementById('originHint');
+  var mapHint = document.getElementById('mapEmptyHint');
+  if (mapHint) mapHint.style.display = waypoints.filter(function(w){return w.lat!==null;}).length > 0 ? 'none' : '';
   if (addBtn) addBtn.textContent = waypoints.length === 0 ? '+ Add Origin' : '+ Add Stop or Destination';
   if (originHint) originHint.style.display = 'none';
   var routingIntro = document.getElementById('routingIntro');
