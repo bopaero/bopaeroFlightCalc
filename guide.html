@@ -69,7 +69,7 @@ header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 0 24px;
-  height: 54px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -78,7 +78,7 @@ header {
   z-index: 100;
 }
 .logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
-.logo-title { font-size:14px; font-weight:700; letter-spacing:2px; color:var(--text); }
+.logo-title { font-size:22px; font-weight:700; letter-spacing:2px; color:var(--text); }
 .logo-title span { color:var(--accent); }
 .logo-dark { display:block; }
 .logo-light { display:none; }
@@ -274,8 +274,8 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
 
 <header>
   <a class="logo" href="index.html">
-    <img src="bopAeroLogo.png" height="32" class="logo-dark" style="flex-shrink:0;width:auto" alt="bop Aero logo">
-    <img src="bopAeroLogoLight.png" height="38" class="logo-light" style="flex-shrink:0;width:auto" alt="bop Aero logo">
+    <img src="bopAeroLogo.png" height="44" class="logo-dark" style="flex-shrink:0;width:auto" alt="bop Aero logo">
+    <img src="bopAeroLogoLight.png" height="50" class="logo-light" style="flex-shrink:0;width:auto" alt="bop Aero logo">
     <div class="logo-divider"></div>
     <div class="logo-title">Trip<span>Calc</span></div>
   </a>
@@ -407,10 +407,11 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
     <section class="guide-section" id="quickstart">
       <h2>Quick Start</h2>
       <ol class="steps">
-        <li><strong>Add your origin.</strong> Select your Program Area from the dropdown and tap your home airport — or click <strong>+ Enter Origin Manually</strong> and click the map (or type an ICAO code). An aircraft picker popup will appear automatically.</li>
-        <li><strong>Select an aircraft.</strong> Choose <strong>SR22T</strong> or <strong>SF50</strong> in the popup or in the Aircraft section. The aircraft details pane opens automatically.</li>
-        <li><strong>Add stops.</strong> Each map click adds the next stop. You can also type an ICAO code or city name into any waypoint's search field.</li>
-        <li><strong>Review results.</strong> The Results section shows total time, flight time, distance, and fuel. Expand <strong>▼ Route Details</strong> for a leg-by-leg breakdown.</li>
+        <li><strong>Step 1 — Trip Routing.</strong> Select your Program Area and tap your home airport, or click <strong>+ Add Origin</strong> and click the map (or type an ICAO code). Not in a program area? Skip the dropdown and go straight to the map or the button. An aircraft picker popup appears automatically after placing your origin.</li>
+        <li><strong>Step 2 — Aircraft.</strong> Tap <strong>SR22T</strong> or <strong>SF50</strong> — the buttons are at the top of the Aircraft section. The Aircraft Details pane expands automatically.</li>
+        <li><strong>Add more stops.</strong> Each map click adds the next stop. You can also type an ICAO code or city name into any waypoint's search field.</li>
+        <li><strong>Results.</strong> Scroll down to the Results section — total time, flight time, distance, and fuel appear as soon as origin and aircraft are set. Expand <strong>▼ Route Details</strong> for a leg-by-leg breakdown.</li>
+        <li><strong>Step 3 — Trip Cost (optional).</strong> Expand the collapsed Trip Cost section to enter aircraft cost, pilot rates, and FBO fees for a full cost estimate.</li>
         <li><strong>Close the loop (optional).</strong> Click <strong>↻ Return to Origin</strong> to add a return leg back to your departure airport.</li>
       </ol>
       <div class="callout tip">
@@ -423,10 +424,11 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
     <section class="guide-section" id="waypoints">
       <h2>Adding Stops</h2>
       <h3>Program Area Shortcuts</h3>
-      <p>Select your <strong>Program Area</strong> from the dropdown at the top of the sidebar. A grid of your home airports appears — tap any one to instantly place it as the origin. An aircraft picker popup appears immediately after placement.</p>
+      <p>Select your <strong>Program Area</strong> from the dropdown at the top of Step 1. A grid of your home airports appears — tap any one to instantly place it as the origin. An aircraft picker popup appears immediately after placement.</p>
+      <p>Not in a Cirrus program area? Skip the dropdown entirely — click <strong>+ Add Origin</strong> or tap the map to place your origin directly.</p>
 
-      <h3>Enter Origin Manually</h3>
-      <p>Click <strong>+ Enter Origin Manually</strong> to add the origin yourself. A flashing badge appears in the sidebar — click anywhere on the map to snap to the nearest airport, or type an ICAO code or address into the search field.</p>
+      <h3>Add Origin</h3>
+      <p>Click <strong>+ Add Origin</strong> to add the origin yourself. A flashing badge appears in the sidebar — click anywhere on the map to snap to the nearest airport, or type an ICAO code or address into the search field.</p>
 
       <h3>Map Click</h3>
       <p>When a waypoint is pending (shown by the flashing badge in the sidebar), click anywhere on the map to place it. TripCalc snaps it to the nearest public-use airport within a reasonable radius.</p>
@@ -458,8 +460,8 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
     <section class="guide-section" id="aircraft">
       <h2>Aircraft</h2>
       <h3>Primary Aircraft</h3>
-      <p>After placing your origin, an aircraft picker popup appears automatically — choose <strong>SR22T</strong> or <strong>SF50</strong> to get started. You can also tap either button directly in the Aircraft section at any time. When an aircraft is selected, the details pane expands automatically to show speed, GPH, and payload fields.</p>
-      <p>You can override the default cruise speed or fuel burn by typing directly into the Speed (mph) or GPH fields in the expanded pane.</p>
+      <p>Tap <strong>SR22T</strong> or <strong>SF50</strong> — the two quick-pick buttons at the top of the Aircraft section. These are the only selection you need; the <strong>▼ Aircraft Details</strong> pane expands automatically after selection. You can also choose in the popup that appears after placing your origin.</p>
+      <p>You can override the default cruise speed or fuel burn by typing directly into the Speed (mph) or GPH fields inside the expanded Aircraft Details pane.</p>
 
       <h3>Custom Aircraft</h3>
       <p>Click <strong>+ Custom Aircraft</strong> under the primary slot to define a fully custom aircraft — enter a name, cruise speed, and fuel burn rate.</p>
@@ -484,8 +486,14 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
       <h3>Setting Occupants</h3>
       <p>Click the occupant count to open a popup with <strong>−</strong> and <strong>+</strong> buttons. TripCalc fills seats in order (SR22T: pilot → rear left → front passenger → rear right; SF50: pilot → front → mid left → mid right → rear). Toggle <strong>Luggage</strong> to add standard baggage weight.</p>
 
+      <h3>Payload Bar</h3>
+      <p>Once an aircraft is selected, a compact payload bar appears in the Aircraft section showing <strong>Payload</strong> (total occupant and baggage weight) and <strong>Fuel avail</strong> (gallons remaining after payload). A note below the bar confirms the aircraft's Basic Empty Weight (BEW) and whether TKS fluid is included. Tap the bar to expand Weight Details.</p>
+
+      <h3>Basic Empty Weight (BEW)</h3>
+      <p>The aircraft's BEW is shown above the payload bar and is editable. It is pre-filled with the published value for your aircraft. If you know your specific aircraft's actual empty weight, update it here for more accurate range and fuel calculations. A warning will appear on first edit — BEW is critical to all weight and range math; only update it with a known value.</p>
+
       <h3>Weight Details</h3>
-      <p>Click <strong>▼ Weight Details</strong> to edit individual seat weights, baggage, and TKS fluid. The payload bar turns red when total weight exceeds the aircraft's max takeoff weight. Click <strong>Use Standard Weights</strong> to reset all seats to standard FAA weights (190 lbs per adult, 80 lbs per child).</p>
+      <p>Tap the payload bar or click <strong>▼ Weight Details</strong> to edit individual seat weights, baggage, and TKS fluid. The payload bar turns red when total weight exceeds the aircraft's max takeoff weight. Click <strong>Use Standard Weights</strong> to reset all seats to standard FAA weights (190 lbs per adult, 80 lbs per child).</p>
 
       <p><strong>SR22T default weights:</strong></p>
       <table class="spec-table">
@@ -652,7 +660,7 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
     <!-- COSTS -->
     <section class="guide-section" id="costs">
       <h2>Trip Cost</h2>
-      <p>The Trip Cost section lets you configure costs to generate a full trip cost estimate.</p>
+      <p>Trip Cost is optional — flight times and fuel estimates appear without it. Click <strong>STEP 3 · Trip Cost</strong> to expand the section and configure costs for a full trip cost estimate.</p>
 
       <h3>Cost Inputs</h3>
       <table class="spec-table">
