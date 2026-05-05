@@ -123,6 +123,7 @@ header {
 }
 
 .sec { padding:14px 16px; border-bottom:1px solid var(--border); }
+.sec-locked { opacity:0.35; pointer-events:none; user-select:none; }
 .sec-title {
   font-family:var(--mono); font-size:12px; letter-spacing:2px; text-transform:uppercase;
   color:var(--text-muted); margin-bottom:10px; display:flex; align-items:center; gap:6px;
@@ -796,7 +797,7 @@ select option { background:var(--surface2); }
     </div>
 
     <!-- AIRCRAFT -->
-    <div class="sec">
+    <div class="sec sec-locked" id="aircraftSec">
       <div class="sec-title"><span class="sec-title-step">STEP 2 ·</span> Aircraft</div>
       <!-- Owner / Lessee toggle — always visible -->
       <div id="userTypeRow" style="display:none;gap:4px;margin-bottom:8px">
@@ -924,7 +925,7 @@ select option { background:var(--surface2); }
     </div>
 
     <!-- COST INPUTS -->
-    <div class="sec">
+    <div class="sec sec-locked" id="costSec">
       <button class="legs-toggle" id="costToggleBtn" onclick="toggleCostPane()" style="width:100%;text-align:left;margin-bottom:0">
         &#x25BC; <span class="sec-title-step">STEP 3 ·</span> <span style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Trip Cost</span> <span style="font-size:10px;color:var(--text-muted);font-style:italic;text-transform:none;letter-spacing:0;font-family:sans-serif">Optional</span>
       </button>
@@ -1295,7 +1296,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.24';
+var APP_VERSION = 'v2026-05-05.25';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -1537,7 +1538,13 @@ function renderWPList() {
   var addBtn = document.getElementById('addWpBtn');
   var originHint = document.getElementById('originHint');
   var mapHint = document.getElementById('mapEmptyHint');
-  if (mapHint) mapHint.style.display = waypoints.filter(function(w){return w.lat!==null;}).length > 0 ? 'none' : '';
+  var placed = waypoints.filter(function(w){return w.lat!==null;});
+  if (mapHint) mapHint.style.display = placed.length > 0 ? 'none' : '';
+  var locked = placed.length === 0;
+  ['aircraftSec','costSec'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('sec-locked', locked);
+  });
   if (addBtn) addBtn.textContent = waypoints.length === 0 ? '+ Add Origin' : '+ Add Stop or Destination';
   if (originHint) originHint.style.display = 'none';
   var routingIntro = document.getElementById('routingIntro');
