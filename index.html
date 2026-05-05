@@ -755,7 +755,7 @@ select option { background:var(--surface2); }
 
       <!-- Program Area Shortcuts -->
       <div>
-        <div class="fbo-title" style="margin-bottom:3px;margin-top:12px">Select a Program Area</div>
+        <div class="fbo-title" style="margin-bottom:3px;margin-top:24px">Select a Program Area</div>
         <div class="prog-area-skip">Not in a program area? Skip this — just click the map or enter an origin below.</div>
         <select id="metroAreaSelect" onchange="onMetroAreaChange()" style="width:100%;margin-bottom:6px">
           <option value="">— Choose area —</option>
@@ -1296,7 +1296,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.27';
+var APP_VERSION = 'v2026-05-05.28';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
