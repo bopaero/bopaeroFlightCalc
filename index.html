@@ -381,6 +381,7 @@ select option { background:var(--surface2); }
 .payload-bar-stat span { color:var(--text); font-family:var(--mono); }
 .payload-bar-stat.over span { color:#ff4444; font-weight:bold; }
 .payload-bar-arrow { font-size:10px; color:var(--text-muted); flex-shrink:0; }
+.payload-bar-note { font-size:10px; color:var(--text-muted); text-align:right; margin-top:2px; }
 .payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:4px 0 0; text-align:center; }
 .payload-details-btn:hover { color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
@@ -846,6 +847,7 @@ select option { background:var(--surface2); }
             <span class="payload-bar-stat" id="payloadBarFuel">Fuel avail: — gal</span>
             <span class="payload-bar-arrow" id="payloadBarArrow">▼</span>
           </div>
+          <div class="payload-bar-note" id="payloadBarNote" style="display:none"></div>
           <button class="payload-details-btn" id="payloadDetailsBtn" onclick="togglePayloadDetails()">▼ Weight details</button>
           <div id="payloadDetails" style="display:none">
             <div class="payload-header">
@@ -1269,7 +1271,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.3';
+var APP_VERSION = 'v2026-05-05.4';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -4243,6 +4245,7 @@ function updatePayloadSummary(spdKey) {
   var bar = document.getElementById('payloadBar');
   var barPayload = document.getElementById('payloadBarPayload');
   var barFuel = document.getElementById('payloadBarFuel');
+  var barNote = document.getElementById('payloadBarNote');
   if (bar) {
     bar.style.display = 'flex';
     if (barPayload) {
@@ -4253,6 +4256,10 @@ function updatePayloadSummary(spdKey) {
       barFuel.innerHTML = overweight
         ? '<span style="color:#ff4444;font-weight:bold">OVERWEIGHT</span>'
         : 'Fuel avail: <span>' + Math.round(availFuelGal) + ' gal</span>';
+    }
+    if (barNote) {
+      barNote.style.display = '';
+      barNote.textContent = 'BEW ' + w.emptyWt + ' lbs' + (w.tksGal != null ? ' · TKS included' : '') + ' · tap for details';
     }
   }
 }
