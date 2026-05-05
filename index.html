@@ -1296,7 +1296,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.29';
+var APP_VERSION = 'v2026-05-05.30';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -6006,7 +6006,7 @@ function syncPull(cb) {
       var localSettings = loadSettings();
       var localTs = localSettings.updatedAt || 0;
       var cloudTs = cloud.settings.updatedAt || 0;
-      if (cloudTs > localTs) {
+      if (cloudTs >= localTs) {
         _saveSettingsLocal(cloud.settings);
         applySettings(cloud.settings);
       }
@@ -6053,6 +6053,8 @@ window.syncDoRedeem = function() {
       try { localStorage.setItem(SYNC_TOKEN_KEY, d.syncToken); } catch(e) {}
       var inp = document.getElementById('syncLinkCodeInput');
       if (inp) inp.value = '';
+      // Clear local updatedAt so cloud settings always win on explicit link
+      try { var _ls = loadSettings(); _ls.updatedAt = 0; localStorage.setItem(SETTINGS_KEY, JSON.stringify(_ls)); } catch(e) {}
       syncPull(function(pulled) {
         if (typeof _renderTripList === 'function') _renderTripList();
         _stgToast(pulled ? '&#x2713; Account linked &mdash; your trips are ready' : '&#x2713; Account linked');
@@ -6081,6 +6083,8 @@ window.syncDoRedeemStg = function() {
     if (d.syncToken) {
       try { localStorage.setItem(SYNC_TOKEN_KEY, d.syncToken); } catch(e) {}
       input.value = '';
+      // Clear local updatedAt so cloud settings always win on explicit link
+      try { var _ls2 = loadSettings(); _ls2.updatedAt = 0; localStorage.setItem(SETTINGS_KEY, JSON.stringify(_ls2)); } catch(e) {}
       syncPull(function(pulled) {
         if (typeof _renderTripList === 'function') _renderTripList();
         closeSettings();
