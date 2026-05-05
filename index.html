@@ -771,7 +771,7 @@ select option { background:var(--surface2); }
         </div>
       </div>
       <div id="orDivider" style="text-align:center;margin:14px 0;color:var(--text-muted);font-size:16px;font-weight:bold;letter-spacing:2px"></div>
-      <button class="add-wp-btn" id="addWpBtn" onclick="addWaypoint()">+ Enter Origin Manually</button>
+      <button class="add-wp-btn" id="addWpBtn" onclick="addWaypoint()">+ Add Origin</button>
       <div class="map-hint" id="originHint" style="display:none"></div>
       <button class="add-wp-btn" id="returnBtn" onclick="toggleClosedRoute()" style="display:none;color:var(--accent);border-color:var(--accent)">&#x21BA; Return to Origin</button>
       <label for="fuelOnlyStopsToggle" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 6px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;color:var(--text-muted);cursor:pointer" title="When enabled, map clicks and address lookups for intermediate stops prefer the nearest airport with matching fuel (100LL or Jet A). Canadian airports are exempt from this filter. Falls back to the nearest airport if none with fuel are within range.">
@@ -811,7 +811,7 @@ select option { background:var(--surface2); }
 
       <!-- Primary aircraft — always shown -->
       <div class="ac-slot">
-        <span class="ac-slot-lbl lbl-a">// Primary Aircraft</span>
+        <span class="ac-slot-lbl lbl-a">Primary Aircraft</span>
         <select id="selA" onchange="onSel('A')" style="display:none">
           <option value="" selected>— Select aircraft —</option>
           <option value="175">Cirrus SR22T — 175 mph</option>
@@ -881,7 +881,7 @@ select option { background:var(--surface2); }
       <!-- Comparison aircraft — hidden until user adds it -->
       <div id="comparisonWrap" style="display:none">
         <div class="ac-slot">
-          <span class="ac-slot-lbl lbl-b">// Comparison Aircraft</span>
+          <span class="ac-slot-lbl lbl-b">Comparison Aircraft</span>
           <select id="selB" onchange="onSel('B')">
             <option value="">— Select aircraft —</option>
             <option value="175">Cirrus SR22T — 175 mph</option>
@@ -1280,7 +1280,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.17';
+var APP_VERSION = 'v2026-05-05.18';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
