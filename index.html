@@ -81,14 +81,14 @@ html, body { height:100%; overflow:hidden; background:var(--surface); color:var(
 body { display:flex; flex-direction:column; }
 
 header {
-  height:50px; background:var(--surface); border-bottom:1px solid var(--border);
+  height:64px; background:var(--surface); border-bottom:1px solid var(--border);
   display:flex; align-items:center; justify-content:space-between;
   padding:0 20px; flex-shrink:0;
 }
-.logo { display:flex; align-items:center; gap:10px; }
+.logo { display:flex; align-items:center; gap:12px; }
 .logo-diamond { width:22px; height:22px; border:2px solid var(--accent); transform:rotate(45deg); position:relative; flex-shrink:0; }
 .logo-diamond::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:7px; height:7px; background:var(--accent); }
-.logo-title { font-size:15px; font-weight:700; letter-spacing:2px; align-self:flex-end; }
+.logo-title { font-size:22px; font-weight:700; letter-spacing:2px; align-self:center; }
 .logo-title span { color:var(--accent); }
 .hdr-right { font-family:var(--mono); font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:16px; }
 .guide-link { color:var(--accent); text-decoration:none; border:1px solid var(--accent); border-radius:4px; padding:3px 8px; letter-spacing:0.5px; white-space:nowrap; }
@@ -448,8 +448,8 @@ select option { background:var(--surface2); }
 @media (max-width: 768px) {
   html, body { overflow:hidden; }
 
-  header { padding:0 14px; height:46px; }
-  .logo-title { font-size:13px; letter-spacing:1px; }
+  header { padding:0 14px; height:54px; }
+  .logo-title { font-size:17px; letter-spacing:1px; }
   .guide-link { font-size:10px; padding:2px 6px; }
   .hdr-right .pulse { display:inline-block; }
   .hdr-right { flex-direction:column; align-items:flex-end; gap:2px; }
@@ -693,8 +693,8 @@ select option { background:var(--surface2); }
 
 <header>
   <div class="logo">
-    <img src="bopAeroLogo.png" height="32" class="logo-dark" style="flex-shrink:0;width:auto" alt="bop Aero logo">
-    <img src="bopAeroLogoLight.png" height="38" class="logo-light" style="flex-shrink:0;width:auto;display:none" alt="bop Aero logo">
+    <img src="bopAeroLogo.png" height="44" class="logo-dark" style="flex-shrink:0;width:auto" alt="bop Aero logo">
+    <img src="bopAeroLogoLight.png" height="50" class="logo-light" style="flex-shrink:0;width:auto;display:none" alt="bop Aero logo">
     <div class="logo-divider" style="width:1px;height:24px;background:#fff;margin:0 6px;flex-shrink:0;align-self:center"></div>
     <div class="logo-title">Trip<span>Calc</span></div>
   </div>
@@ -1280,7 +1280,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.19';
+var APP_VERSION = 'v2026-05-05.20';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
