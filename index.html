@@ -1296,7 +1296,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.28';
+var APP_VERSION = 'v2026-05-05.29';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -6001,11 +6001,15 @@ function syncPull(cb) {
       if (added) _putSavesLocal(merged);
     }
 
-    // Apply cloud settings only if no local settings exist yet
-    var hasLocal = false;
-    try { hasLocal = !!localStorage.getItem(SETTINGS_KEY); } catch(e) {}
-    if (!hasLocal && cloud.settings && Object.keys(cloud.settings).length) {
-      try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloud.settings)); } catch(e) {}
+    // Apply cloud settings if they are newer than local settings
+    if (cloud.settings && Object.keys(cloud.settings).length) {
+      var localSettings = loadSettings();
+      var localTs = localSettings.updatedAt || 0;
+      var cloudTs = cloud.settings.updatedAt || 0;
+      if (cloudTs > localTs) {
+        _saveSettingsLocal(cloud.settings);
+        applySettings(cloud.settings);
+      }
     }
 
     _updateSyncBadge(true);
@@ -6458,6 +6462,11 @@ function loadSettings() {
   catch(e) { return {}; }
 }
 
+function _saveSettingsLocal(s) {
+  s.updatedAt = Date.now();
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
+}
+
 function saveSettings() {
   var pilotIsUser = document.getElementById('stgPilotIsUser').checked;
   // Read weight inputs from the settings modal weight section
@@ -6485,7 +6494,7 @@ function saveSettings() {
     pilotMax:    pilotIsUser ? 0 : (parseFloat(document.getElementById('stgPilotMax').value) || 0),
     acWeights:   savedWeights
   };
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
+  _saveSettingsLocal(s);
   applySettings(s);
   closeSettings();
   _stgToast('&#x2713; Settings saved');
@@ -6663,8 +6672,9 @@ window.setDefaultOriginFromWP = function(wpId) {
   if (!wp || wp.lat === null) return;
   var s = loadSettings();
   s.origin = { icao: wp.icao || null, name: wp.name || '', lat: wp.lat, lng: wp.lng, localCode: wp.localCode || null };
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
+  _saveSettingsLocal(s);
   _stgToast('&#x2713; Default origin saved: ' + (wp.icao || wp.name || 'this location'));
+  syncPush();
 };
 
 window.stgPickAircraft = function(val) {
@@ -6747,7 +6757,7 @@ window.stgOnPilotIsUserChange = function() {
 
 window.resetSettings = function() {
   // Write empty settings object so the reset persists and syncs to cloud
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({})); } catch(e) {}
+  _saveSettingsLocal({});
   syncPush();
 
   // Reset live app state
