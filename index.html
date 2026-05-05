@@ -118,6 +118,8 @@ header {
   color:var(--text-muted); margin-bottom:10px; display:flex; align-items:center; gap:6px;
 }
 .sec-title::before { content:''; width:3px; height:3px; background:var(--accent); border-radius:50%; }
+.sec-title-step { font-size:10px; color:var(--accent); font-family:var(--mono); letter-spacing:1px; margin-right:2px; opacity:0.8; }
+.prog-area-skip { font-size:11px; color:var(--text-muted); font-style:italic; margin-bottom:8px; }
 
 /* WAYPOINT LIST */
 #wp-list { display:flex; flex-direction:column; gap:5px; margin-bottom:8px; }
@@ -740,14 +742,15 @@ select option { background:var(--surface2); }
 
     <!-- WAYPOINTS -->
     <div class="sec">
-      <div class="sec-title">Trip Routing</div>
+      <div class="sec-title"><span class="sec-title-step">STEP 1 ·</span> Trip Routing</div>
       <div id="routingIntro">
         <div style="text-align:center;margin:14px 0;color:var(--text-muted);font-size:16px;font-weight:bold;letter-spacing:2px">CHOOSE ORIGIN</div>
       </div>
 
       <!-- Program Area Shortcuts -->
       <div>
-        <div class="fbo-title" style="margin-bottom:5px">Select a Program Area</div>
+        <div class="fbo-title" style="margin-bottom:3px">Select a Program Area</div>
+        <div class="prog-area-skip">Not in a program area? Skip this — just click the map or enter an origin below.</div>
         <select id="metroAreaSelect" onchange="onMetroAreaChange()" style="width:100%;margin-bottom:6px">
           <option value="">— Choose area —</option>
         </select>
@@ -789,7 +792,7 @@ select option { background:var(--surface2); }
 
     <!-- AIRCRAFT -->
     <div class="sec">
-      <div class="sec-title">Aircraft</div>
+      <div class="sec-title"><span class="sec-title-step">STEP 2 ·</span> Aircraft</div>
       <div class="map-hint" id="acHelperHint" style="text-align:center;margin-bottom:8px">Select an aircraft type below to get started</div>
       <!-- Owner / Lessee toggle — always visible -->
       <div id="userTypeRow" style="display:none;gap:4px;margin-bottom:8px">
@@ -918,7 +921,7 @@ select option { background:var(--surface2); }
 
     <!-- COST INPUTS -->
     <div class="sec">
-      <div class="sec-title">Trip Cost</div>
+      <div class="sec-title"><span class="sec-title-step">STEP 3 ·</span> Trip Cost</div>
       <div class="cost-row" id="acCostRow" style="display:none">
         <label class="cost-lbl">Aircraft ($/hr)</label>
         <input enterkeyhint="done" inputmode="decimal" type="number" id="costAcPerHr" class="cost-input" placeholder="—" min="0" oninput="recalc()">
@@ -1276,7 +1279,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.7';
+var APP_VERSION = 'v2026-05-05.8';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
