@@ -918,7 +918,10 @@ select option { background:var(--surface2); }
 
     <!-- COST INPUTS -->
     <div class="sec">
-      <div class="sec-title"><span class="sec-title-step">STEP 3 ·</span> Trip Cost</div>
+      <button class="legs-toggle" id="costToggleBtn" onclick="toggleCostPane()" style="width:100%;text-align:left;margin-bottom:0">
+        &#x25BC; <span class="sec-title-step">STEP 3 ·</span> <span style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Trip Cost</span> <span style="font-size:10px;color:var(--text-muted);font-style:italic;letter-spacing:0;text-transform:none;font-family:sans-serif">&nbsp;optional</span>
+      </button>
+      <div id="costPaneContent" style="display:none;margin-top:8px">
       <div class="cost-row" id="acCostRow" style="display:none">
         <label class="cost-lbl">Aircraft ($/hr)</label>
         <input enterkeyhint="done" inputmode="decimal" type="number" id="costAcPerHr" class="cost-input" placeholder="—" min="0" oninput="recalc()">
@@ -950,6 +953,7 @@ select option { background:var(--surface2); }
         </div>
       </div>
       <div id="fboList" style="margin-top:6px"></div>
+      </div><!-- /costPaneContent -->
     </div>
 
     <!-- RESULTS -->
@@ -1276,7 +1280,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.11';
+var APP_VERSION = 'v2026-05-05.12';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -4006,6 +4010,17 @@ var comparisonActive = false;
 var userType = 'owner'; // 'owner' or 'lessee'
 
 var acPaneOpen = false;
+
+var costPaneOpen = false;
+window.toggleCostPane = function() {
+  costPaneOpen = !costPaneOpen;
+  var content = document.getElementById('costPaneContent');
+  var btn = document.getElementById('costToggleBtn');
+  if (content) content.style.display = costPaneOpen ? '' : 'none';
+  if (btn) btn.innerHTML = (costPaneOpen ? '&#x25B2;' : '&#x25BC;') +
+    ' <span class="sec-title-step">STEP 3 ·</span> <span style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Trip Cost</span>' +
+    (costPaneOpen ? '' : ' <span style="font-size:10px;color:var(--text-muted);font-style:italic;letter-spacing:0;text-transform:none;font-family:sans-serif">&nbsp;optional</span>');
+};
 
 window.toggleAircraftPane = function() {
   acPaneOpen = !acPaneOpen;
