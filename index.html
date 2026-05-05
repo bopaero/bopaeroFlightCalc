@@ -464,6 +464,8 @@ select option { background:var(--surface2); }
   .hdr-right .pulse { display:inline-block; }
   .sidebar-footer { display:none; }
   .results-footer { display:flex; }
+  .airports-live-label { display:flex; flex-direction:column; align-items:flex-end; line-height:1.2; }
+  .al-live { letter-spacing:2px; }
 
   .layout { flex-direction:column; flex:1; position:relative; }
 
@@ -736,7 +738,7 @@ select option { background:var(--surface2); }
     </div>
     <a href="guide.html" class="guide-link guide-mobile-only">User Guide</a>
     <div class="hdr-right">
-      <span><span class="pulse"></span>AIRPORTS LIVE</span>
+      <span class="airports-live-label"><span class="pulse"></span><span class="al-airports">AIRPORTS</span><span class="al-live"> LIVE</span></span>
     </div>
   </div>
 </header>
@@ -1294,7 +1296,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.22';
+var APP_VERSION = 'v2026-05-05.23';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
