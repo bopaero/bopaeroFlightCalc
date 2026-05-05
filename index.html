@@ -98,7 +98,7 @@ header {
   .guide-desktop-only { display:none !important; }
   .guide-mobile-only { display:inline; }
 }
-#nasrCycle { text-shadow:0 0.5px 0 #000; }
+#nasrCycle, #nasrCycleMobile { text-shadow:0 0.5px 0 #000; }
 .pulse { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent2); margin-right:6px; animation:blink 2s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
@@ -111,6 +111,16 @@ header {
 }
 .sidebar::-webkit-scrollbar { width:3px; }
 .sidebar::-webkit-scrollbar-thumb { background:var(--border-bright); }
+.sidebar-footer {
+  margin-top:auto; padding:10px 16px; border-top:1px solid var(--border);
+  font-family:var(--mono); font-size:10px; color:var(--text-muted);
+  display:flex; gap:12px; flex-shrink:0;
+}
+.results-footer {
+  display:none; padding:12px 16px; border-top:1px solid var(--border);
+  font-family:var(--mono); font-size:11px; color:var(--text-muted);
+  gap:12px; margin-top:8px;
+}
 
 .sec { padding:14px 16px; border-bottom:1px solid var(--border); }
 .sec-title {
@@ -452,9 +462,8 @@ select option { background:var(--surface2); }
   .logo-title { font-size:17px; letter-spacing:1px; }
   .guide-link { font-size:10px; padding:2px 6px; }
   .hdr-right .pulse { display:inline-block; }
-  .hdr-right { flex-direction:column; align-items:flex-end; gap:2px; }
-  .hdr-right span:not(:first-child) { display:none; } /* hide clock/version on mobile */
-  .hdr-right #nasrCycle { display:inline; font-size:9px; } /* show NASR status on mobile */
+  .sidebar-footer { display:none; }
+  .results-footer { display:flex; }
 
   .layout { flex-direction:column; flex:1; position:relative; }
 
@@ -728,9 +737,6 @@ select option { background:var(--surface2); }
     <a href="guide.html" class="guide-link guide-mobile-only">User Guide</a>
     <div class="hdr-right">
       <span><span class="pulse"></span>AIRPORTS LIVE</span>
-      <span id="clk">--:--:-- UTC</span>
-      <span id="nasrCycle" style="color:var(--text-muted)">NASR: --</span>
-      <span id="appVersion" style="color:var(--text-muted)">v2026-04-19.16</span>
     </div>
   </div>
 </header>
@@ -1010,8 +1016,16 @@ select option { background:var(--surface2); }
         </div>
 
       </div>
+      <div class="results-footer" id="resultsFooter">
+        <span id="nasrCycleMobile">NASR: --</span>
+        <span id="appVersionMobile"></span>
+      </div>
     </div>
 
+    <div class="sidebar-footer" id="sidebarFooter">
+      <span id="nasrCycle">NASR: --</span>
+      <span id="appVersion">v2026-04-19.16</span>
+    </div>
   </div>
 
   <!-- MAP -->
@@ -1280,8 +1294,16 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.21';
-(function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
+var APP_VERSION = 'v2026-05-05.22';
+(function(){
+  ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
+})();
+function setNasrText(text, color) {
+  ['nasrCycle','nasrCycleMobile'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) { el.textContent = text; el.style.color = color || ''; }
+  });
+}
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
 (function(){
@@ -3145,8 +3167,7 @@ var CITY_CACHE = null;
       // Keep using fallback — already initialized above
       OA_READY = true;
       console.log('OurAirports fetch failed, using fallback:', e.message || e);
-      var el = document.getElementById('nasrCycle');
-      if (el) { el.textContent = 'DB: LIMITED (30 AIRPORTS)'; el.style.color = '#ff4444'; }
+      setNasrText('DB: LIMITED (30 AIRPORTS)', '#ff4444');
     });
 })();
 
@@ -3264,24 +3285,14 @@ var FAA_FUEL_MAP = {};    // LOCATION_ID → fuel types string
     .then(function(txt) {
       var dateStr = txt.trim();
       if (dateStr) {
-        var el = document.getElementById('nasrCycle');
-        if (el) {
-          el.textContent = 'NASR: ' + dateStr;
-          // Determine freshness: compare data cycle to current cycle
-          var anchor = new Date('2021-01-28');
+        var anchor = new Date('2021-01-28');
           var now = new Date();
           var currentCycles = Math.floor((now - anchor) / (28 * 86400000));
           var dataCycleDate = new Date(dateStr + 'T00:00:00');
           var dataCycles = Math.round((dataCycleDate - anchor) / (28 * 86400000));
           var cyclesOld = currentCycles - dataCycles;
-          if (cyclesOld <= 0) {
-            el.style.color = '#00d46a'; // green — current
-          } else if (cyclesOld === 1) {
-            el.style.color = '#f59e0b'; // amber — one cycle old
-          } else {
-            el.style.color = '#ff4444'; // red — two or more cycles old
-          }
-        }
+          var nasrColor = cyclesOld <= 0 ? '#00d46a' : cyclesOld === 1 ? '#f59e0b' : '#ff4444';
+          setNasrText('NASR: ' + dateStr, nasrColor);
       }
     })
     .catch(function() {});
@@ -3315,8 +3326,7 @@ var FAA_FUEL_MAP = {};    // LOCATION_ID → fuel types string
     .catch(function(e) {
       console.log('FAA public-use DB load failed:', e.message || e, '— keeping local_code filter');
       FAA_PUBLIC_SET = new Set(); // empty set = fall back to local_code filter only
-      var el = document.getElementById('nasrCycle');
-      if (el) { el.textContent = 'NASR: OFFLINE (FAA)'; el.style.color = '#f59e0b'; }
+      setNasrText('NASR: OFFLINE (FAA)', '#f59e0b');
     });
 
   // Load per-airport fuel types
@@ -5753,13 +5763,6 @@ window.toggleLegs = function(id) {
 
 function truncate(str,n){ return str&&str.length>n?str.substring(0,n-1)+'\u2026':str||'—'; }
 
-// ── UTC CLOCK ─────────────────────────────────────────────────────────────────
-function tick(){
-  var n=new Date();
-  document.getElementById('clk').textContent=
-    ('0'+n.getUTCHours()).slice(-2)+':'+('0'+n.getUTCMinutes()).slice(-2)+':'+('0'+n.getUTCSeconds()).slice(-2)+' UTC';
-}
-setInterval(tick,1000); tick();
 
 // ── PROGRAM AREA FAVORITES ───────────────────────────────────────────────────
 var METRO_AREAS = {
