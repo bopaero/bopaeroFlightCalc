@@ -919,7 +919,7 @@ select option { background:var(--surface2); }
     <!-- COST INPUTS -->
     <div class="sec">
       <button class="legs-toggle" id="costToggleBtn" onclick="toggleCostPane()" style="width:100%;text-align:left;margin-bottom:0">
-        &#x25BC; <span style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Trip Cost</span>
+        &#x25BC; <span class="sec-title-step">STEP 3 ·</span> <span style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Trip Cost</span>
       </button>
       <div id="costPaneContent" style="display:none;margin-top:8px">
       <div class="cost-row" id="acCostRow" style="display:none">
@@ -958,7 +958,7 @@ select option { background:var(--surface2); }
 
     <!-- RESULTS -->
     <div class="results-wrap">
-      <div class="sec-title"><span class="sec-title-step">STEP 3 ·</span> Results</div>
+      <div class="sec-title">Flight Time Results</div>
       <div class="empty-msg" id="emptyMsg">ADD STOPS &amp; SELECT AIRCRAFT<br>TO COMPUTE FLIGHT TIMES</div>
       <div id="resultsOut" style="display:none">
 
@@ -1280,7 +1280,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.13';
+var APP_VERSION = 'v2026-05-05.14';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -4018,7 +4018,7 @@ window.toggleCostPane = function() {
   var btn = document.getElementById('costToggleBtn');
   if (content) content.style.display = costPaneOpen ? '' : 'none';
   if (btn) btn.innerHTML = (costPaneOpen ? '&#x25B2;' : '&#x25BC;') +
-    ' <span style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Trip Cost</span>';
+    ' <span class="sec-title-step">STEP 3 ·</span> <span style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Trip Cost</span>';
 };
 
 window.toggleAircraftPane = function() {
