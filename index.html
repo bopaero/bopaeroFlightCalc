@@ -842,6 +842,11 @@ select option { background:var(--surface2); }
             </div>
             <button class="pax-done-btn" onclick="dismissPaxPopup()" style="margin-top:10px">Done</button>
           </div>
+          <div class="payload-row" id="bewRow" style="margin-top:8px">
+            <label>Basic Empty Wt</label>
+            <input enterkeyhint="done" inputmode="decimal" type="number" id="payloadBew" min="500" max="20000" onfocus="onBewFocus()" oninput="onPayloadDetailInput()">
+            <span class="spd-unit">lbs</span>
+          </div>
           <div id="payloadBar" class="payload-bar" onclick="togglePayloadDetails()" style="display:none">
             <span class="payload-bar-stat" id="payloadBarPayload">Payload: — lbs</span>
             <span class="payload-bar-stat" id="payloadBarFuel">Fuel avail: — gal</span>
@@ -1271,7 +1276,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.5';
+var APP_VERSION = 'v2026-05-05.6';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -4305,12 +4310,11 @@ function renderPayloadInputs(spdKey) {
   if (paxPanel && placed.length > 0 && !paxPopupDismissed) { paxPanel.style.display = ''; paxPanel.style.animation = ''; void paxPanel.offsetWidth; paxPanel.style.animation = null; }
 
   _bewWarned = false;
+  var bewInp = document.getElementById('payloadBew');
+  if (bewInp) bewInp.value = w.emptyWt;
 
   // Build itemized weight inputs
-  var html = '<div class="payload-row"><label style="color:var(--text-muted)">Basic Empty Weight</label>' +
-    '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadBew" min="500" max="20000" value="' + w.emptyWt + '" onfocus="onBewFocus()" oninput="onPayloadDetailInput()">' +
-    '<span class="spd-unit">lbs</span></div>' +
-    '<div style="border-top:1px solid var(--border);margin:4px 0 6px"></div>';
+  var html = '';
   w.seats.forEach(function(s, i) {
     html += '<div class="payload-row"><label>' + s.label + '</label>' +
       '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadSeat_' + i + '" min="0" max="' + s.max + '" value="' + s.default + '" oninput="onPayloadDetailInput()">' +
@@ -6165,7 +6169,9 @@ function serializeState() {
   });
   // Seat/baggage weight inputs
   var weights = {};
-  document.querySelectorAll('#payloadInputs input[id^="payloadSeat_"], #payloadInputs input[id^="payloadBag_"], #payloadInputs input[id="payloadTks"], #payloadInputs input[id="payloadBew"]').forEach(function(el) {
+  var bewEl = document.getElementById('payloadBew');
+  if (bewEl) weights['payloadBew'] = bewEl.value;
+  document.querySelectorAll('#payloadInputs input[id^="payloadSeat_"], #payloadInputs input[id^="payloadBag_"], #payloadInputs input[id="payloadTks"]').forEach(function(el) {
     weights[el.id] = el.value;
   });
   return {
