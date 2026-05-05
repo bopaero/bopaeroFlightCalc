@@ -375,7 +375,13 @@ select option { background:var(--surface2); }
   .confirm-overlay { align-items:flex-end; padding-bottom:88px; }
   .confirm-box { width:100%; max-width:100%; border-radius:14px 14px 0 0; border-width:2px 0 0 0; }
 }
-.payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:6px 0 0; text-align:center; }
+.payload-bar { display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding:6px 8px; background:var(--panel-bg,rgba(255,255,255,0.04)); border:1px solid var(--border); border-radius:4px; cursor:pointer; gap:6px; }
+.payload-bar:hover { border-color:var(--accent); }
+.payload-bar-stat { font-size:11px; color:var(--text-muted); white-space:nowrap; }
+.payload-bar-stat span { color:var(--text); font-family:var(--mono); }
+.payload-bar-stat.over span { color:#ff4444; font-weight:bold; }
+.payload-bar-arrow { font-size:10px; color:var(--text-muted); flex-shrink:0; }
+.payload-details-btn { width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; padding:4px 0 0; text-align:center; }
 .payload-details-btn:hover { color:var(--accent); }
 .custom-fields { margin-top:6px; display:flex; flex-direction:column; gap:5px; }
 
@@ -527,6 +533,7 @@ select option { background:var(--surface2); }
   .payload-summary { font-size:14px; }
   .payload-std-btn { font-size:14px; }
   .payload-details-btn { font-size:14px; }
+  .payload-bar-stat { font-size:14px; }
   .legs-table { font-size:13px; }
   .legs-table th { font-size:12px; }
   .dist-lbl { font-size:13px; }
@@ -818,6 +825,11 @@ select option { background:var(--surface2); }
               <input type="checkbox" id="luggageTogglePanel" checked onchange="applyPaxToPayload()">
             </div>
             <button class="pax-done-btn" onclick="dismissPaxPopup()" style="margin-top:10px">Done</button>
+          </div>
+          <div id="payloadBar" class="payload-bar" onclick="togglePayloadDetails()" style="display:none">
+            <span class="payload-bar-stat" id="payloadBarPayload">Payload: — lbs</span>
+            <span class="payload-bar-stat" id="payloadBarFuel">Fuel avail: — gal</span>
+            <span class="payload-bar-arrow" id="payloadBarArrow">▼</span>
           </div>
           <button class="payload-details-btn" id="payloadDetailsBtn" onclick="togglePayloadDetails()">▼ Weight details</button>
           <div id="payloadDetails" style="display:none">
@@ -1238,7 +1250,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-03.33';
+var APP_VERSION = 'v2026-05-05.34';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -4206,6 +4218,22 @@ function updatePayloadSummary(spdKey) {
   html += 'Avail fuel: ' + (overweight ? '<span class="over">OVERWEIGHT</span>' : Math.round(availFuelGal) + ' gal (– ' + mrcGph + ' rsv)');
   html += '<br>Range: ' + (overweight ? '<span class="over">0 mi</span>' : Math.round(range) + ' mi');
   summary.innerHTML = html;
+
+  var bar = document.getElementById('payloadBar');
+  var barPayload = document.getElementById('payloadBarPayload');
+  var barFuel = document.getElementById('payloadBarFuel');
+  if (bar) {
+    bar.style.display = 'flex';
+    if (barPayload) {
+      barPayload.innerHTML = 'Payload: <span>' + Math.round(totalPayload) + ' lbs</span>';
+      barPayload.className = 'payload-bar-stat' + (overweight ? ' over' : '');
+    }
+    if (barFuel) {
+      barFuel.innerHTML = overweight
+        ? '<span style="color:#ff4444;font-weight:bold">OVERWEIGHT</span>'
+        : 'Fuel avail: <span>' + Math.round(availFuelGal) + ' gal</span>';
+    }
+  }
 }
 
 function renderPayloadInputs(spdKey) {
@@ -4380,9 +4408,11 @@ window.dismissPaxPopup = function() {
 window.togglePayloadDetails = function() {
   var details = document.getElementById('payloadDetails');
   var btn = document.getElementById('payloadDetailsBtn');
+  var arrow = document.getElementById('payloadBarArrow');
   var open = details.style.display !== 'none';
   details.style.display = open ? 'none' : 'block';
   btn.textContent = (open ? '▼' : '▲') + ' Weight details';
+  if (arrow) arrow.textContent = open ? '▼' : '▲';
 };
 
 function clearRangeLabel() {
