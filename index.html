@@ -844,7 +844,7 @@ select option { background:var(--surface2); }
           </div>
           <div class="payload-row" id="bewRow" style="margin-top:8px">
             <label>Basic Empty Wt</label>
-            <input enterkeyhint="done" inputmode="decimal" type="number" id="payloadBew" min="500" max="20000" onfocus="onBewFocus()" oninput="onPayloadDetailInput()">
+            <input enterkeyhint="done" inputmode="decimal" type="number" id="payloadBew" min="500" max="20000" style="width:72px" onfocus="onBewFocus()" oninput="onPayloadDetailInput()">
             <span class="spd-unit">lbs</span>
           </div>
           <div id="payloadBar" class="payload-bar" onclick="togglePayloadDetails()" style="display:none">
@@ -1276,7 +1276,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.6';
+var APP_VERSION = 'v2026-05-05.7';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -4192,7 +4192,7 @@ var _bewWarned = false;
 window.onBewFocus = function() {
   if (_bewWarned) return;
   _bewWarned = true;
-  showConfirmDialog('BEW is critical to weight and range calculations. Update only with a known aircraft weight.', function(){}, 'OK', 'OK');
+  showConfirmDialog('BEW is critical to weight and range calculations. Update only with a known aircraft weight.', function(){}, 'OK', 'Cancel');
 };
 
 function getEmptyWt(w) {
