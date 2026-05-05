@@ -1271,7 +1271,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.4';
+var APP_VERSION = 'v2026-05-05.5';
 (function(){ var el = document.getElementById('appVersion'); if (el) el.textContent = APP_VERSION; })();
 
 // ── INHIBIT PAGE PINCH-ZOOM (allow Leaflet map only) ─────────────────────────
@@ -4183,6 +4183,19 @@ function airportHasFuel(wp, spdKey) {
 }
 
 // ── PAYLOAD & RANGE CIRCLE ────────────────────────────────────────────────────
+var _bewWarned = false;
+window.onBewFocus = function() {
+  if (_bewWarned) return;
+  _bewWarned = true;
+  showConfirmDialog('BEW is critical to weight and range calculations. Update only with a known aircraft weight.', function(){}, 'OK', 'OK');
+};
+
+function getEmptyWt(w) {
+  var inp = document.getElementById('payloadBew');
+  var val = inp ? parseFloat(inp.value) : NaN;
+  return (!isNaN(val) && val > 0) ? val : w.emptyWt;
+}
+
 function getPayloadTotal() {
   var total = 0;
   var inputs = document.querySelectorAll('#payloadInputs input[type="number"]');
@@ -4200,7 +4213,7 @@ function computePayloadRange(spdKey) {
   var section = document.getElementById('payloadSection');
   if (!section || section.style.display === 'none') return AC_RANGE[spdKey] || null;
   var totalPayload = getPayloadTotal();
-  var availFuelLbs = w.mtow - w.emptyWt - totalPayload;
+  var availFuelLbs = w.mtow - getEmptyWt(w) - totalPayload;
   if (availFuelLbs <= 0) return 0;
   var availFuelGal = Math.min(availFuelLbs / w.fuelDensity, w.maxFuelGal);
   var gphInp = document.getElementById('gphA');
@@ -4222,7 +4235,8 @@ function updatePayloadSummary(spdKey) {
   var status = document.getElementById('payloadStatus');
   if (!summary) return;
   var totalPayload = getPayloadTotal();
-  var totalWt = w.emptyWt + totalPayload;
+  var emptyWt = getEmptyWt(w);
+  var totalWt = emptyWt + totalPayload;
   var availFuelLbs = w.mtow - totalWt;
   var overweight = availFuelLbs < 0;
   var availFuelGal = overweight ? 0 : Math.min(availFuelLbs / w.fuelDensity, w.maxFuelGal);
@@ -4259,7 +4273,7 @@ function updatePayloadSummary(spdKey) {
     }
     if (barNote) {
       barNote.style.display = '';
-      barNote.textContent = 'BEW ' + w.emptyWt + ' lbs' + (w.tksGal != null ? ' · TKS included' : '') + ' · tap for details';
+      barNote.textContent = 'BEW ' + getEmptyWt(w) + ' lbs' + (w.tksGal != null ? ' · TKS included' : '') + ' · tap for details';
     }
   }
 }
@@ -4290,8 +4304,13 @@ function renderPayloadInputs(spdKey) {
   var paxPanel = document.getElementById('paxPanel');
   if (paxPanel && placed.length > 0 && !paxPopupDismissed) { paxPanel.style.display = ''; paxPanel.style.animation = ''; void paxPanel.offsetWidth; paxPanel.style.animation = null; }
 
+  _bewWarned = false;
+
   // Build itemized weight inputs
-  var html = '';
+  var html = '<div class="payload-row"><label style="color:var(--text-muted)">Basic Empty Weight</label>' +
+    '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadBew" min="500" max="20000" value="' + w.emptyWt + '" onfocus="onBewFocus()" oninput="onPayloadDetailInput()">' +
+    '<span class="spd-unit">lbs</span></div>' +
+    '<div style="border-top:1px solid var(--border);margin:4px 0 6px"></div>';
   w.seats.forEach(function(s, i) {
     html += '<div class="payload-row"><label>' + s.label + '</label>' +
       '<input enterkeyhint="done" inputmode="decimal" type="number" id="payloadSeat_' + i + '" min="0" max="' + s.max + '" value="' + s.default + '" oninput="onPayloadDetailInput()">' +
@@ -6146,7 +6165,7 @@ function serializeState() {
   });
   // Seat/baggage weight inputs
   var weights = {};
-  document.querySelectorAll('#payloadInputs input[id^="payloadSeat_"], #payloadInputs input[id^="payloadBag_"], #payloadInputs input[id="payloadTks"]').forEach(function(el) {
+  document.querySelectorAll('#payloadInputs input[id^="payloadSeat_"], #payloadInputs input[id^="payloadBag_"], #payloadInputs input[id="payloadTks"], #payloadInputs input[id="payloadBew"]').forEach(function(el) {
     weights[el.id] = el.value;
   });
   return {
