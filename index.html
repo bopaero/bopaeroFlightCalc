@@ -1296,7 +1296,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-06.1';
+var APP_VERSION = 'v2026-05-07.1';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -6004,14 +6004,18 @@ function syncPull(cb) {
     // Apply cloud settings if they are newer than local settings.
     // If cloud has no timestamp (older client pushed without one), apply anyway —
     // unknown timestamp means we can't prove local is newer.
+    // Use _saveSettingsLocalRaw so we preserve the cloud timestamp — never stamp
+    // desktop's Date.now() here, which would inflate the timestamp and block
+    // future mobile saves from being recognised as newer.
     if (cloud.settings && Object.keys(cloud.settings).length) {
       var localSettings = loadSettings();
       var localTs = localSettings.updatedAt || 0;
       var cloudTs = cloud.settings.updatedAt || 0;
       var cloudIsNewer = (cloudTs === 0) ? true : (cloudTs >= localTs);
       if (cloudIsNewer) {
-        _saveSettingsLocal(cloud.settings);
+        _saveSettingsLocalRaw(cloud.settings);
         applySettings(cloud.settings);
+        if (typeof _stgToast === 'function') _stgToast('&#x2193; Settings synced');
       }
     }
 
@@ -6056,11 +6060,11 @@ window.syncDoRedeem = function() {
       try { localStorage.setItem(SYNC_TOKEN_KEY, d.syncToken); } catch(e) {}
       var inp = document.getElementById('syncLinkCodeInput');
       if (inp) inp.value = '';
-      // Clear local updatedAt so cloud settings always win on explicit link
-      try { var _ls = loadSettings(); _ls.updatedAt = 0; localStorage.setItem(SETTINGS_KEY, JSON.stringify(_ls)); } catch(e) {}
+      // Delete local updatedAt so cloud always wins on explicit link
+      try { var _ls = loadSettings(); delete _ls.updatedAt; localStorage.setItem(SETTINGS_KEY, JSON.stringify(_ls)); } catch(e) {}
       syncPull(function(pulled) {
         if (typeof _renderTripList === 'function') _renderTripList();
-        _stgToast(pulled ? '&#x2713; Account linked &mdash; your trips are ready' : '&#x2713; Account linked');
+        _stgToast('&#x2713; Account linked');
       });
     } else {
       if (errEl) { errEl.textContent = 'Code not found or expired. Try again.'; errEl.style.display = ''; }
@@ -6086,12 +6090,12 @@ window.syncDoRedeemStg = function() {
     if (d.syncToken) {
       try { localStorage.setItem(SYNC_TOKEN_KEY, d.syncToken); } catch(e) {}
       input.value = '';
-      // Clear local updatedAt so cloud settings always win on explicit link
-      try { var _ls2 = loadSettings(); _ls2.updatedAt = 0; localStorage.setItem(SETTINGS_KEY, JSON.stringify(_ls2)); } catch(e) {}
+      // Delete local updatedAt so cloud always wins on explicit link
+      try { var _ls2 = loadSettings(); delete _ls2.updatedAt; localStorage.setItem(SETTINGS_KEY, JSON.stringify(_ls2)); } catch(e) {}
       syncPull(function(pulled) {
         if (typeof _renderTripList === 'function') _renderTripList();
         closeSettings();
-        _stgToast(pulled ? '&#x2713; Account linked &mdash; your trips are ready' : '&#x2713; Account linked');
+        _stgToast('&#x2713; Account linked');
       });
     } else {
       if (errEl) { errEl.textContent = 'Code not found or expired. Try again.'; errEl.style.display = ''; }
@@ -6471,6 +6475,11 @@ function loadSettings() {
 
 function _saveSettingsLocal(s) {
   s.updatedAt = Date.now();
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
+}
+// Saves settings without touching updatedAt — used by syncPull so the cloud
+// timestamp is preserved and not inflated to local Date.now().
+function _saveSettingsLocalRaw(s) {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
 }
 
