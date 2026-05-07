@@ -1296,7 +1296,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-07.1';
+var APP_VERSION = 'v2026-05-07.2';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -6001,22 +6001,13 @@ function syncPull(cb) {
       if (added) _putSavesLocal(merged);
     }
 
-    // Apply cloud settings if they are newer than local settings.
-    // If cloud has no timestamp (older client pushed without one), apply anyway —
-    // unknown timestamp means we can't prove local is newer.
-    // Use _saveSettingsLocalRaw so we preserve the cloud timestamp — never stamp
-    // desktop's Date.now() here, which would inflate the timestamp and block
-    // future mobile saves from being recognised as newer.
+    // Always apply cloud settings — cloud is the source of truth.
+    // Timestamps proved too fragile (clock skew, old cached clients, inflated
+    // timestamps from prior pull cycles). Since syncPush immediately follows and
+    // re-uploads the same cloud settings unchanged, there is no data loss.
     if (cloud.settings && Object.keys(cloud.settings).length) {
-      var localSettings = loadSettings();
-      var localTs = localSettings.updatedAt || 0;
-      var cloudTs = cloud.settings.updatedAt || 0;
-      var cloudIsNewer = (cloudTs === 0) ? true : (cloudTs >= localTs);
-      if (cloudIsNewer) {
-        _saveSettingsLocalRaw(cloud.settings);
-        applySettings(cloud.settings);
-        if (typeof _stgToast === 'function') _stgToast('&#x2193; Settings synced');
-      }
+      _saveSettingsLocalRaw(cloud.settings);
+      applySettings(cloud.settings);
     }
 
     _updateSyncBadge(true);
@@ -6060,8 +6051,6 @@ window.syncDoRedeem = function() {
       try { localStorage.setItem(SYNC_TOKEN_KEY, d.syncToken); } catch(e) {}
       var inp = document.getElementById('syncLinkCodeInput');
       if (inp) inp.value = '';
-      // Delete local updatedAt so cloud always wins on explicit link
-      try { var _ls = loadSettings(); delete _ls.updatedAt; localStorage.setItem(SETTINGS_KEY, JSON.stringify(_ls)); } catch(e) {}
       syncPull(function(pulled) {
         if (typeof _renderTripList === 'function') _renderTripList();
         _stgToast('&#x2713; Account linked');
@@ -6090,8 +6079,6 @@ window.syncDoRedeemStg = function() {
     if (d.syncToken) {
       try { localStorage.setItem(SYNC_TOKEN_KEY, d.syncToken); } catch(e) {}
       input.value = '';
-      // Delete local updatedAt so cloud always wins on explicit link
-      try { var _ls2 = loadSettings(); delete _ls2.updatedAt; localStorage.setItem(SETTINGS_KEY, JSON.stringify(_ls2)); } catch(e) {}
       syncPull(function(pulled) {
         if (typeof _renderTripList === 'function') _renderTripList();
         closeSettings();
