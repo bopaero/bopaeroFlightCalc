@@ -1296,7 +1296,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-05.30';
+var APP_VERSION = 'v2026-05-06.1';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -6001,12 +6001,15 @@ function syncPull(cb) {
       if (added) _putSavesLocal(merged);
     }
 
-    // Apply cloud settings if they are newer than local settings
+    // Apply cloud settings if they are newer than local settings.
+    // If cloud has no timestamp (older client pushed without one), apply anyway —
+    // unknown timestamp means we can't prove local is newer.
     if (cloud.settings && Object.keys(cloud.settings).length) {
       var localSettings = loadSettings();
       var localTs = localSettings.updatedAt || 0;
       var cloudTs = cloud.settings.updatedAt || 0;
-      if (cloudTs >= localTs) {
+      var cloudIsNewer = (cloudTs === 0) ? true : (cloudTs >= localTs);
+      if (cloudIsNewer) {
         _saveSettingsLocal(cloud.settings);
         applySettings(cloud.settings);
       }
