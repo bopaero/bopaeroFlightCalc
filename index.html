@@ -1273,6 +1273,15 @@ select option { background:var(--surface2); }
       <p id="syncLinkErrorStg" style="color:#f55;font-size:12px;margin:6px 0 0;display:none">Code not found or expired. Try again.</p>
     </div>
 
+    <div id="syncDebugPanel" style="border-top:1px solid var(--border);margin:4px 0 12px;padding-top:12px;font-size:11px;color:var(--text-muted)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="text-transform:uppercase;letter-spacing:.06em">Sync Debug</span>
+        <span id="syncTokenDisplay" style="font-family:var(--mono);letter-spacing:.05em">—</span>
+      </div>
+      <button onclick="syncCheckCloud()" class="trips-btn" style="width:100%;margin:0 0 6px;padding:6px">Check Cloud Data</button>
+      <pre id="syncDebugOut" style="margin:0;font-size:10px;white-space:pre-wrap;word-break:break-all;color:var(--text-muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:6px;max-height:120px;overflow-y:auto;display:none"></pre>
+    </div>
+
     <button onclick="resetSettings()" style="width:100%;padding:8px;background:none;color:var(--red,#ff4444);border:1px solid var(--red,#ff4444);border-radius:6px;font-family:var(--mono);font-size:12px;cursor:pointer;margin-bottom:8px;letter-spacing:.5px">&#x2715; Reset All Settings</button>
     <button onclick="saveSettings()" style="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px">Save Settings</button>
   </div>
@@ -1296,7 +1305,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-07.2';
+var APP_VERSION = 'v2026-05-07.3';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -6022,6 +6031,32 @@ function _putSavesLocal(arr) {
   try { localStorage.setItem(SAVES_KEY, JSON.stringify(arr)); } catch(e) {}
 }
 
+window.syncCheckCloud = function() {
+  var out = document.getElementById('syncDebugOut');
+  if (!out) return;
+  out.style.display = '';
+  out.textContent = 'Fetching…';
+  var token = _syncToken();
+  if (!token) { out.textContent = 'No sync token on this device.'; return; }
+  fetch(SYNC_WORKER + '/data', { headers: { 'X-Sync-Token': token } })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) {
+      if (!d) { out.textContent = 'No data in cloud (empty response).'; return; }
+      var s = d.settings || {};
+      var lines = [
+        'Token (last 8): …' + token.replace(/-/g,'').slice(-8).toUpperCase(),
+        'Cloud updatedAt: ' + (s.updatedAt || '(none)'),
+        'Aircraft: ' + (s.aircraft || '(none)'),
+        'Pax: ' + (s.pax || '(none)'),
+        'Origin: ' + (s.origin && s.origin.icao ? s.origin.icao : '(none)'),
+        'Local updatedAt: ' + (loadSettings().updatedAt || '(none)'),
+        'Trips in cloud: ' + (Array.isArray(d.trips) ? d.trips.length : 0),
+      ];
+      out.textContent = lines.join('\n');
+    })
+    .catch(function(e) { out.textContent = 'Fetch error: ' + e; });
+};
+
 function _updateSyncBadge(ok) {
   var el = document.getElementById('syncStatusBadge');
   if (!el) return;
@@ -6597,6 +6632,12 @@ function applyDefaultOrigin(origin) {
 
 function openSettings() {
   if (isMobile()) mobileTab('plan');
+  // Show last 8 chars of sync token so user can compare across devices
+  var tok = _syncToken ? _syncToken() : null;
+  var tokEl = document.getElementById('syncTokenDisplay');
+  if (tokEl) tokEl.textContent = tok ? ('Token: …' + tok.replace(/-/g,'').slice(-8).toUpperCase()) : 'No token';
+  var dbgOut = document.getElementById('syncDebugOut');
+  if (dbgOut) dbgOut.style.display = 'none';
   var s = loadSettings();
   _stgOriginResolved = s.origin || null;
   _stgAircraft       = s.aircraft || null;
