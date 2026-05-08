@@ -820,28 +820,30 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
       <h2>Cloud Sync</h2>
       <p>TripCalc automatically backs up your saved trips and settings to the cloud every time you save. Nothing to configure — it happens silently in the background.</p>
 
-      <h3>Accessing Your Trips on Another Device</h3>
-      <p>To bring your trips to a second phone, tablet, or computer:</p>
+      <h3>Linking Two Devices</h3>
+      <p>To sync between a phone, tablet, or computer:</p>
       <ol class="steps">
-        <li>On your <strong>existing device</strong>, open the <strong>💾 Trips</strong> modal and scroll to the <strong>Link Another Device</strong> section. Tap <strong>Get Sync Code</strong>.</li>
-        <li>A unique 8-character code appears (e.g. <code>AEFA-W3QL</code>). Tap it to copy. The code is valid for <strong>10 minutes</strong>.</li>
-        <li>On your <strong>new device</strong>, open TripCalc and go to <strong>💾 Trips → Link Another Device</strong>. Enter the code in the <em>Have a code from another device?</em> field and tap <strong>Restore</strong>.</li>
-        <li>Your trips will appear in the Trips list on the new device automatically.</li>
+        <li>On the device <strong>whose data you want to keep</strong> (e.g. your phone), open <strong>⚙ Settings</strong> and tap <strong>Get Sync Code</strong>. A unique 8-character code appears (e.g. <code>AEFA-W3QL</code>). Tap it to copy. The code is valid for <strong>10 minutes</strong>.</li>
+        <li>On the <strong>other device</strong> (e.g. your desktop), open <strong>⚙ Settings</strong>, enter the code in the <em>Have a code from another device?</em> field, and tap <strong>Restore</strong>.</li>
+        <li>The second device adopts the first device's sync token and immediately pulls all trips and settings from the cloud.</li>
       </ol>
 
       <div class="callout note">
         <div class="callout-icon">&#9432;</div>
-        <p>The same Link Another Device section is also available in <strong>⚙ Settings</strong> — useful if you want to link before saving any trips.</p>
+        <p><strong>Direction matters.</strong> The device that <em>enters</em> the code switches to the other device's cloud slot. Always generate the code on the device that already has the data you want — then enter it on the device you're adding.</p>
       </div>
 
-      <h3>How It Works</h3>
-      <p>Each device has a silent sync token stored in browser storage. When you save a trip or change settings, a copy is pushed to the cloud. When you open the app, the latest cloud data is merged into your local storage — so trips saved on any linked device are always available everywhere.</p>
-      <p>Linking two devices gives them the same sync token, so they share a single pool of trips and settings going forward. Any trip saved on either device will appear on the other the next time the app is opened.</p>
+      <h3>How Settings Sync Works</h3>
+      <p>Cloud is the source of truth for settings. Whenever you open the app on any linked device, it pulls the latest settings from the cloud and applies them. Changes you save on one device are available on all others the next time they're opened or refreshed.</p>
 
       <div class="callout tip">
         <div class="callout-icon">&#128161;</div>
-        <p>You can link as many devices as you like — just generate a fresh code from any already-linked device each time.</p>
+        <p>You can link as many devices as you like — generate a fresh code from any already-linked device each time.</p>
       </div>
+
+      <h3>If Devices Fall Out of Sync</h3>
+      <p>Open <strong>⚙ Settings</strong> on both devices and compare the <strong>Token</strong> shown in the Sync Debug section at the bottom. If the last 8 characters don't match, the devices are no longer sharing a cloud slot — re-link using the steps above.</p>
+      <p>This can happen if a browser clears its local storage (common on iOS Safari). TripCalc now stores the sync token in both browser storage and a long-lived cookie to reduce how often this occurs.</p>
     </section>
 
     <!-- EXPORT -->
