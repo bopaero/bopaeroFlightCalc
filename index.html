@@ -1305,7 +1305,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-05-07.3';
+var APP_VERSION = 'v2026-05-07.4';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -5953,8 +5953,33 @@ var SYNC_WORKER    = 'https://tripcalc-sync.compilotrc.workers.dev';
 var SYNC_TOKEN_KEY = 'tripcalc_sync_token';
 var _syncLinkExpTimer = null;
 
+// Token helpers — store in both localStorage AND a long-lived cookie so iOS
+// Safari purges don't silently generate a new token and break device links.
+function _cookieGet(name) {
+  var m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function _cookieSet(name, val) {
+  // 2-year expiry; SameSite=Lax works for same-origin PWA
+  var exp = new Date(Date.now() + 2 * 365 * 24 * 3600 * 1000).toUTCString();
+  document.cookie = name + '=' + encodeURIComponent(val) + ';expires=' + exp + ';path=/;SameSite=Lax';
+}
+function _syncTokenWrite(t) {
+  try { localStorage.setItem(SYNC_TOKEN_KEY, t); } catch(e) {}
+  try { _cookieSet(SYNC_TOKEN_KEY, t); } catch(e) {}
+}
+
 function _syncToken() {
-  try { return localStorage.getItem(SYNC_TOKEN_KEY) || null; } catch(e) { return null; }
+  // Prefer localStorage; fall back to cookie if localStorage was purged
+  var t = null;
+  try { t = localStorage.getItem(SYNC_TOKEN_KEY); } catch(e) {}
+  if (!t) { try { t = _cookieGet(SYNC_TOKEN_KEY); } catch(e) {} }
+  if (t) {
+    // Re-sync whichever store is missing
+    try { if (!localStorage.getItem(SYNC_TOKEN_KEY)) localStorage.setItem(SYNC_TOKEN_KEY, t); } catch(e) {}
+    try { if (!_cookieGet(SYNC_TOKEN_KEY)) _cookieSet(SYNC_TOKEN_KEY, t); } catch(e) {}
+  }
+  return t || null;
 }
 
 function _ensureSyncToken() {
@@ -5964,7 +5989,7 @@ function _ensureSyncToken() {
     t = (typeof crypto !== 'undefined' && crypto.randomUUID)
         ? crypto.randomUUID()
         : Array.from({length:32}, function() { return Math.floor(Math.random()*16).toString(16); }).join('');
-    localStorage.setItem(SYNC_TOKEN_KEY, t);
+    _syncTokenWrite(t);
   } catch(e) {}
   return t;
 }
@@ -6083,7 +6108,7 @@ window.syncDoRedeem = function() {
   }).then(function(r) { return r.json(); })
   .then(function(d) {
     if (d.syncToken) {
-      try { localStorage.setItem(SYNC_TOKEN_KEY, d.syncToken); } catch(e) {}
+      _syncTokenWrite(d.syncToken);
       var inp = document.getElementById('syncLinkCodeInput');
       if (inp) inp.value = '';
       syncPull(function(pulled) {
@@ -6112,7 +6137,7 @@ window.syncDoRedeemStg = function() {
   }).then(function(r) { return r.json(); })
   .then(function(d) {
     if (d.syncToken) {
-      try { localStorage.setItem(SYNC_TOKEN_KEY, d.syncToken); } catch(e) {}
+      _syncTokenWrite(d.syncToken);
       input.value = '';
       syncPull(function(pulled) {
         if (typeof _renderTripList === 'function') _renderTripList();
