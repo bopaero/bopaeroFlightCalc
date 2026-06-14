@@ -943,6 +943,10 @@ select option { background:var(--surface2); }
         <label class="cost-lbl">Pilot ($/day)</label>
         <input enterkeyhint="done" inputmode="decimal" type="number" id="costPilot" class="cost-input" placeholder="required" min="0" step="100" oninput="recalc()">
       </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
+        <input type="checkbox" id="costPilotIsUser" onchange="onCostPilotIsUserChange()" style="cursor:pointer">
+        <span style="font-size:12px;color:var(--text-muted)">I am the pilot &mdash; pilot cost $0</span>
+      </label>
       <div style="color:var(--text-muted);font-size:9px;margin-bottom:2px;line-height:1.3">Trip days = total reservation or time away from base</div>
       <div class="cost-row">
         <label class="cost-lbl">Flying days</label>
@@ -1023,7 +1027,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-06-14.3</span>
+      <span id="appVersion">v2026-06-14.4</span>
     </div>
   </div>
 
@@ -1295,7 +1299,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-06-14.3';
+var APP_VERSION = 'v2026-06-14.4';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -4069,6 +4073,19 @@ window.setUserType = function(type) {
   recalc();
 };
 
+window.onCostPilotIsUserChange = function() {
+  var checked = document.getElementById('costPilotIsUser').checked;
+  var inp = document.getElementById('costPilot');
+  if (checked) {
+    inp.value = '0';
+    inp.disabled = true;
+  } else {
+    inp.value = '';
+    inp.disabled = false;
+  }
+  recalc();
+};
+
 window.addComparison = function() {
   comparisonActive = true;
   document.getElementById('comparisonWrap').style.display = 'block';
@@ -6269,7 +6286,8 @@ function serializeState() {
     costs: {
       acPerHr:    _elVal('costAcPerHr'),
       consumables:_elVal('costConsumables'),
-      pilot:      _elVal('costPilot'),
+      pilot:         _elVal('costPilot'),
+      pilotIsUser:   document.getElementById('costPilotIsUser').checked,
       tripDays:   _elVal('costTripDays'),
       groundMins: _elVal('groundMinsPerStop')
     },
@@ -6407,6 +6425,10 @@ function restoreState(state) {
     if (c.consumables!== undefined) _setEl('costConsumables',  c.consumables);
     if (c.pilot !== undefined) _setEl('costPilot', c.pilot);
     else if (c.pilotMin !== undefined) _setEl('costPilot', c.pilotMin);
+    if (c.pilotIsUser) {
+      var cpiu = document.getElementById('costPilotIsUser');
+      if (cpiu) { cpiu.checked = true; var pi = document.getElementById('costPilot'); if (pi) { pi.value = '0'; pi.disabled = true; } }
+    }
     if (c.tripDays   !== undefined) _setEl('costTripDays',     c.tripDays);
     if (c.groundMins !== undefined) _setEl('groundMinsPerStop',c.groundMins);
 
@@ -6583,8 +6605,17 @@ function applySettings(s) {
     if (ftEl && ftEl.checked !== !!s.fuelOnly) { ftEl.checked = !!s.fuelOnly; if (typeof onFuelOnlyToggle === 'function') onFuelOnlyToggle(ftEl); }
   }
   // Pilot costs override preset values set by pickAircraft
-  if (s.pilot !== undefined && s.pilot !== null) _setEl('costPilot', String(s.pilot));
-  else if (s.pilotMin !== undefined) _setEl('costPilot', String(s.pilotMin));
+  var costPiuEl = document.getElementById('costPilotIsUser');
+  var costPiInp = document.getElementById('costPilot');
+  if (s.pilotIsUser) {
+    if (costPiuEl) costPiuEl.checked = true;
+    if (costPiInp) { costPiInp.value = '0'; costPiInp.disabled = true; }
+  } else {
+    if (costPiuEl) costPiuEl.checked = false;
+    if (costPiInp) costPiInp.disabled = false;
+    if (s.pilot !== undefined && s.pilot !== null) _setEl('costPilot', String(s.pilot));
+    else if (s.pilotMin !== undefined) _setEl('costPilot', String(s.pilotMin));
+  }
   // Occupants
   var currentPax = parseInt((document.getElementById('paxCountPanel')||{}).textContent) || 1;
   var targetPax  = Math.max(1, s.pax || 1);
