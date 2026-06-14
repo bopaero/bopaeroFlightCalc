@@ -802,7 +802,8 @@ select option { background:var(--surface2); }
       <!-- Owner / Lessee toggle — always visible -->
       <div id="userTypeRow" style="display:none;gap:4px;margin-bottom:8px">
         <button class="layer-btn active" id="btnOwner" onclick="setUserType('owner')">OWNER</button>
-        <button class="layer-btn" id="btnLessee" onclick="setUserType('lessee')">LESSEE</button>
+        <button class="layer-btn" id="btnLessee" onclick="setUserType('lessee')">MONTHLY</button>
+        <button class="layer-btn" id="btnHourly" onclick="setUserType('hourly')">HOURLY</button>
       </div>
       <div id="leaseHoursRow" class="cost-row" style="display:none;margin-bottom:8px">
         <label class="cost-lbl">Lease hrs remaining</label>
@@ -1226,7 +1227,8 @@ select option { background:var(--surface2); }
       <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Role</div>
       <div style="display:flex;gap:6px">
         <button id="stgBtnOwner" onclick="stgPickRole('owner')" class="layer-btn active">Owner</button>
-        <button id="stgBtnLessee" onclick="stgPickRole('lessee')" class="layer-btn">Lessee</button>
+        <button id="stgBtnLessee" onclick="stgPickRole('lessee')" class="layer-btn">Monthly</button>
+        <button id="stgBtnHourly" onclick="stgPickRole('hourly')" class="layer-btn">Hourly</button>
       </div>
     </div>
 
@@ -4034,7 +4036,7 @@ function updateMode(state) {
 
 // ── AIRCRAFT ─────────────────────────────────────────────────────────────────
 var comparisonActive = false;
-var userType = 'owner'; // 'owner' or 'lessee'
+var userType = 'owner'; // 'owner', 'lessee', or 'hourly'
 
 var acPaneOpen = false;
 
@@ -4071,9 +4073,10 @@ window.setUserType = function(type) {
   userType = type;
   document.getElementById('btnOwner').classList.toggle('active', type === 'owner');
   document.getElementById('btnLessee').classList.toggle('active', type === 'lessee');
+  document.getElementById('btnHourly').classList.toggle('active', type === 'hourly');
   document.getElementById('leaseHoursRow').style.display = type === 'lessee' ? 'flex' : 'none';
-  // Show/hide aircraft CPH input
   document.getElementById('acCostRow').style.display = type === 'owner' ? 'none' : 'flex';
+  if (type === 'hourly') document.getElementById('costAcPerHr').value = 410;
   recalc();
 };
 
@@ -4100,7 +4103,7 @@ window.removeComparison = function() {
 function applyCostPreset(spdKey) {
   var preset = acCostPresets[spdKey];
   if (!preset) return;
-  document.getElementById('costAcPerHr').value = preset.acPerHr;
+  document.getElementById('costAcPerHr').value = userType === 'hourly' ? 410 : preset.acPerHr;
   document.getElementById('costConsumables').value = computeConsumPerHr(spdKey);
   document.getElementById('consumablesLbl').textContent = preset.consumLabel + ' ($/hr)';
   // Respect owner-pilot setting — always $0 regardless of aircraft preset
@@ -4132,13 +4135,16 @@ window.pickAircraft = function(val, s, _fromSettings) {
   if (activeBtn) activeBtn.classList.add('active');
   // Show Owner/Lessee row when aircraft is selected
   document.getElementById('userTypeRow').style.display = 'flex';
-  // SF50 has no lease option — hide Lessee button and force Owner
+  // SF50 has no lease option — hide Monthly/Hourly buttons and force Owner
   var lesseeBtn = document.getElementById('btnLessee');
+  var hourlyBtn = document.getElementById('btnHourly');
   if (val === '280') {
     lesseeBtn.style.display = 'none';
-    if (lesseeBtn.classList.contains('active')) setUserType('owner');
+    hourlyBtn.style.display = 'none';
+    if (userType === 'lessee' || userType === 'hourly') setUserType('owner');
   } else {
     lesseeBtn.style.display = '';
+    hourlyBtn.style.display = '';
   }
   onSel(s);
   // Force warn-icon and list refresh after spdA is set — guards against any
@@ -5044,9 +5050,12 @@ window.recalc = function() {
   var acCost = 0;
   var billableHrs = 0;
   if (userType === 'owner') {
-    acCost = 0; // owner pays no CPH
+    acCost = 0;
+  } else if (userType === 'hourly') {
+    billableHrs = rA.flightHours;
+    acCost = acPerHr * billableHrs;
   } else {
-    // Lessee: only hours exceeding included lease hours are billed
+    // Monthly lessee: only hours exceeding included block are billed
     billableHrs = Math.max(0, rA.flightHours - leaseHrsIncl);
     acCost = acPerHr * billableHrs;
   }
@@ -5072,7 +5081,9 @@ window.recalc = function() {
 
   var grid = document.getElementById('costGrid');
   var gridHtml = '';
-  if (userType === 'lessee') {
+  if (userType === 'hourly') {
+    gridHtml += '<div><div class="res-item-lbl">Aircraft (' + billableHrs.toFixed(1) + 'hr)</div><div class="res-item-val" style="font-size:14px">' + fmt$(acCost) + '</div></div>';
+  } else if (userType === 'lessee') {
     var acLabel = billableHrs > 0 ? 'Aircraft (' + billableHrs.toFixed(1) + 'hr over)' : 'Aircraft (included)';
     gridHtml += '<div><div class="res-item-lbl">' + acLabel + '</div><div class="res-item-val" style="font-size:14px">' + fmt$(acCost) + '</div></div>';
   }
@@ -5087,7 +5098,9 @@ window.recalc = function() {
   // Cost breakdown table
   var tbl = document.getElementById('legsTableCost');
   var rows = '<colgroup><col style="width:20%"><col style="width:50%"><col style="width:30%"></colgroup><tr><th>Item</th><th>Detail</th><th>Cost</th></tr>';
-  if (userType === 'lessee') {
+  if (userType === 'hourly') {
+    rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
+  } else if (userType === 'lessee') {
     if (billableHrs > 0) {
       rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr over ' + leaseHrsIncl + ' remaining × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
     } else {
@@ -5217,7 +5230,10 @@ function buildTripData() {
     var tripDays = tripDaysVal ? Math.max(parseFloat(tripDaysVal), flyingDays) : flyingDays;
 
     var billableHrs = 0, acCost = 0;
-    if (userType === 'lessee') {
+    if (userType === 'hourly') {
+      billableHrs = totals.flightHrs;
+      acCost = acPerHr * billableHrs;
+    } else if (userType === 'lessee') {
       billableHrs = Math.max(0, totals.flightHrs - leaseHrsIncl);
       acCost = acPerHr * billableHrs;
     }
@@ -5413,7 +5429,9 @@ function toText(td) {
     var c = td.costs;
     lines.push('');
     lines.push('COSTS  (' + c.userType + ')');
-    if (c.userType === 'lessee') {
+    if (c.userType === 'hourly') {
+      lines.push('  ' + pad('Aircraft (' + c.billableHrs.toFixed(1) + ' hr × $' + c.acPerHr + '/hr)', 36) + fmt$(c.acCost));
+    } else if (c.userType === 'lessee') {
       var acLbl = c.billableHrs > 0 ? 'Aircraft (' + c.billableHrs.toFixed(1) + ' hr over lease)' : 'Aircraft (within lease)';
       lines.push('  ' + pad(acLbl, 36) + fmt$(c.acCost));
     }
@@ -6682,12 +6700,13 @@ function openSettings() {
     var preset = acCostPresets[_stgAircraft] || {};
     _setEl('stgAcSpd',   String(s.acSpd   !== undefined && s.acSpd   !== null ? s.acSpd   : (acGph[_stgAircraft] ? (_stgAircraft === '280' ? 280 : 175) : '')));
     _setEl('stgAcGph',   String(s.acGph   !== undefined && s.acGph   !== null ? s.acGph   : (acGph[_stgAircraft] || '')));
-    _setEl('stgAcPerHr', String(s.acPerHr !== undefined && s.acPerHr !== null ? s.acPerHr : (preset.acPerHr || '')));
+    _setEl('stgAcPerHr', String(s.acPerHr !== undefined && s.acPerHr !== null ? s.acPerHr : (_stgRole === 'hourly' ? 410 : (preset.acPerHr || ''))));
     stgRenderWeightInputs(_stgAircraft);
   }
   document.getElementById('stgPaxCount').textContent = String(_stgPax);
   document.getElementById('stgBtnOwner').classList.toggle('active',  _stgRole === 'owner');
   document.getElementById('stgBtnLessee').classList.toggle('active', _stgRole === 'lessee');
+  document.getElementById('stgBtnHourly').classList.toggle('active', _stgRole === 'hourly');
 
   var foEl = document.getElementById('stgFuelOnly');
   if (foEl) foEl.checked = !!s.fuelOnly;
@@ -6755,7 +6774,7 @@ window.stgPickAircraft = function(val) {
   var preset = acCostPresets[val] || {};
   _setEl('stgAcSpd',   String(val === '280' ? 280 : 175));
   _setEl('stgAcGph',   String(acGph[val] || ''));
-  _setEl('stgAcPerHr', String(preset.acPerHr || ''));
+  _setEl('stgAcPerHr', String(_stgRole === 'hourly' ? 410 : (preset.acPerHr || '')));
   if (!document.getElementById('stgPilotIsUser').checked) {
     if (preset.pilotMin !== undefined) { _setEl('stgPilotMin', String(preset.pilotMin)); _setEl('stgPilotMax', String(preset.pilotMax)); }
   }
@@ -6810,6 +6829,7 @@ window.stgPickRole = function(role) {
   _stgRole = role;
   document.getElementById('stgBtnOwner').classList.toggle('active',  role === 'owner');
   document.getElementById('stgBtnLessee').classList.toggle('active', role === 'lessee');
+  document.getElementById('stgBtnHourly').classList.toggle('active', role === 'hourly');
 };
 
 window.stgAdjPax = function(delta) {
