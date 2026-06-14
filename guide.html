@@ -410,8 +410,8 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
         <li><strong>Step 1 — Trip Routing.</strong> Select your Program Area and tap your home airport, or click <strong>+ Add Origin</strong> and click the map (or type an ICAO code). Not in a program area? Skip the dropdown and go straight to the map or the button. An aircraft picker popup appears automatically after placing your origin. <em>Steps 2 and 3 are grayed out until your origin is placed — this is by design.</em></li>
         <li><strong>Step 2 — Aircraft.</strong> Tap <strong>SR22T</strong> or <strong>SF50</strong> — the buttons are at the top of the Aircraft section. The Aircraft Details pane expands automatically. This section activates as soon as your origin is placed.</li>
         <li><strong>Add more stops.</strong> Each map click adds the next stop. You can also type an ICAO code or city name into any waypoint's search field.</li>
-        <li><strong>Results.</strong> Scroll down to the Results section — total time, flight time, distance, and fuel appear as soon as origin and aircraft are set. Expand <strong>▼ Route Details</strong> for a leg-by-leg breakdown.</li>
-        <li><strong>Step 3 — Trip Cost (optional).</strong> Expand the collapsed Trip Cost section to enter aircraft cost, pilot rates, and FBO fees for a full cost estimate.</li>
+        <li><strong>Results.</strong> Scroll down to the Results section — total time, flight time, distance, and fuel appear as soon as origin and aircraft are set. Expand <strong>▲ Route Details</strong> for a leg-by-leg breakdown (▼ when expanded).</li>
+        <li><strong>Step 3 — Trip Cost (optional).</strong> Expand the collapsed Trip Cost section (<strong>▲</strong> when collapsed, <strong>▼</strong> when expanded) to enter pilot cost and FBO fees for a full cost estimate. Cost totals are hidden until a pilot cost is entered.</li>
         <li><strong>Close the loop (optional).</strong> Click <strong>↻ Return to Origin</strong> to add a return leg back to your departure airport.</li>
       </ol>
       <div class="callout tip">
@@ -460,7 +460,7 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
     <section class="guide-section" id="aircraft">
       <h2>Aircraft</h2>
       <h3>Primary Aircraft</h3>
-      <p>The Aircraft section is grayed out until your origin is placed — once it activates, tap <strong>SR22T</strong> or <strong>SF50</strong> to select your aircraft. The <strong>▼ Aircraft Details</strong> pane expands automatically after selection. You can also choose in the popup that appears after placing your origin.</p>
+      <p>The Aircraft section is grayed out until your origin is placed — once it activates, tap <strong>SR22T</strong> or <strong>SF50</strong> to select your aircraft. The <strong>Aircraft Details</strong> pane expands automatically after selection (▼ when expanded, ▲ when collapsed). You can also choose in the popup that appears after placing your origin.</p>
       <p>You can override the default cruise speed or fuel burn by typing directly into the Speed (mph) or GPH fields inside the expanded Aircraft Details pane.</p>
 
       <h3>Custom Aircraft</h3>
@@ -469,8 +469,14 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
       <h3>Comparison Aircraft</h3>
       <p>Click <strong>+ Add Comparison Aircraft</strong> to add a second aircraft. Both aircraft compute side-by-side results on the same route, with a time-difference row showing how much faster or slower the second aircraft is.</p>
 
-      <h3>SF50 — Owner vs. Lessee</h3>
-      <p>When the SF50 is selected, choose between <strong>OWNER</strong> and <strong>LESSEE</strong> modes. In Lessee mode, enter your remaining lease hours; cost calculations adjust accordingly.</p>
+      <h3>Owner vs. Lease Type</h3>
+      <p>Once an aircraft is selected, a role row appears above the aircraft buttons:</p>
+      <ul>
+        <li><strong>OWNER</strong> — no aircraft hourly cost applied.</li>
+        <li><strong>MONTHLY LEASE</strong> — enter your remaining hours in the block. Only hours flown <em>beyond</em> the remaining block are billed at the Aircraft ($/hr) rate.</li>
+        <li><strong>HOURLY LEASE</strong> — all flight hours are billed at a flat $410/hr rate. No block to draw from.</li>
+      </ul>
+      <p>The SF50 is owner-only — the Monthly Lease and Hourly Lease options are hidden when the SF50 is selected.</p>
 
       <div class="callout note">
         <div class="callout-icon">&#9432;</div>
@@ -666,9 +672,9 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
       <table class="spec-table">
         <thead><tr><th>Field</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td>Aircraft Cost ($/hr)</td><td>Ownership or charter cost per hour. Leave at $0 if not applicable.</td></tr>
+          <tr><td>Aircraft Cost ($/hr)</td><td>Shown for Monthly Lease and Hourly Lease roles. Pre-filled based on your role — editable.</td></tr>
           <tr><td>Fuel/Oil/TKS ($/hr)</td><td>Pre-filled based on aircraft GPH × current fuel price. Editable.</td></tr>
-          <tr><td>Pilot Cost ($/day)</td><td>Minimum and maximum daily pilot cost. The estimate shows a range.</td></tr>
+          <tr><td>Pilot Cost ($/day)</td><td>Daily pilot cost. <strong>Required</strong> — cost totals are hidden until a value is entered. Check <strong>I am the pilot</strong> to confirm $0.</td></tr>
           <tr><td>Flying Days</td><td>Auto-calculated: 1 + number of overnight stops.</td></tr>
           <tr><td>Trip Days</td><td>Total days away from base (may differ from flying days).</td></tr>
           <tr><td>Ground Time Per Stop</td><td>Minutes budgeted at each intermediate stop. Default: 35 min.</td></tr>
@@ -694,7 +700,7 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
       <p>Use the <strong>↗ AirNav</strong> and <strong>↗ AOPA</strong> links next to each stop to verify fees directly on those sites before your flight.</p>
 
       <h3>Cost Breakdown</h3>
-      <p>Click <strong>▼ Cost Breakdown</strong> inside the cost estimate card to see a line-by-line breakdown: aircraft cost, fuel cost, oil/consumables, pilot cost, and FBO fees. The FBO row shows the stop, FBO name, and fee components (e.g. <em>KGKT · Gatlinburg Airport Authority: Tie-down ×1</em>).</p>
+      <p>Click <strong>▲ Cost Breakdown</strong> inside the cost estimate card to expand a line-by-line breakdown: aircraft cost, fuel cost, oil/consumables, pilot cost, and FBO fees. The FBO row shows the stop, FBO name, and fee components (e.g. <em>KGKT · Gatlinburg Airport Authority: Tie-down ×1</em>). The triangle points ▼ when the section is expanded and ▲ when collapsed.</p>
     </section>
 
     <!-- WARNINGS -->
@@ -738,27 +744,22 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
 
       <h3>Default Aircraft</h3>
       <p>Select <strong>SR22T</strong> or <strong>Vision Jet</strong> to pre-select the aircraft on every load. When an aircraft is chosen, an <strong>Aircraft Details</strong> row appears allowing you to override the default cruise speed (mph), fuel burn (GPH), and aircraft cost ($/hr) — useful if your aircraft's performance differs from the factory defaults.</p>
-      <p>Below the performance fields, click <strong>▼ Weight Details</strong> to expand an editable list of all seat, baggage, and TKS fluid weights for that aircraft. Values pre-fill from your previously saved settings, or from the current payload panel if that aircraft is active. Edit any field and click <strong>Save Settings</strong> — exactly what you see in the dropdown is what gets saved and applied on every load.</p>
+      <p>Below the performance fields, click <strong>▲ Weight Details</strong> to expand an editable list of all seat, baggage, and TKS fluid weights for that aircraft. Values pre-fill from your previously saved settings, or from the current payload panel if that aircraft is active. Edit any field and click <strong>Save Settings</strong> — exactly what you see in the dropdown is what gets saved and applied on every load.</p>
 
       <h3>Default Occupants</h3>
       <p>Set your typical total occupant count (pilot included) using the <strong>−</strong> and <strong>+</strong> buttons. This count is applied on load and after Clear All, suppressing the occupant prompt that would otherwise appear when adding the first stop.</p>
 
       <h3>Default Role</h3>
-      <p>Choose <strong>OWNER</strong> or <strong>LESSEE</strong> to pre-select your operator role. The SF50 does not support the Lessee option; it defaults to Owner regardless.</p>
+      <p>Choose <strong>Owner</strong>, <strong>Monthly Lease</strong>, or <strong>Hourly Lease</strong> to pre-select your operator role on every load. The SF50 does not support lease options; it defaults to Owner regardless.</p>
 
       <h3>Fuel Services Filter</h3>
       <p>Check <strong>Only choose Airports with Fuel Services</strong> to enable the fuel-only stop filter by default on every load, so TripCalc only snaps to airports carrying the right fuel type for your aircraft.</p>
 
       <h3>Owner-Pilot (Pilot Cost = $0)</h3>
-      <p>Check <strong>I am the pilot</strong> to save a $0 pilot cost as your default. This setting is respected across aircraft changes — switching from SR22T to SF50 will not override the $0 value with the SF50 preset rates. If this option is saved, pilot cost fields default to $0 and the preset aircraft rates are not applied.</p>
+      <p>Check <strong>I am the pilot</strong> to save a $0 pilot cost as your default. When this setting is active, the Pilot Cost field in Trip Cost is set to $0 and locked — no entry required.</p>
 
       <h3>Pilot Cost ($/day)</h3>
-      <p>If you are not the pilot, enter your typical <strong>Min</strong> and <strong>Max</strong> daily pilot cost. These values are applied on load as long as the selected aircraft matches your saved default aircraft. If you switch to a different aircraft, the new aircraft's preset rates are used instead, and a notification toast will appear reminding you to update Settings if the change was intentional.</p>
-
-      <div class="callout tip">
-        <div class="callout-icon">&#128161;</div>
-        <p><strong>Pilot cost notification:</strong> When you manually switch aircraft and your saved Settings have pilot costs that differ from the new aircraft's preset, a brief toast message appears: <em>"Pilot costs from your Settings are applied — update Settings to change."</em> This is a reminder that your saved personal rates are active.</p>
-      </div>
+      <p>Enter your typical daily pilot cost. This value is applied on load. If you are the pilot, use the <strong>I am the pilot</strong> checkbox instead of typing $0.</p>
 
       <h3>Reset All Settings</h3>
       <p>Click <strong>Reset All Settings</strong> at the bottom of the Settings panel to immediately clear all saved defaults — including aircraft selection, origin, occupant count, pilot costs, and weight details. The reset takes effect instantly and is persisted to cloud sync, so reloading the app (or opening it on another linked device) starts completely fresh.</p>
