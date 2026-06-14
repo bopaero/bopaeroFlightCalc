@@ -941,11 +941,7 @@ select option { background:var(--surface2); }
       </div>
       <div class="cost-row">
         <label class="cost-lbl">Pilot ($/day)</label>
-        <div style="display:flex;gap:4px;align-items:center">
-          <input enterkeyhint="done" inputmode="decimal" type="number" id="costPilotMin" class="cost-input" placeholder="—" min="0" step="100" oninput="recalc()" style="width:80px">
-          <span style="color:var(--text-muted);font-size:10px">–</span>
-          <input enterkeyhint="done" inputmode="decimal" type="number" id="costPilotMax" class="cost-input" placeholder="—" min="0" step="100" oninput="recalc()" style="width:80px">
-        </div>
+        <input enterkeyhint="done" inputmode="decimal" type="number" id="costPilot" class="cost-input" placeholder="required" min="0" step="100" oninput="recalc()">
       </div>
       <div style="color:var(--text-muted);font-size:9px;margin-bottom:2px;line-height:1.3">Trip days = total reservation or time away from base</div>
       <div class="cost-row">
@@ -1027,7 +1023,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-06-14.2</span>
+      <span id="appVersion">v2026-06-14.3</span>
     </div>
   </div>
 
@@ -1244,16 +1240,8 @@ select option { background:var(--surface2); }
 
     <div id="stgPilotCostRow" style="margin-bottom:18px;transition:opacity .2s">
       <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Pilot Cost ($/day)</div>
-      <div style="display:flex;gap:12px;align-items:center">
-        <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Min
-          <input id="stgPilotMin" type="number" min="0" step="100"
-                 style="width:75px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
-        </label>
-        <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px">Max
-          <input id="stgPilotMax" type="number" min="0" step="100"
-                 style="width:75px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
-        </label>
-      </div>
+      <input id="stgPilot" type="number" min="0" step="100"
+             style="width:100px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px">
     </div>
 
     <div style="border-top:1px solid var(--border);margin:4px 0 16px;padding-top:16px">
@@ -1307,7 +1295,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-06-14.2';
+var APP_VERSION = 'v2026-06-14.3';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -2635,8 +2623,8 @@ var acGph = {
 // Per-aircraft cost presets (mph speed value → { acPerHr, consumLabel, oilPerHr, fuelType })
 // consumPerHr is computed dynamically from national avg fuel prices
 var acCostPresets = {
-  '175': { acPerHr: 372, consumLabel: 'Fuel/Oil/TKS', oilPerHr: 2.00, fuelType: '100ll', pilotMin: 500, pilotMax: 1500 },
-  '280': { acPerHr: 372, consumLabel: 'Fuel/Oil', oilPerHr: 6.45, fuelType: 'jeta', pilotMin: 1500, pilotMax: 2500 }
+  '175': { acPerHr: 372, consumLabel: 'Fuel/Oil/TKS', oilPerHr: 2.00, fuelType: '100ll' },
+  '280': { acPerHr: 372, consumLabel: 'Fuel/Oil', oilPerHr: 6.45, fuelType: 'jeta' }
 };
 
 // National average fuel prices (updated daily via GitHub Action)
@@ -2806,9 +2794,10 @@ function airportFuelLine(icao, acA, small) {
           // Only re-apply saved dollar amounts when aircraft matches settings.
           var _stg = loadSettings ? loadSettings() : null;
           if (_stg && _stg.pilotIsUser) {
-            _setEl('costPilotMin','0'); _setEl('costPilotMax','0');
-          } else if (_stg && _stg.aircraft === selA.value && _stg.pilotMin !== undefined) {
-            _setEl('costPilotMin', String(_stg.pilotMin)); _setEl('costPilotMax', String(_stg.pilotMax));
+            _setEl('costPilot', '0');
+          } else if (_stg && _stg.aircraft === selA.value) {
+            var _pilotVal = _stg.pilot !== undefined ? _stg.pilot : (_stg.pilotMin !== undefined ? _stg.pilotMin : '');
+            if (_pilotVal !== '' && _pilotVal !== null && _pilotVal !== undefined) _setEl('costPilot', String(_pilotVal));
           }
         }
       }
@@ -4109,11 +4098,7 @@ function applyCostPreset(spdKey) {
   // Respect owner-pilot setting — always $0 regardless of aircraft preset
   var _stg = loadSettings ? loadSettings() : null;
   if (_stg && _stg.pilotIsUser) {
-    document.getElementById('costPilotMin').value = 0;
-    document.getElementById('costPilotMax').value = 0;
-  } else {
-    document.getElementById('costPilotMin').value = preset.pilotMin;
-    document.getElementById('costPilotMax').value = preset.pilotMax;
+    document.getElementById('costPilot').value = 0;
   }
   var flyDays = document.getElementById('costFlyingDays');
   if (!flyDays.value) flyDays.value = 1;
@@ -4150,20 +4135,6 @@ window.pickAircraft = function(val, s, _fromSettings) {
   // Force warn-icon and list refresh after spdA is set — guards against any
   // timing edge where recalc's renderWPList ran before spdA was committed.
   if (s === 'A') setTimeout(function() { refreshWarnIcons(); renderWPList(); }, 0);
-  // Notify when manually switching aircraft if saved pilot costs differ from preset
-  if (s === 'A' && !_fromSettings) {
-    setTimeout(function() {
-      var _stg = loadSettings ? loadSettings() : null;
-      var preset = acCostPresets[val];
-      if (_stg && preset && _stg.aircraft) {
-        var stgMin = _stg.pilotIsUser ? 0 : (_stg.pilotMin || 0);
-        var stgMax = _stg.pilotIsUser ? 0 : (_stg.pilotMax || 0);
-        if (stgMin !== preset.pilotMin || stgMax !== preset.pilotMax) {
-          _stgToast('&#x2139; Pilot costs from your Settings are applied &mdash; update Settings to change');
-        }
-      }
-    }, 50);
-  }
   if (s === 'A') setTimeout(fitRouteOrWaypoint, 50);
   if (s === 'A' && !acPaneOpen) toggleAircraftPane();
   if (s === 'A' && !paxPopupDismissed) {
@@ -5030,8 +5001,9 @@ window.recalc = function() {
 
   var acPerHr       = parseFloat(document.getElementById('costAcPerHr').value) || 0;
   var consumPerHr   = parseFloat(document.getElementById('costConsumables').value) || 0;
-  var pilotMin      = parseFloat(document.getElementById('costPilotMin').value) || 0;
-  var pilotMax      = parseFloat(document.getElementById('costPilotMax').value) || 0;
+  var pilotEl       = document.getElementById('costPilot');
+  var pilotEntered  = pilotEl && pilotEl.value !== '';
+  var pilot         = pilotEntered ? (parseFloat(pilotEl.value) || 0) : null;
   var flyingDays    = parseFloat(document.getElementById('costFlyingDays').value) || 1;
   var tripDaysVal   = document.getElementById('costTripDays').value;
   var tripDays      = tripDaysVal ? Math.max(parseFloat(tripDaysVal), flyingDays) : flyingDays;
@@ -5063,8 +5035,7 @@ window.recalc = function() {
   var fuelCost      = totalFuelCostA;
   var oilCost       = oilPerHr * rA.flightHours;
   var consumCost    = fuelCost + oilCost;
-  var pilotLow      = pilotMin * days;
-  var pilotHigh     = pilotMax * days;
+  var pilotCost     = pilotEntered ? pilot * days : null;
 
   // Sum FBO fees
   var fboTotal = 0;
@@ -5073,69 +5044,75 @@ window.recalc = function() {
     if (inp) fboTotal += parseFloat(inp.value) || 0;
   });
 
-  var totalLow  = acCost + consumCost + pilotLow  + fboTotal;
-  var totalHigh = acCost + consumCost + pilotHigh + fboTotal;
+  var total = pilotEntered ? acCost + consumCost + pilotCost + fboTotal : null;
 
   function fmt$(n){ return '$' + Math.round(n).toLocaleString(); }
-  function fmtRange(lo, hi){ return lo === hi ? fmt$(lo) : fmt$(lo) + ' – ' + fmt$(hi); }
 
   var grid = document.getElementById('costGrid');
-  var gridHtml = '';
-  if (userType === 'hourly') {
-    gridHtml += '<div><div class="res-item-lbl">Aircraft (' + billableHrs.toFixed(1) + 'hr)</div><div class="res-item-val" style="font-size:14px">' + fmt$(acCost) + '</div></div>';
-  } else if (userType === 'lessee') {
-    var acLabel = billableHrs > 0 ? 'Aircraft (' + billableHrs.toFixed(1) + 'hr over)' : 'Aircraft (included)';
-    gridHtml += '<div><div class="res-item-lbl">' + acLabel + '</div><div class="res-item-val" style="font-size:14px">' + fmt$(acCost) + '</div></div>';
+  if (!pilotEntered) {
+    grid.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;font-style:italic;padding:4px 0">Enter pilot cost above to see totals</div>';
+    var legsTableCostEl = document.getElementById('legsTableCost');
+    if (legsTableCostEl) legsTableCostEl.innerHTML = '';
+  } else {
+    var gridHtml = '';
+    if (userType === 'hourly') {
+      gridHtml += '<div><div class="res-item-lbl">Aircraft (' + billableHrs.toFixed(1) + 'hr)</div><div class="res-item-val" style="font-size:14px">' + fmt$(acCost) + '</div></div>';
+    } else if (userType === 'lessee') {
+      var acLabel = billableHrs > 0 ? 'Aircraft (' + billableHrs.toFixed(1) + 'hr over)' : 'Aircraft (included)';
+      gridHtml += '<div><div class="res-item-lbl">' + acLabel + '</div><div class="res-item-val" style="font-size:14px">' + fmt$(acCost) + '</div></div>';
+    }
+    gridHtml +=
+      '<div><div class="res-item-lbl">Fuel</div><div class="res-item-val" style="font-size:14px">' + fmt$(fuelCost) + '</div></div>' +
+      '<div><div class="res-item-lbl">Oil</div><div class="res-item-val" style="font-size:14px">' + fmt$(oilCost) + '</div></div>' +
+      '<div><div class="res-item-lbl">Pilot (' + flyingDays + ' flying days' + (tripDaysVal && tripDays > flyingDays ? ' / ' + tripDays + ' trip' : '') + ')</div><div class="res-item-val" style="font-size:14px">' + fmt$(pilotCost) + '</div></div>' +
+      '<div><div class="res-item-lbl">FBO Fees' + (Object.keys(_fboBreakdown).some(function(k){ return _fboBreakdown[k].undisclosed; }) ? ' ⚠' : '') + '</div><div class="res-item-val" style="font-size:14px">' + fmt$(fboTotal) + '</div></div>' +
+      '<div><div class="res-item-lbl">Total</div><div class="res-item-val" style="color:var(--accent2)">' + fmt$(total) + '</div></div>';
+    grid.innerHTML = gridHtml;
   }
-  gridHtml +=
-    '<div><div class="res-item-lbl">Fuel</div><div class="res-item-val" style="font-size:14px">' + fmt$(fuelCost) + '</div></div>' +
-    '<div><div class="res-item-lbl">Oil</div><div class="res-item-val" style="font-size:14px">' + fmt$(oilCost) + '</div></div>' +
-    '<div><div class="res-item-lbl">Pilot (' + flyingDays + ' flying days' + (tripDaysVal && tripDays > flyingDays ? ' / ' + tripDays + ' trip' : '') + ')</div><div class="res-item-val" style="font-size:14px">' + fmtRange(pilotLow, pilotHigh) + '</div></div>' +
-    '<div><div class="res-item-lbl">FBO Fees' + (Object.keys(_fboBreakdown).some(function(k){ return _fboBreakdown[k].undisclosed; }) ? ' ⚠' : '') + '</div><div class="res-item-val" style="font-size:14px">' + fmt$(fboTotal) + '</div></div>' +
-    '<div><div class="res-item-lbl">Total</div><div class="res-item-val" style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</div></div>';
-  grid.innerHTML = gridHtml;
 
   // Cost breakdown table
   var tbl = document.getElementById('legsTableCost');
-  var rows = '<colgroup><col style="width:20%"><col style="width:50%"><col style="width:30%"></colgroup><tr><th>Item</th><th>Detail</th><th>Cost</th></tr>';
-  if (userType === 'hourly') {
-    rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
-  } else if (userType === 'lessee') {
-    if (billableHrs > 0) {
-      rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr over ' + leaseHrsIncl + ' remaining × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
-    } else {
-      rows += '<tr><td>Aircraft</td><td>' + rA.flightHours.toFixed(2) + ' hr within ' + leaseHrsIncl + ' hr remaining</td><td>$0</td></tr>';
+  if (pilotEntered) {
+    var rows = '<colgroup><col style="width:20%"><col style="width:50%"><col style="width:30%"></colgroup><tr><th>Item</th><th>Detail</th><th>Cost</th></tr>';
+    if (userType === 'hourly') {
+      rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
+    } else if (userType === 'lessee') {
+      if (billableHrs > 0) {
+        rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr over ' + leaseHrsIncl + ' remaining × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
+      } else {
+        rows += '<tr><td>Aircraft</td><td>' + rA.flightHours.toFixed(2) + ' hr within ' + leaseHrsIncl + ' hr remaining</td><td>$0</td></tr>';
+      }
     }
+    rows += '<tr><td>Fuel</td><td>' + totalFuelGalA.toFixed(1) + ' gal × $' + blendedPriceA.toFixed(2) + '/gal blended</td><td>' + fmt$(fuelCost) + '</td></tr>';
+    rows += '<tr><td>Oil</td><td>' + rA.flightHours.toFixed(2) + ' hr × $' + oilPerHr.toFixed(2) + '/hr</td><td>' + fmt$(oilCost) + '</td></tr>';
+    var pilotDetail = flyingDays + ' flying day' + (flyingDays>1?'s':'') + ' × $' + pilot + '/day';
+    if (tripDaysVal && tripDays > flyingDays) pilotDetail += ' (' + tripDays + ' day trip)';
+    rows += '<tr><td>Pilot</td><td>' + pilotDetail + '</td><td>' + fmt$(pilotCost) + '</td></tr>';
+    var anyUndisclosed = false;
+    placed.forEach(function(wp) {
+      var inp = document.getElementById('fbo-' + wp.id);
+      var fee = inp ? (parseFloat(inp.value) || 0) : 0;
+      var bd  = _fboBreakdown[wp.id];
+      var stopLabel = wp.icao || truncate(wp.name, 14);
+      var headerLabel = bd && bd.fboName ? stopLabel + ' · ' + truncate(bd.fboName, 22) : stopLabel;
+      if (bd && bd.undisclosed) {
+        anyUndisclosed = true;
+        rows += '<tr><td>FBO</td><td style="font-size:10px">' + headerLabel + '</td><td style="color:var(--warn,#e6a817)">CALL FOR RATES</td></tr>';
+      } else if (bd && bd.components && bd.components.length) {
+        rows += '<tr><td>FBO</td><td style="font-size:10px;font-weight:600">' + headerLabel + '</td><td>' + fmt$(fee) + '</td></tr>';
+        bd.components.forEach(function(c) {
+          rows += '<tr><td></td><td style="font-size:10px;color:var(--text-muted);padding-left:10px">' + c.label + '</td><td style="font-size:10px;color:var(--text-muted)">' + fmt$(c.amount) + '</td></tr>';
+        });
+      } else {
+        rows += '<tr><td>FBO</td><td style="font-size:10px">' + headerLabel + '</td><td>' + fmt$(fee) + '</td></tr>';
+      }
+    });
+    if (fboTotal === 0 && !anyUndisclosed) rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:10px">No FBO fees — adjust inputs above if applicable</td></tr>';
+    if (anyUndisclosed) rows += '<tr><td colspan="3" style="color:var(--warn,#e6a817);font-size:10px">⚠ FBO total may be incomplete — one or more stops do not disclose fees</td></tr>';
+    rows += '<tr style="font-weight:bold;border-top:1px solid var(--border-bright)"><td colspan="2">Total</td><td style="color:var(--accent2)">' + fmt$(total) + '</td></tr>';
+    rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:9px;font-style:italic;padding-top:6px">Fuel prices based on current national average (source: AirNav.com' + (fuelPrices.updated ? ', updated ' + fuelPrices.updated : '') + ')</td></tr>';
+    tbl.innerHTML = rows;
   }
-  rows += '<tr><td>Fuel</td><td>' + totalFuelGalA.toFixed(1) + ' gal × $' + blendedPriceA.toFixed(2) + '/gal blended</td><td>' + fmt$(fuelCost) + '</td></tr>';
-  rows += '<tr><td>Oil</td><td>' + rA.flightHours.toFixed(2) + ' hr × $' + oilPerHr.toFixed(2) + '/hr</td><td>' + fmt$(oilCost) + '</td></tr>';
-  var pilotDetail = flyingDays + ' flying day' + (flyingDays>1?'s':'') + ' × $' + pilotMin + '–$' + pilotMax + '/day';
-  if (tripDaysVal && tripDays > flyingDays) pilotDetail += ' (' + tripDays + ' day trip)';
-  rows += '<tr><td>Pilot</td><td>' + pilotDetail + '</td><td>' + fmtRange(pilotLow, pilotHigh) + '</td></tr>';
-  var anyUndisclosed = false;
-  placed.forEach(function(wp) {
-    var inp = document.getElementById('fbo-' + wp.id);
-    var fee = inp ? (parseFloat(inp.value) || 0) : 0;
-    var bd  = _fboBreakdown[wp.id];
-    var stopLabel = wp.icao || truncate(wp.name, 14);
-    var headerLabel = bd && bd.fboName ? stopLabel + ' · ' + truncate(bd.fboName, 22) : stopLabel;
-    if (bd && bd.undisclosed) {
-      anyUndisclosed = true;
-      rows += '<tr><td>FBO</td><td style="font-size:10px">' + headerLabel + '</td><td style="color:var(--warn,#e6a817)">CALL FOR RATES</td></tr>';
-    } else if (bd && bd.components && bd.components.length) {
-      rows += '<tr><td>FBO</td><td style="font-size:10px;font-weight:600">' + headerLabel + '</td><td>' + fmt$(fee) + '</td></tr>';
-      bd.components.forEach(function(c) {
-        rows += '<tr><td></td><td style="font-size:10px;color:var(--text-muted);padding-left:10px">' + c.label + '</td><td style="font-size:10px;color:var(--text-muted)">' + fmt$(c.amount) + '</td></tr>';
-      });
-    } else {
-      rows += '<tr><td>FBO</td><td style="font-size:10px">' + headerLabel + '</td><td>' + fmt$(fee) + '</td></tr>';
-    }
-  });
-  if (fboTotal === 0 && !anyUndisclosed) rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:10px">No FBO fees — adjust inputs above if applicable</td></tr>';
-  if (anyUndisclosed) rows += '<tr><td colspan="3" style="color:var(--warn,#e6a817);font-size:10px">⚠ FBO total may be incomplete — one or more stops do not disclose fees</td></tr>';
-  rows += '<tr style="font-weight:bold;border-top:1px solid var(--border-bright)"><td colspan="2">Total</td><td style="color:var(--accent2)">' + fmtRange(totalLow, totalHigh) + '</td></tr>';
-  rows += '<tr><td colspan="3" style="color:var(--text-muted);font-size:9px;font-style:italic;padding-top:6px">Fuel prices based on current national average (source: AirNav.com' + (fuelPrices.updated ? ', updated ' + fuelPrices.updated : '') + ')</td></tr>';
-  tbl.innerHTML = rows;
 
   updateRangeCircle();
   maybeProposeFuelStops();
@@ -5221,8 +5198,9 @@ function buildTripData() {
     var gphLookup = acGph[spdKey] || acA.gph || 0;
     var fuelPriceGal = gphLookup > 0 ? (fuelPerHr / gphLookup) : 0;
     var acPerHr = parseFloat((document.getElementById('costAcPerHr')||{}).value) || 0;
-    var pilotMin = parseFloat((document.getElementById('costPilotMin')||{}).value) || 0;
-    var pilotMax = parseFloat((document.getElementById('costPilotMax')||{}).value) || 0;
+    var pilotEl2 = document.getElementById('costPilot');
+    var pilotEntered2 = pilotEl2 && pilotEl2.value !== '';
+    var pilot2 = pilotEntered2 ? (parseFloat(pilotEl2.value) || 0) : 0;
     var leaseHrsIncl = parseFloat((document.getElementById('leaseHoursIncl')||{}).value) || 0;
     var overnightCount = placed.filter(function(w){ return w.overnight; }).length;
     var flyingDays = 1 + overnightCount;
@@ -5242,8 +5220,7 @@ function buildTripData() {
     var blendedPrice = totals.fuelGal > 0 ? fuelCost / totals.fuelGal : 0;
     var oilCost = oilPerHr * totals.flightHrs;
     var consumCost = fuelCost + oilCost;
-    var pilotLow = pilotMin * flyingDays;
-    var pilotHigh = pilotMax * flyingDays;
+    var pilotCost2 = pilot2 * flyingDays;
 
     var fboTotal = 0;
     var fboItems = [];
@@ -5253,15 +5230,14 @@ function buildTripData() {
       fboTotal += fee;
       if (fee > 0) fboItems.push({ name: wp.name || wp.icao || 'Stop', fee: fee });
     });
-    var totalLow = acCost + consumCost + pilotLow + fboTotal;
-    var totalHigh = acCost + consumCost + pilotHigh + fboTotal;
+    var total2 = acCost + consumCost + pilotCost2 + fboTotal;
 
     costs = {
       userType: userType, acCost: acCost, billableHrs: billableHrs, leaseHrsIncl: leaseHrsIncl,
       acPerHr: acPerHr, fuelCost: fuelCost, oilCost: oilCost, consumCost: consumCost,
-      pilotLow: pilotLow, pilotHigh: pilotHigh, pilotMin: pilotMin, pilotMax: pilotMax,
+      pilot: pilot2, pilotCost: pilotCost2,
       fboTotal: fboTotal, fboItems: fboItems,
-      totalLow: totalLow, totalHigh: totalHigh,
+      total: total2,
       flyingDays: flyingDays, tripDays: tripDays,
       fuelPriceGal: blendedPrice, gph: gphLookup, oilPerHr: oilPerHr
     };
@@ -5380,7 +5356,6 @@ function toText(td) {
   function pad(s, n, right) { s = String(s); if (s.length >= n) return s; var p = new Array(n - s.length + 1).join(' '); return right ? p + s : s + p; }
   function fmtHrs(h) { if (h==null||!isFinite(h)) return '—'; var H=Math.floor(h); var M=Math.round((h-H)*60); if (M===60){H++;M=0;} return H+'h '+(M<10?'0':'')+M+'m'; }
   function fmt$(n) { return '$' + Math.round(n).toLocaleString(); }
-  function fmtRange(lo, hi) { return lo===hi ? fmt$(lo) : fmt$(lo) + ' – ' + fmt$(hi); }
   var dt = td.generatedAt;
   var dateStr = dt.getFullYear() + '-' + ('0'+(dt.getMonth()+1)).slice(-2) + '-' + ('0'+dt.getDate()).slice(-2) +
                 ' ' + ('0'+dt.getHours()).slice(-2) + ':' + ('0'+dt.getMinutes()).slice(-2);
@@ -5437,7 +5412,7 @@ function toText(td) {
     }
     lines.push('  ' + pad('Fuel',36) + fmt$(c.fuelCost));
     lines.push('  ' + pad('Oil',36) + fmt$(c.oilCost));
-    lines.push('  ' + pad('Pilot (' + c.flyingDays + ' flying day' + (c.flyingDays===1?'':'s') + ')',36) + fmtRange(c.pilotLow, c.pilotHigh));
+    lines.push('  ' + pad('Pilot (' + c.flyingDays + ' flying day' + (c.flyingDays===1?'':'s') + ')',36) + fmt$(c.pilotCost));
     if (c.fboItems.length) {
       c.fboItems.forEach(function(f){ lines.push('  ' + pad('  FBO: ' + f.name.substring(0,28),36) + fmt$(f.fee)); });
       lines.push('  ' + pad('FBO Total',36) + fmt$(c.fboTotal));
@@ -5445,7 +5420,7 @@ function toText(td) {
       lines.push('  ' + pad('FBO Fees',36) + fmt$(0));
     }
     lines.push('  ' + new Array(45).join('-'));
-    lines.push('  ' + pad('TOTAL',36) + fmtRange(c.totalLow, c.totalHigh));
+    lines.push('  ' + pad('TOTAL',36) + fmt$(c.total));
     if (c.gph) lines.push('  (Fuel: ' + td.totals.fuelGal.toFixed(1) + ' gal × $' + c.fuelPriceGal.toFixed(2) + '/gal blended)');
   }
   lines.push('');
@@ -6294,8 +6269,7 @@ function serializeState() {
     costs: {
       acPerHr:    _elVal('costAcPerHr'),
       consumables:_elVal('costConsumables'),
-      pilotMin:   _elVal('costPilotMin'),
-      pilotMax:   _elVal('costPilotMax'),
+      pilot:      _elVal('costPilot'),
       tripDays:   _elVal('costTripDays'),
       groundMins: _elVal('groundMinsPerStop')
     },
@@ -6431,8 +6405,8 @@ function restoreState(state) {
     var c = state.costs || {};
     if (c.acPerHr    !== undefined) _setEl('costAcPerHr',      c.acPerHr);
     if (c.consumables!== undefined) _setEl('costConsumables',  c.consumables);
-    if (c.pilotMin   !== undefined) _setEl('costPilotMin',     c.pilotMin);
-    if (c.pilotMax   !== undefined) _setEl('costPilotMax',     c.pilotMax);
+    if (c.pilot !== undefined) _setEl('costPilot', c.pilot);
+    else if (c.pilotMin !== undefined) _setEl('costPilot', c.pilotMin);
     if (c.tripDays   !== undefined) _setEl('costTripDays',     c.tripDays);
     if (c.groundMins !== undefined) _setEl('groundMinsPerStop',c.groundMins);
 
@@ -6571,8 +6545,7 @@ function saveSettings() {
     userType:    _stgRole,
     fuelOnly:    document.getElementById('stgFuelOnly').checked,
     pilotIsUser: pilotIsUser,
-    pilotMin:    pilotIsUser ? 0 : (parseFloat(document.getElementById('stgPilotMin').value) || 0),
-    pilotMax:    pilotIsUser ? 0 : (parseFloat(document.getElementById('stgPilotMax').value) || 0),
+    pilot:       pilotIsUser ? 0 : (parseFloat(document.getElementById('stgPilot').value) || null),
     acWeights:   savedWeights
   };
   _saveSettingsLocal(s);
@@ -6610,8 +6583,8 @@ function applySettings(s) {
     if (ftEl && ftEl.checked !== !!s.fuelOnly) { ftEl.checked = !!s.fuelOnly; if (typeof onFuelOnlyToggle === 'function') onFuelOnlyToggle(ftEl); }
   }
   // Pilot costs override preset values set by pickAircraft
-  if (s.pilotMin !== undefined) _setEl('costPilotMin', String(s.pilotMin));
-  if (s.pilotMax !== undefined) _setEl('costPilotMax', String(s.pilotMax));
+  if (s.pilot !== undefined && s.pilot !== null) _setEl('costPilot', String(s.pilot));
+  else if (s.pilotMin !== undefined) _setEl('costPilot', String(s.pilotMin));
   // Occupants
   var currentPax = parseInt((document.getElementById('paxCountPanel')||{}).textContent) || 1;
   var targetPax  = Math.max(1, s.pax || 1);
@@ -6712,8 +6685,7 @@ function openSettings() {
   if (foEl) foEl.checked = !!s.fuelOnly;
   var piuEl = document.getElementById('stgPilotIsUser');
   if (piuEl) piuEl.checked = !!s.pilotIsUser;
-  _setEl('stgPilotMin', String(s.pilotMin !== undefined ? s.pilotMin : (s.aircraft === '280' ? 1500 : 500)));
-  _setEl('stgPilotMax', String(s.pilotMax !== undefined ? s.pilotMax : (s.aircraft === '280' ? 2500 : 1500)));
+  _setEl('stgPilot', s.pilot !== undefined && s.pilot !== null ? String(s.pilot) : (s.pilotMin !== undefined ? String(s.pilotMin) : ''));
 
   var firstWp = waypoints.length > 0 ? waypoints[0] : null;
   var useBtn  = document.getElementById('stgUseCurrentBtn');
@@ -6776,7 +6748,7 @@ window.stgPickAircraft = function(val) {
   _setEl('stgAcGph',   String(acGph[val] || ''));
   _setEl('stgAcPerHr', String(_stgRole === 'hourly' ? 410 : (preset.acPerHr || '')));
   if (!document.getElementById('stgPilotIsUser').checked) {
-    if (preset.pilotMin !== undefined) { _setEl('stgPilotMin', String(preset.pilotMin)); _setEl('stgPilotMax', String(preset.pilotMax)); }
+    // Don't pre-fill pilot cost — user must enter it explicitly
   }
   stgRenderWeightInputs(val);
 };
@@ -6841,7 +6813,7 @@ window.stgOnPilotIsUserChange = function() {
   var checked = document.getElementById('stgPilotIsUser').checked;
   var row = document.getElementById('stgPilotCostRow');
   if (row) row.style.opacity = checked ? '0.35' : '1';
-  if (checked) { _setEl('stgPilotMin', '0'); _setEl('stgPilotMax', '0'); }
+  if (checked) { _setEl('stgPilot', '0'); }
 };
 
 window.resetSettings = function() {
