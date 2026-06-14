@@ -602,6 +602,7 @@ select option { background:var(--surface2); }
   background:var(--surface); border:1px solid var(--border); color:var(--text-muted);
   font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase;
   padding:5px 8px; border-radius:3px; cursor:pointer; transition:all .15s; text-align:center;
+  white-space:nowrap;
 }
 .layer-btn:hover, .layer-btn.active { border-color:var(--accent); color:var(--accent); }
 
@@ -800,7 +801,7 @@ select option { background:var(--surface2); }
     <div class="sec sec-locked" id="aircraftSec">
       <div class="sec-title"><span class="sec-title-step">STEP 2 ·</span> Aircraft</div>
       <!-- Owner / Lessee toggle — always visible -->
-      <div id="userTypeRow" style="display:none;gap:4px;margin-bottom:8px">
+      <div id="userTypeRow" style="display:none;gap:4px;margin-bottom:8px;flex-wrap:wrap">
         <button class="layer-btn active" id="btnOwner" onclick="setUserType('owner')">OWNER</button>
         <button class="layer-btn" id="btnLessee" onclick="setUserType('lessee')">MONTHLY LEASE</button>
         <button class="layer-btn" id="btnHourly" onclick="setUserType('hourly')">HOURLY LEASE</button>
@@ -1027,7 +1028,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-06-14.5</span>
+      <span id="appVersion">v2026-06-14.6</span>
     </div>
   </div>
 
@@ -1225,7 +1226,7 @@ select option { background:var(--surface2); }
 
     <div style="margin-bottom:14px">
       <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Role</div>
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button id="stgBtnOwner" onclick="stgPickRole('owner')" class="layer-btn active">Owner</button>
         <button id="stgBtnLessee" onclick="stgPickRole('lessee')" class="layer-btn">Monthly Lease</button>
         <button id="stgBtnHourly" onclick="stgPickRole('hourly')" class="layer-btn">Hourly Lease</button>
@@ -1299,7 +1300,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-06-14.5';
+var APP_VERSION = 'v2026-06-14.6';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
