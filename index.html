@@ -815,7 +815,7 @@ select option { background:var(--surface2); }
         <button class="ac-pick-btn" id="acBtnSF50" onclick="pickAircraft('280','A')">SF50</button>
       </div>
 
-      <button class="legs-toggle" id="acToggleBtn" onclick="toggleAircraftPane()" style="margin-bottom:6px">&#x25BC; <span id="acToggleLabel">Aircraft Details</span></button>
+      <button class="legs-toggle" id="acToggleBtn" onclick="toggleAircraftPane()" style="margin-bottom:6px">&#x25B2; <span id="acToggleLabel">Aircraft Details</span></button>
       <div id="acPaneContent" style="display:none">
 
       <!-- Primary aircraft — always shown -->
@@ -928,7 +928,7 @@ select option { background:var(--surface2); }
     <!-- COST INPUTS -->
     <div class="sec sec-locked" id="costSec">
       <button class="legs-toggle" id="costToggleBtn" onclick="toggleCostPane()" style="width:100%;text-align:left;margin-bottom:0">
-        &#x25BC; <span class="sec-title-step">STEP 3 ·</span> <span style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Trip Cost</span> <span style="font-size:10px;color:var(--text-muted);font-style:italic;text-transform:none;letter-spacing:0;font-family:sans-serif">Optional</span>
+        &#x25B2; <span class="sec-title-step">STEP 3 ·</span> <span style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Trip Cost</span> <span style="font-size:10px;color:var(--text-muted);font-style:italic;text-transform:none;letter-spacing:0;font-family:sans-serif">Optional</span>
       </button>
       <div id="costPaneContent" style="display:none;margin-top:8px">
       <div class="cost-row" id="acCostRow" style="display:none">
@@ -981,7 +981,7 @@ select option { background:var(--surface2); }
             <div><div class="res-item-lbl">Speed</div><div class="res-item-val" id="rSpdA">—</div></div>
             <div id="rFuelWrapA" style="display:none"><div class="res-item-lbl">Total Fuel</div><div class="res-item-val" id="rFuelA">—</div></div>
           </div>
-          <button class="legs-toggle" onclick="toggleLegs('A')">&#x25BC; Route Details</button>
+          <button class="legs-toggle" onclick="toggleLegs('A')">&#x25B2; Route Details</button>
           <div id="legsA" style="display:none">
             <table class="legs-table" id="legsTableA"></table>
           </div>
@@ -997,7 +997,7 @@ select option { background:var(--surface2); }
             <div><div class="res-item-lbl">Speed</div><div class="res-item-val" id="rSpdB">—</div></div>
             <div id="rFuelWrapB" style="display:none"><div class="res-item-lbl">Total Fuel</div><div class="res-item-val" id="rFuelB">—</div></div>
           </div>
-          <button class="legs-toggle" onclick="toggleLegs('B')">&#x25BC; Route Details</button>
+          <button class="legs-toggle" onclick="toggleLegs('B')">&#x25B2; Route Details</button>
           <div id="legsB" style="display:none">
             <table class="legs-table" id="legsTableB"></table>
           </div>
@@ -1012,7 +1012,7 @@ select option { background:var(--surface2); }
         <div class="res-card" id="costCard" style="margin-top:8px;border-color:var(--accent2)">
           <div class="res-name" style="color:var(--accent2)">&#x24; Trip Cost Estimate</div>
           <div class="totals-grid" id="costGrid"></div>
-          <button class="legs-toggle" onclick="toggleLegs('Cost')">&#x25BC; Cost Breakdown</button>
+          <button class="legs-toggle" onclick="toggleLegs('Cost')">&#x25B2; Cost Breakdown</button>
           <div id="legsCost" style="display:none">
             <table class="legs-table" id="legsTableCost"></table>
           </div>
@@ -1027,7 +1027,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-06-14.4</span>
+      <span id="appVersion">v2026-06-14.5</span>
     </div>
   </div>
 
@@ -1299,7 +1299,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-06-14.4';
+var APP_VERSION = 'v2026-06-14.5';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -4039,7 +4039,7 @@ window.toggleCostPane = function() {
   var content = document.getElementById('costPaneContent');
   var btn = document.getElementById('costToggleBtn');
   if (content) content.style.display = costPaneOpen ? '' : 'none';
-  if (btn) btn.innerHTML = (costPaneOpen ? '&#x25B2;' : '&#x25BC;') +
+  if (btn) btn.innerHTML = (costPaneOpen ? '&#x25BC;' : '&#x25B2;') +
     ' <span class="sec-title-step">STEP 3 ·</span> <span style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Trip Cost</span> <span style="font-size:10px;color:var(--text-muted);font-style:italic;text-transform:none;letter-spacing:0;font-family:sans-serif">Optional</span>';
 };
 
@@ -4049,7 +4049,7 @@ window.toggleAircraftPane = function() {
   var btn = document.getElementById('acToggleBtn');
   var label = document.getElementById('acToggleLabel');
   content.style.display = acPaneOpen ? '' : 'none';
-  btn.innerHTML = (acPaneOpen ? '&#x25B2; ' : '&#x25BC; ') + '<span id="acToggleLabel">' + label.textContent + '</span>';
+  btn.innerHTML = (acPaneOpen ? '&#x25BC; ' : '&#x25B2; ') + '<span id="acToggleLabel">' + label.textContent + '</span>';
 };
 
 function updateAircraftToggleLabel() {
@@ -5785,7 +5785,7 @@ window.toggleLegs = function(id) {
   var btn=el.previousElementSibling;
   var open=el.style.display!=='none';
   el.style.display=open?'none':'block';
-  btn.innerHTML=(open?'&#x25BC;':'&#x25B2;')+' Route Details';
+  btn.innerHTML=(open?'&#x25B2;':'&#x25BC;')+(id==='Cost'?' Cost Breakdown':' Route Details');
 };
 
 function truncate(str,n){ return str&&str.length>n?str.substring(0,n-1)+'\u2026':str||'—'; }
