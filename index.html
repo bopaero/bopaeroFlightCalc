@@ -802,8 +802,8 @@ select option { background:var(--surface2); }
       <!-- Owner / Lessee toggle — always visible -->
       <div id="userTypeRow" style="display:none;gap:4px;margin-bottom:8px">
         <button class="layer-btn active" id="btnOwner" onclick="setUserType('owner')">OWNER</button>
-        <button class="layer-btn" id="btnLessee" onclick="setUserType('lessee')">MONTHLY</button>
-        <button class="layer-btn" id="btnHourly" onclick="setUserType('hourly')">HOURLY</button>
+        <button class="layer-btn" id="btnLessee" onclick="setUserType('lessee')">MONTHLY LEASE</button>
+        <button class="layer-btn" id="btnHourly" onclick="setUserType('hourly')">HOURLY LEASE</button>
       </div>
       <div id="leaseHoursRow" class="cost-row" style="display:none;margin-bottom:8px">
         <label class="cost-lbl">Lease hrs remaining</label>
@@ -1027,7 +1027,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-06-14.1</span>
+      <span id="appVersion">v2026-06-14.2</span>
     </div>
   </div>
 
@@ -1227,8 +1227,8 @@ select option { background:var(--surface2); }
       <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Default Role</div>
       <div style="display:flex;gap:6px">
         <button id="stgBtnOwner" onclick="stgPickRole('owner')" class="layer-btn active">Owner</button>
-        <button id="stgBtnLessee" onclick="stgPickRole('lessee')" class="layer-btn">Monthly</button>
-        <button id="stgBtnHourly" onclick="stgPickRole('hourly')" class="layer-btn">Hourly</button>
+        <button id="stgBtnLessee" onclick="stgPickRole('lessee')" class="layer-btn">Monthly Lease</button>
+        <button id="stgBtnHourly" onclick="stgPickRole('hourly')" class="layer-btn">Hourly Lease</button>
       </div>
     </div>
 
@@ -1307,7 +1307,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-06-14.1';
+var APP_VERSION = 'v2026-06-14.2';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
