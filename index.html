@@ -1053,7 +1053,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-06-16.7</span>
+      <span id="appVersion">v2026-06-16.8</span>
     </div>
   </div>
 
@@ -1325,7 +1325,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-06-16.7';
+var APP_VERSION = 'v2026-06-16.8';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -1481,7 +1481,7 @@ function setCostTimeMode(mode) {
   document.getElementById('ctmTotalLbl').style.opacity = isTotal ? '1' : '0.5';
   document.getElementById('ctmFlightLbl').style.color  = isTotal ? 'var(--text-muted)' : 'var(--accent2)';
   document.getElementById('ctmFlightLbl').style.opacity = isTotal ? '0.5' : '1';
-  updateRoute();
+  recalc();
 }
 
 function doClearAll(clearPayload) {
