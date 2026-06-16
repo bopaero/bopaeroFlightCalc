@@ -682,6 +682,17 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
         </tbody>
       </table>
 
+      <h3>Cost Time Basis</h3>
+      <p>The Trip Cost card includes a <strong>Flight Time / Total Time</strong> toggle that controls which time value is used as the basis for aircraft and oil costs. It defaults to <strong>Total Time</strong> (flight time + ground time at stops).</p>
+      <table class="spec-table">
+        <thead><tr><th>Setting</th><th>Hours used for aircraft &amp; oil costs</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Total Time</strong> (default)</td><td>Flight time + all ground time at intermediate stops.</td></tr>
+          <tr><td><strong>Flight Time</strong></td><td>Airborne time only — ground stops excluded.</td></tr>
+        </tbody>
+      </table>
+      <p>Toggle between the two at any time — costs update instantly. The active basis is also shown in the <strong>▲ Cost Parameters</strong> panel alongside the actual hours used.</p>
+
       <h3>FBO / Airport Fees</h3>
       <p>TripCalc automatically looks up FBO fee data from the AOPA Airport Directory for each airport waypoint and pre-fills the fee input. Fees are selected based on your aircraft type and stop type:</p>
       <ul>
@@ -698,6 +709,23 @@ hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
       </div>
 
       <p>Use the <strong>↗ AirNav</strong> and <strong>↗ AOPA</strong> links next to each stop to verify fees directly on those sites before your flight.</p>
+
+      <h3>Cost Parameters</h3>
+      <p>Click <strong>▲ Cost Parameters</strong> inside the cost estimate card to verify every setting that affects the cost calculation before relying on the result.</p>
+      <table class="spec-table">
+        <thead><tr><th>Parameter</th><th>What it shows</th></tr></thead>
+        <tbody>
+          <tr><td>Role</td><td>Owner, Monthly Lease, or Hourly Lease — confirms the active operator role.</td></tr>
+          <tr><td>Cost Basis</td><td>Total Time or Flight Time, with the actual hours used in parentheses.</td></tr>
+          <tr><td>Aircraft Rate</td><td>$/hr charged for the aircraft (Monthly Lease and Hourly Lease only).</td></tr>
+          <tr><td>Lease Hours Remaining</td><td>Included block hours remaining in the lease period (Monthly Lease only).</td></tr>
+          <tr><td>Consumables</td><td>Total $/hr broken out as fuel $/hr + oil $/hr.</td></tr>
+          <tr><td>Pilot Cost</td><td>$/day entered, or "Not entered" if the field is blank.</td></tr>
+          <tr><td>Flying Days</td><td>Number of flying days; shows trip days in parentheses if different.</td></tr>
+          <tr><td>Ground Time/Stop</td><td>Minutes per stop × number of intermediate stops.</td></tr>
+          <tr><td>FBO Fees</td><td>Total FBO fees across all stops (shown only when greater than $0).</td></tr>
+        </tbody>
+      </table>
 
       <h3>Cost Breakdown</h3>
       <p>Click <strong>▲ Cost Breakdown</strong> inside the cost estimate card to expand a line-by-line breakdown: aircraft cost, fuel cost, oil/consumables, pilot cost, and FBO fees. The FBO row shows the stop, FBO name, and fee components (e.g. <em>KGKT · Gatlinburg Airport Authority: Tie-down ×1</em>). The triangle points ▼ when the section is expanded and ▲ when collapsed.</p>
