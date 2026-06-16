@@ -419,6 +419,21 @@ select option { background:var(--surface2); }
 .res-item-val .u { font-size:12px; color:var(--text-muted); margin-left:2px; }
 
 /* Leg breakdown */
+/* Cost time mode toggle */
+.toggle-switch { position:relative; display:inline-block; width:34px; height:18px; cursor:pointer; flex-shrink:0; }
+.toggle-switch input { opacity:0; width:0; height:0; position:absolute; }
+.toggle-track {
+  position:absolute; inset:0; border-radius:18px;
+  background:var(--border-bright); transition:background 0.2s;
+}
+.toggle-track::after {
+  content:''; position:absolute; top:2px; left:2px;
+  width:14px; height:14px; border-radius:50%;
+  background:#fff; transition:transform 0.2s;
+}
+.toggle-switch input:checked + .toggle-track { background:var(--accent2); }
+.toggle-switch input:checked + .toggle-track::after { transform:translateX(16px); }
+
 .legs-toggle {
   width:100%; background:none; border:1px solid var(--border); color:var(--text-muted);
   font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase;
@@ -1011,7 +1026,17 @@ select option { background:var(--surface2); }
 
         <!-- COST BREAKDOWN -->
         <div class="res-card" id="costCard" style="margin-top:8px;border-color:var(--accent2)">
-          <div class="res-name" style="color:var(--accent2)">&#x24; Trip Cost Estimate</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:2px">
+            <div class="res-name" style="color:var(--accent2);margin-bottom:0">&#x24; Trip Cost Estimate</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);color:var(--text-muted)">
+              <span id="ctmFlightLbl" style="opacity:0.5">Flight Time</span>
+              <label class="toggle-switch" style="margin:0" title="Switch cost basis between Total Time and Flight Time">
+                <input type="checkbox" id="costTimeModeToggle" checked onchange="setCostTimeMode(this.checked?'total':'flight')">
+                <span class="toggle-track"></span>
+              </label>
+              <span id="ctmTotalLbl" style="color:var(--accent2)">Total Time</span>
+            </div>
+          </div>
           <div class="totals-grid" id="costGrid"></div>
           <button class="legs-toggle" onclick="toggleLegs('Cost')">&#x25B2; Cost Breakdown</button>
           <div id="legsCost" style="display:none">
@@ -1028,7 +1053,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-06-14.6</span>
+      <span id="appVersion">v2026-06-16.7</span>
     </div>
   </div>
 
@@ -1300,7 +1325,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-06-14.6';
+var APP_VERSION = 'v2026-06-16.7';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -1447,6 +1472,16 @@ function clearAll() {
     return;
   }
   doClearAll(false);
+}
+
+function setCostTimeMode(mode) {
+  costTimeMode = mode;
+  var isTotal = mode === 'total';
+  document.getElementById('ctmTotalLbl').style.color  = isTotal ? 'var(--accent2)' : 'var(--text-muted)';
+  document.getElementById('ctmTotalLbl').style.opacity = isTotal ? '1' : '0.5';
+  document.getElementById('ctmFlightLbl').style.color  = isTotal ? 'var(--text-muted)' : 'var(--accent2)';
+  document.getElementById('ctmFlightLbl').style.opacity = isTotal ? '0.5' : '1';
+  updateRoute();
 }
 
 function doClearAll(clearPayload) {
@@ -4031,6 +4066,7 @@ function updateMode(state) {
 // ── AIRCRAFT ─────────────────────────────────────────────────────────────────
 var comparisonActive = false;
 var userType = 'owner'; // 'owner', 'lessee', or 'hourly'
+var costTimeMode = 'total'; // 'total' or 'flight' — basis for billable hours and oil calc
 
 var acPaneOpen = false;
 
@@ -5036,22 +5072,23 @@ window.recalc = function() {
   var gph = acGph[spdKey] || 0;
   var fuelPriceGal = gph > 0 ? (fuelPerHr / gph) : 0;
 
-  // Aircraft cost depends on user type
+  // Aircraft cost depends on user type and selected time mode
+  var basisHrs = costTimeMode === 'total' ? rA.hours : rA.flightHours;
   var acCost = 0;
   var billableHrs = 0;
   if (userType === 'owner') {
     acCost = 0;
   } else if (userType === 'hourly') {
-    billableHrs = rA.flightHours;
+    billableHrs = basisHrs;
     acCost = acPerHr * billableHrs;
   } else {
     // Monthly lessee: only hours exceeding included block are billed
-    billableHrs = Math.max(0, rA.flightHours - leaseHrsIncl);
+    billableHrs = Math.max(0, basisHrs - leaseHrsIncl);
     acCost = acPerHr * billableHrs;
   }
 
   var fuelCost      = totalFuelCostA;
-  var oilCost       = oilPerHr * rA.flightHours;
+  var oilCost       = oilPerHr * basisHrs;
   var consumCost    = fuelCost + oilCost;
   var pilotCost     = pilotEntered ? pilot * days : null;
 
@@ -5092,17 +5129,18 @@ window.recalc = function() {
   var tbl = document.getElementById('legsTableCost');
   if (pilotEntered) {
     var rows = '<colgroup><col style="width:20%"><col style="width:50%"><col style="width:30%"></colgroup><tr><th>Item</th><th>Detail</th><th>Cost</th></tr>';
+    var timeLbl = costTimeMode === 'total' ? 'total' : 'flight';
     if (userType === 'hourly') {
-      rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
+      rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' ' + timeLbl + ' hr × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
     } else if (userType === 'lessee') {
       if (billableHrs > 0) {
-        rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' hr over ' + leaseHrsIncl + ' remaining × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
+        rows += '<tr><td>Aircraft</td><td>' + billableHrs.toFixed(2) + ' ' + timeLbl + ' hr over ' + leaseHrsIncl + ' remaining × $' + acPerHr + '/hr</td><td>' + fmt$(acCost) + '</td></tr>';
       } else {
-        rows += '<tr><td>Aircraft</td><td>' + rA.flightHours.toFixed(2) + ' hr within ' + leaseHrsIncl + ' hr remaining</td><td>$0</td></tr>';
+        rows += '<tr><td>Aircraft</td><td>' + basisHrs.toFixed(2) + ' ' + timeLbl + ' hr within ' + leaseHrsIncl + ' hr remaining</td><td>$0</td></tr>';
       }
     }
     rows += '<tr><td>Fuel</td><td>' + totalFuelGalA.toFixed(1) + ' gal × $' + blendedPriceA.toFixed(2) + '/gal blended</td><td>' + fmt$(fuelCost) + '</td></tr>';
-    rows += '<tr><td>Oil</td><td>' + rA.flightHours.toFixed(2) + ' hr × $' + oilPerHr.toFixed(2) + '/hr</td><td>' + fmt$(oilCost) + '</td></tr>';
+    rows += '<tr><td>Oil</td><td>' + basisHrs.toFixed(2) + ' ' + timeLbl + ' hr × $' + oilPerHr.toFixed(2) + '/hr</td><td>' + fmt$(oilCost) + '</td></tr>';
     var pilotDetail = flyingDays + ' flying day' + (flyingDays>1?'s':'') + ' × $' + pilot + '/day';
     if (tripDaysVal && tripDays > flyingDays) pilotDetail += ' (' + tripDays + ' day trip)';
     rows += '<tr><td>Pilot</td><td>' + pilotDetail + '</td><td>' + fmt$(pilotCost) + '</td></tr>';
@@ -5225,18 +5263,19 @@ function buildTripData() {
     var tripDaysVal = (document.getElementById('costTripDays')||{}).value;
     var tripDays = tripDaysVal ? Math.max(parseFloat(tripDaysVal), flyingDays) : flyingDays;
 
+    var basisHrs2 = costTimeMode === 'total' ? totals.totalHrs : totals.flightHrs;
     var billableHrs = 0, acCost = 0;
     if (userType === 'hourly') {
-      billableHrs = totals.flightHrs;
+      billableHrs = basisHrs2;
       acCost = acPerHr * billableHrs;
     } else if (userType === 'lessee') {
-      billableHrs = Math.max(0, totals.flightHrs - leaseHrsIncl);
+      billableHrs = Math.max(0, basisHrs2 - leaseHrsIncl);
       acCost = acPerHr * billableHrs;
     }
     var _spdKeyC = String(Math.round(acA.speed));
     var fuelCost = legs.reduce(function(s, l) { return s + (l.fuelGal || 0) * scrapedPricePerGal(l.depIcao, _spdKeyC); }, 0);
     var blendedPrice = totals.fuelGal > 0 ? fuelCost / totals.fuelGal : 0;
-    var oilCost = oilPerHr * totals.flightHrs;
+    var oilCost = oilPerHr * basisHrs2;
     var consumCost = fuelCost + oilCost;
     var pilotCost2 = pilot2 * flyingDays;
 
