@@ -420,19 +420,19 @@ select option { background:var(--surface2); }
 
 /* Leg breakdown */
 /* Cost time mode toggle */
-.toggle-switch { position:relative; display:inline-block; width:34px; height:18px; cursor:pointer; flex-shrink:0; }
+.toggle-switch { position:relative; display:inline-block; width:24px; height:13px; cursor:pointer; flex-shrink:0; }
 .toggle-switch input { opacity:0; width:0; height:0; position:absolute; }
 .toggle-track {
-  position:absolute; inset:0; border-radius:18px;
+  position:absolute; inset:0; border-radius:13px;
   background:var(--border-bright); transition:background 0.2s;
 }
 .toggle-track::after {
   content:''; position:absolute; top:2px; left:2px;
-  width:14px; height:14px; border-radius:50%;
+  width:9px; height:9px; border-radius:50%;
   background:#fff; transition:transform 0.2s;
 }
 .toggle-switch input:checked + .toggle-track { background:var(--accent2); }
-.toggle-switch input:checked + .toggle-track::after { transform:translateX(16px); }
+.toggle-switch input:checked + .toggle-track::after { transform:translateX(11px); }
 
 .legs-toggle {
   width:100%; background:none; border:1px solid var(--border); color:var(--text-muted);
@@ -1028,13 +1028,13 @@ select option { background:var(--surface2); }
         <div class="res-card" id="costCard" style="margin-top:8px;border-color:var(--accent2)">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:2px">
             <div class="res-name" style="color:var(--accent2);margin-bottom:0">&#x24; Trip Cost Estimate</div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);color:var(--text-muted)">
-              <span id="ctmFlightLbl" style="opacity:0.5">Flight Time</span>
+            <div style="display:flex;align-items:center;gap:4px;font-size:10px;font-family:var(--mono);color:var(--text-muted);opacity:0.7">
+              <span id="ctmFlightLbl" style="opacity:0.5">Flt</span>
               <label class="toggle-switch" style="margin:0" title="Switch cost basis between Total Time and Flight Time">
                 <input type="checkbox" id="costTimeModeToggle" checked onchange="setCostTimeMode(this.checked?'total':'flight')">
                 <span class="toggle-track"></span>
               </label>
-              <span id="ctmTotalLbl" style="color:var(--accent2)">Total Time</span>
+              <span id="ctmTotalLbl" style="color:var(--accent2)">Tot</span>
             </div>
           </div>
           <div class="totals-grid" id="costGrid"></div>
@@ -1057,7 +1057,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-06-16.4</span>
+      <span id="appVersion">v2026-06-16.5</span>
     </div>
   </div>
 
@@ -1329,7 +1329,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-06-16.4';
+var APP_VERSION = 'v2026-06-16.5';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
