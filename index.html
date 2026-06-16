@@ -1038,6 +1038,10 @@ select option { background:var(--surface2); }
             </div>
           </div>
           <div class="totals-grid" id="costGrid"></div>
+          <button class="legs-toggle" onclick="toggleLegs('Params')">&#x25B2; Cost Parameters</button>
+          <div id="legsParams" style="display:none">
+            <table class="legs-table" id="costParamsTable"></table>
+          </div>
           <button class="legs-toggle" onclick="toggleLegs('Cost')">&#x25B2; Cost Breakdown</button>
           <div id="legsCost" style="display:none">
             <table class="legs-table" id="legsTableCost"></table>
@@ -1053,7 +1057,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-06-16.2</span>
+      <span id="appVersion">v2026-06-16.3</span>
     </div>
   </div>
 
@@ -1325,7 +1329,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-06-16.2';
+var APP_VERSION = 'v2026-06-16.3';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -5125,6 +5129,31 @@ window.recalc = function() {
     grid.innerHTML = gridHtml;
   }
 
+  // Cost parameters table
+  var paramsTbl = document.getElementById('costParamsTable');
+  if (paramsTbl) {
+    var roleLabel = userType === 'owner' ? 'Owner' : userType === 'hourly' ? 'Hourly Lease' : 'Monthly Lease';
+    var timeBasisLabel = costTimeMode === 'total' ? 'Total Time (' + fmtTime(rA.hours) + ')' : 'Flight Time (' + fmtTime(rA.flightHours) + ')';
+    var pRows = '<colgroup><col style="width:40%"><col style="width:60%"></colgroup>';
+    pRows += '<tr><th>Parameter</th><th>Value</th></tr>';
+    pRows += '<tr><td>Role</td><td>' + roleLabel + '</td></tr>';
+    pRows += '<tr><td>Cost Basis</td><td>' + timeBasisLabel + '</td></tr>';
+    if (userType !== 'owner') {
+      pRows += '<tr><td>Aircraft Rate</td><td>$' + acPerHr + '/hr</td></tr>';
+    }
+    if (userType === 'lessee') {
+      pRows += '<tr><td>Lease Hours Remaining</td><td>' + leaseHrsIncl + ' hr</td></tr>';
+    }
+    pRows += '<tr><td>Consumables</td><td>$' + consumPerHr + '/hr (fuel $' + fuelPerHr.toFixed(2) + ' + oil $' + oilPerHr.toFixed(2) + ')</td></tr>';
+    pRows += '<tr><td>Pilot Cost</td><td>' + (pilotEntered ? '$' + pilot + '/day' : 'Not entered') + '</td></tr>';
+    pRows += '<tr><td>Flying Days</td><td>' + flyingDays + (tripDaysVal && tripDays > flyingDays ? ' (trip: ' + tripDays + ' days)' : '') + '</td></tr>';
+    pRows += '<tr><td>Ground Time/Stop</td><td>' + (document.getElementById('groundMinsPerStop') ? document.getElementById('groundMinsPerStop').value : '35') + ' min × ' + (placed.length > 1 ? Math.max(0, placed.length - 2) : 0) + ' stop' + (Math.max(0, placed.length - 2) !== 1 ? 's' : '') + '</td></tr>';
+    if (fboTotal > 0) {
+      pRows += '<tr><td>FBO Fees</td><td>' + fmt$(fboTotal) + ' total</td></tr>';
+    }
+    paramsTbl.innerHTML = pRows;
+  }
+
   // Cost breakdown table
   var tbl = document.getElementById('legsTableCost');
   if (pilotEntered) {
@@ -5825,7 +5854,8 @@ window.toggleLegs = function(id) {
   var btn=el.previousElementSibling;
   var open=el.style.display!=='none';
   el.style.display=open?'none':'block';
-  btn.innerHTML=(open?'&#x25B2;':'&#x25BC;')+(id==='Cost'?' Cost Breakdown':' Route Details');
+  var label = id==='Cost' ? ' Cost Breakdown' : id==='Params' ? ' Cost Parameters' : ' Route Details';
+  btn.innerHTML=(open?'&#x25B2;':'&#x25BC;')+label;
 };
 
 function truncate(str,n){ return str&&str.length>n?str.substring(0,n-1)+'\u2026':str||'—'; }
