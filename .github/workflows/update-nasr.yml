@@ -26,10 +26,11 @@ jobs:
           days = (now - anchor).days
           cycles = days // 28
           cycle_date = anchor + timedelta(days=cycles * 28)
-          # FAA uses 'DD_Mon_YYYY' format for the zip URL
+          # FAA uses 'DD_Mon_YYYY' format for the zip URL, with the day
+          # ZERO-PADDED to two digits (e.g. '09_Jul_2026', not '9_Jul_2026').
           months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
           mon = months[cycle_date.month - 1]
-          zip_date = f'{cycle_date.day}_{mon}_{cycle_date.year}'
+          zip_date = f'{cycle_date.day:02d}_{mon}_{cycle_date.year}'
           iso_date = cycle_date.strftime('%Y-%m-%d')
           print(f'ZIP_DATE={zip_date}')
           print(f'ISO_DATE={iso_date}')
@@ -41,7 +42,10 @@ jobs:
           ISO_DATE="${{ steps.cycle.outputs.ISO_DATE }}"
           URL="https://nfdc.faa.gov/webContent/28DaySub/extra/${ZIP_DATE}_APT_CSV.zip"
           echo "Fetching: $URL"
-          curl -sL -o apt_csv.zip "$URL"
+          # -f makes curl exit non-zero on HTTP 4xx/5xx (e.g. a wrong cycle URL)
+          # so the step fails clearly instead of saving an HTML error page and
+          # dying later with a cryptic "not a zipfile" error from unzip.
+          curl -fsSL -o apt_csv.zip "$URL"
           unzip -o apt_csv.zip APT_BASE.csv
 
           # Extract ARPT_ID + FACILITY_USE_CODE, and fuel types
