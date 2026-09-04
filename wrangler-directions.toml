@@ -1,0 +1,6 @@
+name = "tripcalc-directions"
+main = "workers/tripcalc-directions.js"
+compatibility_date = "2024-01-01"
+
+# MAPBOX_TOKEN is a secret, not a var — set it with:
+#   wrangler secret put MAPBOX_TOKEN -c wrangler-directions.toml

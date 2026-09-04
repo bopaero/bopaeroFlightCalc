@@ -1057,7 +1057,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-04.1</span>
+      <span id="appVersion">v2026-09-04.2</span>
     </div>
   </div>
 
@@ -1329,7 +1329,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-04.1';
+var APP_VERSION = 'v2026-09-04.2';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -2532,7 +2532,11 @@ function placeWaypointFromCoords(id, originLat, originLng) {
 
 var DRIVE_ROUTE_MIN_ZOOM = 11;
 var _driveRouteErrShown = false;
-var MAPBOX_TOKEN = 'pk.eyJ1IjoiYm9wYWVybyIsImEiOiJjbW55cTlyaHAwNGR5MnNvaXM5NGlpM2l6In0.NSwuC7VX576weB7LLZ1QVg';
+// Drive routes go through a Cloudflare Worker that holds the Mapbox token as
+// a secret. Previously the token was inlined here and restricted by Mapbox to
+// the tripcalc.bopaero.com URL, which is enforced off the Referer header —
+// browsers that omit Referer got a silent 403 and no drive route.
+var DIRECTIONS_WORKER = 'https://tripcalc-directions.compilotrc.workers.dev/';
 function driveRouteColor() { return isLightMode() ? '#d946ef' : '#f0abfc'; }
 function makeAirportIcon() {
   var c = isLightMode() ? '#0077aa' : '#00d4ff';
@@ -2554,9 +2558,9 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
   if (wp.driveLine) { map.removeLayer(wp.driveLine); wp.driveLine = null; }
   if (wp.driveTimeLabel) { map.removeLayer(wp.driveTimeLabel); wp.driveTimeLabel = null; }
   if (wp.homeMarker) { map.removeLayer(wp.homeMarker); wp.homeMarker = null; }
-  var url = 'https://api.mapbox.com/directions/v5/mapbox/driving/' +
-    oLng + ',' + oLat + ';' + aLng + ',' + aLat +
-    '?overview=full&geometries=geojson&access_token=' + MAPBOX_TOKEN;
+  var url = DIRECTIONS_WORKER +
+    '?from=' + oLng + ',' + oLat +
+    '&to='   + aLng + ',' + aLat;
   wp.driveRouteFailed = false;
   fetch(url).then(function(r){
     if (!r.ok) {
@@ -2566,13 +2570,12 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
     }
     return r.json();
   }).then(function(j){
-    if (!j || !j.routes || !j.routes.length) {
-      throw new Error('no route in response' + (j && j.message ? ': ' + j.message : ''));
+    if (!j || !j.coordinates || !j.coordinates.length) {
+      throw new Error('no route in response' + (j && j.error ? ': ' + j.error : ''));
     }
-    var route = j.routes[0];
-    var coords = route.geometry.coordinates.map(function(c){ return [c[1], c[0]]; });
-    wp.driveMi = route.distance / 1609.344;
-    wp.driveSec = route.duration;
+    var coords = j.coordinates.map(function(c){ return [c[1], c[0]]; });
+    wp.driveMi = j.distanceM / 1609.344;
+    wp.driveSec = j.durationS;
     wp.driveLine = L.polyline(coords, {
       color: driveRouteColor(), weight: 4, opacity: 0.85, dashArray: '6,6', interactive: false
     });
@@ -2581,7 +2584,7 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
       interactive: false,
       icon: L.divIcon({
         className: 'drive-time-label',
-        html: '<span>' + formatDriveTime(route.duration) + '</span>',
+        html: '<span>' + formatDriveTime(j.durationS) + '</span>',
         iconSize: null
       })
     });
@@ -2592,7 +2595,7 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
     // Directions call failed — keep the straight-line estimate already in
     // wp.driveMi, but make the degraded state visible instead of silent.
     wp.driveRouteFailed = true;
-    console.warn('[TripCalc] Mapbox Directions failed:', err && err.message ? err.message : err);
+    console.warn('[TripCalc] drive route request failed:', err && err.message ? err.message : err);
     if (!_driveRouteErrShown) {
       _driveRouteErrShown = true;
       _flashToast('Drive route unavailable — showing estimate');
