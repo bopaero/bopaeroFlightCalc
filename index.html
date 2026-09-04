@@ -1057,7 +1057,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-07-10.1</span>
+      <span id="appVersion">v2026-09-04.1</span>
     </div>
   </div>
 
@@ -1329,7 +1329,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-07-10.1';
+var APP_VERSION = 'v2026-09-04.1';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -1705,7 +1705,10 @@ function renderWPList() {
       var driveHrs = wp.driveMi / 35; // avg 35 mph
       var driveMins = Math.round(driveHrs * 60);
       var driveTimeStr = driveMins >= 60 ? Math.floor(driveMins / 60) + 'hr ' + (driveMins % 60) + 'min' : driveMins + 'min';
-      innerHtml += '<div class="wp-drive" style="gap:5px">&#x1F697; <span class="wp-drive-val">' + wp.driveMi.toFixed(1) + ' mi</span><span style="color:var(--accent2)">~' + driveTimeStr + '</span><span style="color:var(--text-muted)">' + driveLabel + '</span></div>';
+      var driveWarn = wp.driveRouteFailed
+        ? '<span style="color:var(--text-muted)" title="Mapbox Directions unavailable — straight-line estimate, no route drawn on map">(est.)</span>'
+        : '';
+      innerHtml += '<div class="wp-drive" style="gap:5px">&#x1F697; <span class="wp-drive-val">' + wp.driveMi.toFixed(1) + ' mi</span><span style="color:var(--accent2)">~' + driveTimeStr + '</span>' + driveWarn + '<span style="color:var(--text-muted)">' + driveLabel + '</span></div>';
     }
 
     // Overnight toggle — shown on placed non-origin waypoints
@@ -2528,6 +2531,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
 }
 
 var DRIVE_ROUTE_MIN_ZOOM = 11;
+var _driveRouteErrShown = false;
 var MAPBOX_TOKEN = 'pk.eyJ1IjoiYm9wYWVybyIsImEiOiJjbW55cTlyaHAwNGR5MnNvaXM5NGlpM2l6In0.NSwuC7VX576weB7LLZ1QVg';
 function driveRouteColor() { return isLightMode() ? '#d946ef' : '#f0abfc'; }
 function makeAirportIcon() {
@@ -2553,8 +2557,18 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
   var url = 'https://api.mapbox.com/directions/v5/mapbox/driving/' +
     oLng + ',' + oLat + ';' + aLng + ',' + aLat +
     '?overview=full&geometries=geojson&access_token=' + MAPBOX_TOKEN;
-  fetch(url).then(function(r){ return r.json(); }).then(function(j){
-    if (!j || !j.routes || !j.routes.length) return;
+  wp.driveRouteFailed = false;
+  fetch(url).then(function(r){
+    if (!r.ok) {
+      return r.text().then(function(body){
+        throw new Error('HTTP ' + r.status + ' ' + (body || '').slice(0, 200));
+      });
+    }
+    return r.json();
+  }).then(function(j){
+    if (!j || !j.routes || !j.routes.length) {
+      throw new Error('no route in response' + (j && j.message ? ': ' + j.message : ''));
+    }
     var route = j.routes[0];
     var coords = route.geometry.coordinates.map(function(c){ return [c[1], c[0]]; });
     wp.driveMi = route.distance / 1609.344;
@@ -2574,7 +2588,17 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
     wp.homeMarker = L.marker([oLat, oLng], { icon: makeHouseIcon(), interactive: false });
     updateDriveRoutesVisibility();
     renderWPList(); recalc();
-  }).catch(function(){});
+  }).catch(function(err){
+    // Directions call failed — keep the straight-line estimate already in
+    // wp.driveMi, but make the degraded state visible instead of silent.
+    wp.driveRouteFailed = true;
+    console.warn('[TripCalc] Mapbox Directions failed:', err && err.message ? err.message : err);
+    if (!_driveRouteErrShown) {
+      _driveRouteErrShown = true;
+      _flashToast('Drive route unavailable — showing estimate');
+    }
+    renderWPList(); recalc();
+  });
 }
 function updateDriveRoutesVisibility() {
   var show = map.getZoom() >= DRIVE_ROUTE_MIN_ZOOM;
