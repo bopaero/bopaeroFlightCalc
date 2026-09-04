@@ -31,6 +31,10 @@ const LOCAL_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 const CACHE_TTL = 60 * 60 * 24 * 30; // drive routes are effectively static
 
+// Sent as Referer on the upstream Mapbox call so the proxy works whether or
+// not the token still has Mapbox URL restrictions applied.
+const CANONICAL_REFERER = 'https://tripcalc.bopaero.com/';
+
 function originAllowed(origin) {
   if (!origin) return false;
   return ALLOWED_ORIGINS.includes(origin) || LOCAL_ORIGIN.test(origin);
@@ -109,7 +113,11 @@ export default {
 
     let upstream;
     try {
-      upstream = await fetch(mbUrl);
+      // Send a Referer matching the canonical site URL. An unrestricted token
+      // ignores this; a token still carrying Mapbox's URL restriction needs it,
+      // since a server-side fetch sends no Referer of its own. Keeping it means
+      // the proxy works with the token configured either way.
+      upstream = await fetch(mbUrl, { headers: { 'Referer': CANONICAL_REFERER } });
     } catch (e) {
       return json({ error: 'upstream unreachable' }, 502, origin);
     }
