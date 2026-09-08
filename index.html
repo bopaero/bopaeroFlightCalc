@@ -1057,7 +1057,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-04.3</span>
+      <span id="appVersion">v2026-09-07.1</span>
     </div>
   </div>
 
@@ -1329,7 +1329,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-04.3';
+var APP_VERSION = 'v2026-09-07.1';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -1358,7 +1358,12 @@ function setNasrText(text, color) {
 })();
 // ── TILE LAYERS ───────────────────────────────────────────────────────────────
 var TILES = {
-  dark:      { url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',      attr:'&copy; <a href="https://carto.com/">CARTO</a> &copy; OSM', maxZoom:19 },
+  // Esri Dark Gray Canvas: keyless and not Referer-gated, so it renders identically
+  // in every browser regardless of referrer policy. Ships as base + labels pair.
+  dark:      { layers:[
+                 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+                 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
+               ], attr:'&copy; Esri', maxZoom:19 },
   street:    { url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',                  attr:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19 },
   satellite: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr:'&copy; Esri', maxZoom:17 }
 };
@@ -1366,12 +1371,15 @@ var TILES = {
 var map = L.map('map', { center: [37.5, -82], zoom: 6, zoomControl: true,
   dragging: false, touchZoom: false, scrollWheelZoom: false,
   doubleClickZoom: false, keyboard: false });
-var currentTile = null;
+var currentTile = [];
 
 function setLayer(name) {
-  if (currentTile) map.removeLayer(currentTile);
+  currentTile.forEach(function(l) { map.removeLayer(l); });
   var t = TILES[name];
-  currentTile = L.tileLayer(t.url, { attribution: t.attr, maxZoom: t.maxZoom }).addTo(map);
+  var urls = t.layers || [t.url];
+  currentTile = urls.map(function(u) {
+    return L.tileLayer(u, { attribution: t.attr, maxZoom: t.maxZoom }).addTo(map);
+  });
   ['Dark','Street','Satellite'].forEach(function(k) {
     var btn = document.getElementById('btn'+k);
     btn.classList.toggle('active', k.toLowerCase() === name);
