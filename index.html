@@ -1057,7 +1057,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-07.1</span>
+      <span id="appVersion">v2026-09-07.2</span>
     </div>
   </div>
 
@@ -1329,7 +1329,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-07.1';
+var APP_VERSION = 'v2026-09-07.2';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -1363,7 +1363,7 @@ var TILES = {
   dark:      { layers:[
                  'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
                  'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
-               ], attr:'&copy; Esri', maxZoom:19 },
+               ], attr:'&copy; Esri', maxZoom:19, maxNativeZoom:16 },
   street:    { url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',                  attr:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19 },
   satellite: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr:'&copy; Esri', maxZoom:17 }
 };
@@ -1378,7 +1378,12 @@ function setLayer(name) {
   var t = TILES[name];
   var urls = t.layers || [t.url];
   currentTile = urls.map(function(u) {
-    return L.tileLayer(u, { attribution: t.attr, maxZoom: t.maxZoom }).addTo(map);
+    var opts = { attribution: t.attr, maxZoom: t.maxZoom };
+    // Esri's canvas cache stops at z16 and returns a light-gray "Map data not
+    // yet available" tile (at HTTP 200) above it. Upscale the deepest real
+    // tile instead of requesting those.
+    if (t.maxNativeZoom) opts.maxNativeZoom = t.maxNativeZoom;
+    return L.tileLayer(u, opts).addTo(map);
   });
   ['Dark','Street','Satellite'].forEach(function(k) {
     var btn = document.getElementById('btn'+k);
