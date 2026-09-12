@@ -1,0 +1,5 @@
+# Wrangler local state — never committed
+.wrangler/
+
+# Claude Code local overrides (may contain machine-specific paths)
+.claude/settings.local.json

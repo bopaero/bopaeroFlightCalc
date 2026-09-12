@@ -1,0 +1,94 @@
+name: Check External Dependencies
+
+on:
+  schedule:
+    # 07:00 UTC daily — an hour after update-nasr.yml, so the two never contend.
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+# Avoid piling up runs if one hangs on a slow provider.
+concurrency:
+  group: check-deps
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run dependency checks
+        id: check
+        # Don't abort here — we want the report published and an issue opened
+        # even (especially) when checks fail. The final step sets the job status.
+        continue-on-error: true
+        run: python3 scripts/check_deps.py
+
+      - name: Open or update alert issue
+        if: steps.check.outputs.failed == 'true'
+        uses: actions/github-script@v7
+        env:
+          REPORT: ${{ steps.check.outputs.report }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const title = 'TripCalc external dependency FAILING';
+            const body = [
+              'The daily dependency check found a broken external dependency.',
+              '',
+              '```',
+              process.env.REPORT,
+              '```',
+              '',
+              `[Full run log](${process.env.RUN_URL})`,
+              '',
+              '> Checks verify CONTENT, not HTTP status. A provider returning 200',
+              '> with a watermark or placeholder tile still counts as broken.',
+              '> Reproduce locally with `python3 scripts/check_deps.py`.',
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const existing = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: 'dependency-alert',
+            });
+
+            if (existing.data.length) {
+              // Reuse the open issue so a multi-day outage doesn't spam a new
+              // issue every morning.
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: existing.data[0].number, body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner, repo, title, body, labels: ['dependency-alert'],
+              });
+            }
+
+      - name: Close alert issue once healthy again
+        if: steps.check.outputs.failed == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const open = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: 'dependency-alert',
+            });
+            for (const issue of open.data) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issue.number,
+                body: 'All dependency checks passing again — closing automatically.',
+              });
+              await github.rest.issues.update({
+                owner, repo, issue_number: issue.number, state: 'closed',
+              });
+            }
+
+      - name: Fail the job if any check failed
+        if: steps.check.outputs.failed == 'true'
+        run: |
+          echo "One or more dependency checks failed — see the job summary above."
+          exit 1
