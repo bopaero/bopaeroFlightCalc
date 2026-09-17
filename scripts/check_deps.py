@@ -19,10 +19,13 @@ Exit 0 = all good, 1 = at least one FAIL.
 import hashlib
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 
 TIMEOUT = 45
+RETRIES = 3
+BACKOFF = (0, 2, 5)   # seconds before attempts 1, 2, 3
 UA = "Mozilla/5.0 (compatible; TripCalc-depcheck/1.0; +https://tripcalc.bopaero.com)"
 ORIGIN = "https://tripcalc.bopaero.com"
 
@@ -33,14 +36,42 @@ def record(ok, name, detail):
     results.append(("PASS" if ok else "FAIL", name, detail))
 
 
-def get(url, headers=None):
-    """Return (status, body_bytes). Raises only on transport errors."""
+def get(url, headers=None, expect_json=False):
+    """Return (status, body_bytes), retrying transient failures.
+
+    A single request used to decide each check, and these are public endpoints
+    that blink. On 2026-09-16 the Census geocoder returned a body that was not
+    JSON, the run failed, an alert went out, and the service was fine minutes
+    later. This monitor exists because nobody is watching by hand, so its worth
+    depends on being believed when it fires - one transient miss teaches the
+    reader to skim past the next one. Only a sustained outage should alert.
+
+    Retries on a transport error, 5xx, 429, an empty body, or - when the caller
+    says the endpoint must return JSON - a body that will not parse.
+    """
     req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
-    try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-            return r.status, r.read()
-    except urllib.error.HTTPError as e:
-        return e.code, e.read()
+    last = (0, b"")
+    for attempt in range(RETRIES):
+        if attempt:
+            time.sleep(BACKOFF[attempt])
+        try:
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+                status, body = r.status, r.read()
+        except urllib.error.HTTPError as e:
+            status, body = e.code, e.read()
+        except Exception:
+            last = (0, b"")
+            continue
+        last = (status, body)
+        if status >= 500 or status == 429 or not body:
+            continue
+        if expect_json:
+            try:
+                json.loads(body)
+            except Exception:
+                continue
+        return status, body
+    return last
 
 
 # Three widely separated z12 tiles: NYC, Los Angeles, Chicago.
@@ -130,6 +161,7 @@ def check_workers():
             "https://tripcalc-directions.compilotrc.workers.dev/"
             "?from=-73.7781,40.6413&to=-73.9857,40.7484",
             org,
+            expect_json=True,
         )
         d = json.loads(body)
         coords = d.get("coordinates") or []
@@ -145,7 +177,8 @@ def check_workers():
     # Fuel: must return a plausible price, not null/zero.
     try:
         status, body = get(
-            "https://wandering-star-ec81.compilotrc.workers.dev/?icao=KJFK", org)
+            "https://wandering-star-ec81.compilotrc.workers.dev/?icao=KJFK", org,
+            expect_json=True)
         d = json.loads(body)
         price = d.get("avgas_100ll")
         if status == 200 and isinstance(price, (int, float)) and 1 < price < 50:
@@ -158,7 +191,8 @@ def check_workers():
     # FBO fees: must return at least one FBO with fees.
     try:
         status, body = get(
-            "https://fbo-fees.compilotrc.workers.dev/?icao=KJFK", org)
+            "https://fbo-fees.compilotrc.workers.dev/?icao=KJFK", org,
+            expect_json=True)
         d = json.loads(body)
         fbos = d.get("fbos") or []
         if status == 200 and fbos and fbos[0].get("fees"):
@@ -211,7 +245,8 @@ def check_data_feeds():
     try:
         status, body = get(
             "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
-            "?address=1600+Pennsylvania+Ave+NW+Washington+DC&benchmark=4&format=json")
+            "?address=1600+Pennsylvania+Ave+NW+Washington+DC&benchmark=4&format=json",
+            expect_json=True)
         d = json.loads(body)
         matches = d.get("result", {}).get("addressMatches") or []
         if status == 200 and matches and "coordinates" in matches[0]:
