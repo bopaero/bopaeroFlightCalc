@@ -209,9 +209,16 @@ def check_data_feeds():
 
     # Census geocoder (JSONP in the app; JSON here) must actually resolve an address.
     try:
-        status, body = get(
-            "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
-            "?address=1600+Pennsylvania+Ave+NW+Washington+DC&benchmark=4&format=json")
+        url = ("https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
+               "?address=1600+Pennsylvania+Ave+NW+Washington+DC&benchmark=4&format=json")
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        try:
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+                status, body, resp_headers = r.status, r.read(), dict(r.headers)
+        except urllib.error.HTTPError as e:
+            status, body, resp_headers = e.code, e.read(), dict(e.headers)
+        print(f"DIAG census status={status} content-type={resp_headers.get('Content-Type')} "
+              f"len={len(body)} first300={body[:300]!r}", file=sys.stderr)
         d = json.loads(body)
         matches = d.get("result", {}).get("addressMatches") or []
         if status == 200 and matches and "coordinates" in matches[0]:
