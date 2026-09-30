@@ -1057,7 +1057,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-30.3</span>
+      <span id="appVersion">v2026-09-30.4</span>
     </div>
   </div>
 
@@ -1329,7 +1329,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-30.3';
+var APP_VERSION = 'v2026-09-30.4';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -1799,15 +1799,7 @@ function renderWPList() {
       // Re-index
       waypoints.forEach(function(w, idx){ w.idx = idx; });
 
-      // Update marker icons to reflect new colours/numbers
-      waypoints.forEach(function(w, idx) {
-        if (w.marker && w.lat !== null) {
-          var c = wpColor(idx);
-          w.marker.setIcon(makeIcon(c, idx + 1));
-        }
-      });
-
-      dragSrcId = null;
+      dragSrcId = null; // recalc() below redraws every marker for its new position
       drawAllLines();
       renderWPList();
       recalc();
@@ -2057,6 +2049,117 @@ window.geocodeAddress = function(id) {
   }
 };
 
+// ── STOP MARKER & POPUP ───────────────────────────────────────────────────────
+// Every way of adding a stop — map click, ICAO code, city, favorite, auto fuel
+// stop, restored trip, default origin — goes through these, so a stop looks the
+// same on the map however it was added.
+
+// Copy an airport's fields onto a waypoint. `ap` is an OA_CACHE entry or any
+// object with lat/lng/name/icao and optionally localCode/icaoCode.
+function setWpAirport(wp, ap, rwyFt) {
+  wp.lat = ap.lat; wp.lng = ap.lng;
+  wp.name = ap.name; wp.icao = ap.icao || null;
+  wp.localCode = ap.localCode || null; wp.icaoCode = ap.icaoCode || null;
+  wp.rwyFt = rwyFt || 0;
+  wp.warn = wpNeedsWarn(wp.rwyFt);
+  wp.noAirportNearby = false;
+  wp.fuelFilterMissed = false;
+}
+
+function isOriginWp(w) {
+  for (var i = 0; i < waypoints.length; i++) if (waypoints[i].lat !== null) return waypoints[i] === w;
+  return false;
+}
+
+// Marker icon from the stop's current state: runway warning or unsuitable,
+// missing fuel (never flagged on the origin), overnight.
+function wpIcon(w, idx) {
+  var c = wpColor(idx), badge = wpBadge(idx);
+  var unsuitable = w.warn && w.rwyFt < getRwyThresholds().minFt;
+  var icon = unsuitable ? makeUnsuitableIcon(c, badge) : (w.warn ? makeWarnIcon(c, badge) : makeIcon(c, badge));
+  if (!isOriginWp(w) && w.icao) {
+    var acA = getAC('A');
+    var spdKey = acA ? String(Math.round(acA.speed)) : '';
+    if (spdKey && !airportHasFuel(w, spdKey)) {
+      var sz = icon.options.iconSize;
+      icon = L.divIcon({
+        className: '',
+        html: '<div style="position:relative">' + icon.options.html +
+          '<div style="position:absolute;top:-6px;left:-6px;background:#f59e0b;color:#000;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;line-height:1" title="No fuel services">!</div></div>',
+        iconSize: [sz[0] + 4, sz[1] + 4],
+        iconAnchor: [sz[0]/2 + 2, sz[1]/2 + 2],
+        popupAnchor: icon.options.popupAnchor
+      });
+    }
+  }
+  if (w.overnight) {
+    var size = icon.options.iconSize;
+    icon = L.divIcon({
+      className: '',
+      html: addOvernightBadge(icon.options.html),
+      iconSize: [size[0] + 4, size[1] + 4],
+      iconAnchor: [size[0]/2 + 2, size[1]/2 + 2],
+      popupAnchor: icon.options.popupAnchor
+    });
+  }
+  return icon;
+}
+
+// Popup HTML, built each time the popup opens (and refreshed while it's open),
+// so it always shows the stop's current label, runway, fuel and overnight state.
+function wpPopupHtml(w) {
+  var idx = waypoints.indexOf(w);
+  var isOrigin = isOriginWp(w);
+  var acA = getAC('A');
+  var spdKey = acA ? String(Math.round(acA.speed)) : '';
+  var h = '<b style="color:' + wpColor(idx) + '">' + wpLabel(idx) + '</b>';
+  if (w.icao) h += '&nbsp;<span style="color:var(--accent)">' + w.icao + '</span>';
+  h += '<br>' + (w.name || '—');
+  if (w.rwyFt) {
+    var unsuitable = w.warn && w.rwyFt < getRwyThresholds().minFt;
+    var rc = unsuitable ? '#ff4444' : (w.warn ? '#f59e0b' : 'var(--text)');
+    h += '<br><span style="color:' + rc + '">' + (unsuitable ? '⚠ UNSUITABLE ' : (w.warn ? '⚠ SHORT ' : '')) +
+         'Longest paved rwy: ' + w.rwyFt.toLocaleString() + ' ft</span>';
+  }
+  h += '<br><span style="color:var(--text-muted)">' + w.lat.toFixed(4) + '° / ' + w.lng.toFixed(4) + '°</span>';
+  if (w.noAirportNearby) h += '<br><span style="color:#f59e0b">⚠ No qualifying airport found nearby</span>';
+  if (w.icao) {
+    if (!isOrigin && spdKey && !airportHasFuel(w, spdKey)) {
+      h += '<br><span style="color:#f59e0b;font-size:11px">' +
+           (w.fuelFilterMissed ? '⚠ No fuel-equipped airport nearby — showing closest' : '⚠ No fuel services') + '</span>';
+    } else {
+      var fuelLine = airportFuelLine(w.icao, acA, false);
+      if (fuelLine) h += '<br>' + fuelLine;
+    }
+  }
+  if (w.autoFuel) h += '<br><span style="color:var(--accent);font-size:10px">⛽ Auto fuel stop</span>';
+  if (w.overnight) h += '<br><span style="color:var(--overnight);font-size:11px">☽ Overnight stop</span>';
+  if (isOrigin && waypoints.filter(function(x){ return x.lat !== null; }).length >= 2) {
+    // stopPropagation: without it the click also reaches the map and drops a new stop
+    h += '<br><button onclick="event.stopPropagation();toggleClosedRoute();map.closePopup()" style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px">' +
+         (routeClosed ? '✕ Remove return to Origin' : '↺ Return to Origin') + '</button>';
+  }
+  return h;
+}
+
+function addWpMarker(wp) {
+  if (wp.marker) map.removeLayer(wp.marker);
+  wp.marker = L.marker([wp.lat, wp.lng], { icon: wpIcon(wp, waypoints.indexOf(wp)) })
+    .bindPopup(function(){ return wpPopupHtml(wp); }, { autoPan: false })
+    .addTo(map);
+  return wp.marker;
+}
+
+// Once a stop is placed, move placement on to the next unplaced stop after it.
+function advancePlacing(id) {
+  var found = false;
+  for (var i = 0; i < waypoints.length; i++) {
+    if (waypoints[i].id === id) { found = true; continue; }
+    if (found && waypoints[i].lat === null) { placingId = waypoints[i].id; return; }
+  }
+  placingId = null;
+}
+
 // Look up airport by ICAO/FAA identifier (e.g. KATL, I67, KLUK)
 function lookupByIdentifier(id, code, input) {
   var match = null;
@@ -2074,60 +2177,13 @@ function lookupByIdentifier(id, code, input) {
   var wp = wpById(id);
   if (!wp) return false;
 
-  if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
   clearWpExtras(wp);
-
-  var color = wpColor(wp.idx);
-  var num = wpBadge(wp.idx);
-  var rwyFt = getMaxPavedRwyFt(match);
-  var warn  = wpNeedsWarn(rwyFt);
-
-  wp.lat   = match.lat;
-  wp.lng   = match.lng;
-  wp.name  = match.name;
-  wp.icao  = match.icao;
-  wp.localCode = match.localCode || null;
-  wp.icaoCode  = match.icaoCode || null;
-  wp.rwyFt = rwyFt;
-  wp.warn  = warn;
+  setWpAirport(wp, match, getMaxPavedRwyFt(match));
   wp.originLat = match.lat;
   wp.originLng = match.lng;
   wp.driveMi   = null;
-
-  var popupBody = '<b style="color:'+color+'">'+ wpLabel(wp.idx) +'</b>&nbsp;' +
-    '<span style="color:var(--accent)">' + match.icao + '</span><br>' + match.name +
-    '<br><span style="color:var(--text-muted)">' + match.lat.toFixed(4) + '° / ' + match.lng.toFixed(4) + '°</span>';
-
-  var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp);
-  if (wpIndex === 0 || (wpIndex === -1 && waypoints.filter(function(w){ return w.lat !== null; }).length === 0)) {
-    popupBody += '<br><button id="popupReturnBtn" style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none"></button>';
-  }
-
-  wp.marker = L.marker([match.lat, match.lng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
-    .bindPopup(popupBody, { autoPan: false }).addTo(map);
-
-  if (wpIndex === 0 || (wpIndex === -1 && waypoints.filter(function(w){ return w.lat !== null; }).length === 0)) {
-    wp.marker.on('popupopen', function() {
-      var btn = document.getElementById('popupReturnBtn');
-      if (!btn) return;
-      var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
-      if (placedNow.length >= 2) {
-        btn.style.display = '';
-        btn.textContent = routeClosed ? '\u2715 Remove return to Origin' : '\u21BA Return to Origin';
-        btn.onclick = function() { toggleClosedRoute(); wp.marker.closePopup(); };
-      } else {
-        btn.style.display = 'none';
-      }
-    });
-  }
-
-  // Auto-advance to next unplaced waypoint
-  var next = null, found = false;
-  for (var j = 0; j < waypoints.length; j++) {
-    if (waypoints[j].id === id) { found = true; continue; }
-    if (found && waypoints[j].lat === null) { next = waypoints[j].id; break; }
-  }
-  placingId = next;
+  addWpMarker(wp);
+  advancePlacing(id);
 
   input.disabled = false;
   input.value = '';
@@ -2328,86 +2384,22 @@ function findAirportByMunicipality(city, state, originLat, originLng) {
   // Pick the closest municipality-matching airport
   candidates.sort(function(a, b) { return a.dist - b.dist; });
   var best = candidates[0];
-  return { lat: best.entry.lat, lng: best.entry.lng, name: best.entry.name, icao: best.entry.icao, maxRwyFt: best.rwyFt };
+  return { lat: best.entry.lat, lng: best.entry.lng, name: best.entry.name, icao: best.entry.icao,
+           localCode: best.entry.localCode || null, icaoCode: best.entry.icaoCode || null, maxRwyFt: best.rwyFt };
 }
 
 // Place a waypoint directly from a known airport (no nearest-airport search)
 function placeWaypointDirect(id, airport) {
   var wp = wpById(id);
   if (!wp) return;
-  placingId = id;
+  clearWpExtras(wp);
   wp.originLat = airport.lat;
   wp.originLng = airport.lng;
   wp.driveMi   = null;
-  if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
-  clearWpExtras(wp);
-  // Reuse the same placement logic as placeWaypointFromCoords callback
-  var color = wpColor(wp.idx);
-  var num = wpBadge(wp.idx);
-  var rwyFt = airport.maxRwyFt || 0;
-  var warn  = rwyFt > 0 && wpNeedsWarn(rwyFt);
-
-  wp.lat   = airport.lat;
-  wp.lng   = airport.lng;
-  wp.name  = airport.name;
-  wp.icao  = airport.icao;
-  wp.localCode = airport.localCode || null;
-  wp.icaoCode  = airport.icaoCode || null;
-  wp.rwyFt = rwyFt;
-  wp.warn  = warn;
-
-  var popupBody = '<b style="color:'+color+'">'+ wpLabel(wp.idx) +'</b>&nbsp;';
-  if (airport.icao) popupBody += '<span style="color:var(--accent)">' + airport.icao + '</span><br>';
-  popupBody += airport.name;
-  if (rwyFt) {
-    var rc = warn ? '#f59e0b' : 'var(--text)';
-    popupBody += '<br><span style="color:'+rc+'">'+(warn?'⚠ SHORT ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
-  }
-  popupBody += '<br><span style="color:var(--text-muted)">'+airport.lat.toFixed(4)+'° / '+airport.lng.toFixed(4)+'°</span>';
-
-  var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp);
-  // Fuel availability warning / live price (all stops including origin)
-  if (airport.icao) {
-    var acA = getAC('A');
-    var fuelSpdKey = acA ? String(Math.round(acA.speed)) : '';
-    if (wpIndex > 0 && fuelSpdKey && !airportHasFuel(wp, fuelSpdKey)) {
-      popupBody += '<br><span class="popup-no-fuel" style="color:#f59e0b;font-size:11px">&#9888; No fuel services</span>';
-    } else {
-      var fuelLine = airportFuelLine(airport.icao, acA, false);
-      if (fuelLine) popupBody += '<br>' + fuelLine;
-    }
-  }
-  if (wpIndex === 0) {
-    popupBody += '<br><button id="popupReturnBtn" ' +
-      'style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);' +
-      'color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none">' +
-      '</button>';
-  }
-
-  wp.marker = L.marker([airport.lat, airport.lng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
-    .bindPopup(popupBody, { autoPan: false }).addTo(map);
-
-  if (wpIndex === 0) {
-    wp.marker.on('popupopen', function() {
-      var btn = document.getElementById('popupReturnBtn');
-      if (!btn) return;
-      var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
-      if (placedNow.length >= 2) {
-        btn.style.display = '';
-        btn.textContent = routeClosed ? '\u2715 Remove return to Origin' : '\u21BA Return to Origin';
-        btn.onclick = function() { toggleClosedRoute(); wp.marker.closePopup(); };
-      } else { btn.style.display = 'none'; }
-    });
-  }
-
+  setWpAirport(wp, airport, airport.maxRwyFt);
+  addWpMarker(wp);
   if (isMobile()) wp.marker.openPopup();
-
-  var next = null, found = false;
-  for (var i = 0; i < waypoints.length; i++) {
-    if (waypoints[i].id === id) { found = true; continue; }
-    if (found && waypoints[i].lat === null) { next = waypoints[i].id; break; }
-  }
-  placingId = next;
+  advancePlacing(id);
 
   drawAllLines(); renderWPList(); updateMode(); recalc();
   fitRouteOrWaypoint();
@@ -2451,91 +2443,20 @@ function placeWaypointFromCoords(id, originLat, originLng) {
   findNearestAirport(originLat, originLng, function(airport) {
     var wp2 = wpById(id);
     if (!wp2) return;
-    if (wp2.marker) map.removeLayer(wp2.marker);
 
-    var useLat = airport ? airport.lat : originLat;
-    var useLng = airport ? airport.lng : originLng;
-    var name   = (airport && airport.name) ? airport.name : formatCoordFallback(originLat, originLng);
-    var icao   = airport ? airport.icao : '';
-    var rwyFt  = airport ? airport.maxRwyFt : 0;
-    var warn   = rwyFt > 0 && wpNeedsWarn(rwyFt);
-
-    wp2.lat   = useLat;
-    wp2.lng   = useLng;
-    wp2.name  = name;
-    wp2.icao  = icao;
-    wp2.localCode = (airport && airport.localCode) ? airport.localCode : null;
-    wp2.icaoCode  = (airport && airport.icaoCode) ? airport.icaoCode : null;
-    wp2.rwyFt = rwyFt;
-    wp2.warn  = warn;
-
-    var popupBody = '<b style="color:'+color+'">'+ wpLabel(wp.idx) +'</b>&nbsp;';
-    if (icao) popupBody += '<span style="color:var(--accent)">' + icao + '</span><br>';
-    popupBody += name;
-    if (rwyFt) {
-      var rc = warn ? '#f59e0b' : 'var(--text)';
-      popupBody += '<br><span style="color:'+rc+'">'+(warn?'⚠ SHORT ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
-    }
-    popupBody += '<br><span style="color:var(--text-muted)">'+useLat.toFixed(4)+'° / '+useLng.toFixed(4)+'°</span>';
-    if (!airport) popupBody += '<br><span style="color:#f59e0b">⚠ No qualifying airport found nearby</span>';
-
-    // For WP1, add a return button — shown/hidden dynamically when popup opens
-    var wpIndex = waypoints.filter(function(w){ return w.lat !== null; }).indexOf(wp2);
-    // Fuel availability warning / live price (all stops including origin)
-    if (icao) {
-      var acA2 = getAC('A');
-      var fuelSpdKey2 = acA2 ? String(Math.round(acA2.speed)) : '';
-      if (wpIndex > 0 && fuelSpdKey2 && !airportHasFuel(wp2, fuelSpdKey2)) {
-        var fuelWarnMsg = _opts.requireFuelSpdKey
-          ? '\u26A0 No fuel-equipped airport nearby \u2014 showing closest'
-          : '\u26A0 No fuel services';
-        popupBody += '<br><span class="popup-no-fuel" style="color:#f59e0b;font-size:11px">' + fuelWarnMsg + '</span>';
-      } else {
-        var fuelLine2 = airportFuelLine(icao, acA2, false);
-        if (fuelLine2) popupBody += '<br>' + fuelLine2;
-      }
-    }
-    if (wpIndex === 0) {
-      popupBody += '<br><button id="popupReturnBtn" ' +
-        'style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);' +
-        'color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none">' +
-        '</button>';
-    }
+    if (airport) setWpAirport(wp2, airport, airport.maxRwyFt);
+    else setWpAirport(wp2, { lat: originLat, lng: originLng, name: formatCoordFallback(originLat, originLng) }, 0);
+    wp2.noAirportNearby = !airport;
+    // Fuel-only was on but nothing with fuel was in range, so this is the closest airport
+    wp2.fuelFilterMissed = !!(airport && _opts.requireFuelSpdKey && !airportHasFuel(wp2, _opts.requireFuelSpdKey));
+    var useLat = wp2.lat, useLng = wp2.lng;
 
     if (airport) {
       wp2.airportIcon = L.marker([useLat, useLng], { icon: makeAirportIcon(), interactive: false, zIndexOffset: -100 });
     }
-    wp2.marker = L.marker([useLat, useLng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
-      .bindPopup(popupBody, { autoPan: false }).addTo(map);
-
-    // Wire up return button on popup open — only show if 2+ placed waypoints
-    if (wpIndex === 0) {
-      wp2.marker.on('popupopen', function() {
-        var btn = document.getElementById('popupReturnBtn');
-        if (!btn) return;
-        var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
-        if (placedNow.length >= 2) {
-          btn.style.display = '';
-          btn.textContent = routeClosed ? '\u2715 Remove return to Origin' : '\u21BA Return to Origin';
-          btn.onclick = function() {
-            toggleClosedRoute();
-            wp2.marker.closePopup();
-          };
-        } else {
-          btn.style.display = 'none';
-        }
-      });
-    }
-
+    addWpMarker(wp2);
     if (isMobile()) wp2.marker.openPopup();
-
-    // Auto-advance placingId to next unplaced wp (for map-click flow)
-    var next = null, found = false;
-    for (var i = 0; i < waypoints.length; i++) {
-      if (waypoints[i].id === id) { found = true; continue; }
-      if (found && waypoints[i].lat === null) { next = waypoints[i].id; break; }
-    }
-    placingId = next;
+    advancePlacing(id);
 
     // Drive distance — fall back to straight-line * 1.3 until OSRM responds
     var distM = haversineM(originLat, originLng, useLat, useLng);
@@ -4857,6 +4778,7 @@ function findFuelStopForLeg(fromWp, toWp, remainingMi, spdKey, excludeIcaos) {
   candidates.sort(function(x, y){ return x.score - y.score; });
   var pick = candidates[0].a;
   return { icao: pick.icao, name: pick.name, lat: pick.lat, lng: pick.lng,
+           localCode: pick.localCode || null, icaoCode: pick.icaoCode || null,
            maxRwyFt: getMaxPavedRwyFt(pick), dFromMi: candidates[0].dFromMi };
 }
 
@@ -4932,29 +4854,12 @@ function insertFuelStopBeforePlacedIdx(placedIdx, airport) {
   var anchor = placed[placedIdx];
   if (!anchor) return;
   var wpIdx = waypoints.indexOf(anchor);
-  var id = ++wpIdCounter;
-  var entry = { id:id, idx:0, lat:airport.lat, lng:airport.lng,
-                name:airport.name, icao:airport.icao,
-                rwyFt:airport.maxRwyFt || 0, marker:null, overnight:false,
-                autoFuel:true };
-  entry.warn = entry.rwyFt > 0 && wpNeedsWarn(entry.rwyFt);
+  var entry = { id: ++wpIdCounter, idx: 0, marker: null, overnight: false, autoFuel: true };
+  setWpAirport(entry, airport, airport.maxRwyFt);
   waypoints.splice(wpIdx, 0, entry);
   waypoints.forEach(function(w, i){ w.idx = i; });
-
-  var color = wpColor(entry.idx);
-  var num = wpBadge(entry.idx);
-  var popupBody = '<b style="color:'+color+'">'+ wpLabel(entry.idx) +'</b>&nbsp;';
-  if (entry.icao) popupBody += '<span style="color:var(--accent)">' + entry.icao + '</span><br>';
-  popupBody += entry.name;
-  if (entry.rwyFt) {
-    var rc = entry.warn ? '#f59e0b' : 'var(--text)';
-    popupBody += '<br><span style="color:'+rc+'">'+(entry.warn?'⚠ SHORT ':'')+'Longest paved rwy: '+entry.rwyFt.toLocaleString()+' ft</span>';
-  }
-  popupBody += '<br><span style="color:var(--text-muted)">'+entry.lat.toFixed(4)+'° / '+entry.lng.toFixed(4)+'°</span>';
-  popupBody += '<br><span style="color:var(--accent);font-size:10px">⛽ Auto fuel stop</span>';
   entry.airportIcon = L.marker([entry.lat, entry.lng], { icon: makeAirportIcon(), interactive: false, zIndexOffset: -100 }).addTo(map);
-  entry.marker = L.marker([entry.lat, entry.lng], { icon: entry.warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
-    .bindPopup(popupBody, { autoPan: false }).addTo(map);
+  addWpMarker(entry);
 }
 
 function insertionsSignature(list) {
@@ -5785,70 +5690,12 @@ function renderFBOInputs(placed) {
 }
 
 function refreshWarnIcons() {
-  var thresholds = getRwyThresholds();
   waypoints.forEach(function(w, idx) {
-    if (w.marker && w.lat !== null) {
-      var c    = wpColor(idx);
-      var warn = w.rwyFt > 0 && wpNeedsWarn(w.rwyFt);
-      var unsuitable = warn && w.rwyFt < thresholds.minFt;
-      w.warn   = warn;
-      var icon = unsuitable ? makeUnsuitableIcon(c, wpBadge(idx)) : (warn ? makeWarnIcon(c, wpBadge(idx)) : makeIcon(c, wpBadge(idx)));
-      // Add no-fuel badge (skip origin)
-      if (idx > 0 && w.icao) {
-        var acFuelIcon = getAC('A');
-        var fuelKeyIcon = acFuelIcon ? String(Math.round(acFuelIcon.speed)) : '';
-        if (fuelKeyIcon && !airportHasFuel(w, fuelKeyIcon)) {
-          var sz = icon.options.iconSize;
-          icon = L.divIcon({
-            className: '',
-            html: '<div style="position:relative">' + icon.options.html +
-              '<div style="position:absolute;top:-6px;left:-6px;background:#f59e0b;color:#000;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;line-height:1" title="No fuel services">!</div></div>',
-            iconSize: [sz[0] + 4, sz[1] + 4],
-            iconAnchor: [sz[0]/2 + 2, sz[1]/2 + 2],
-            popupAnchor: icon.options.popupAnchor
-          });
-        }
-      }
-      if (w.overnight) {
-        var size = icon.options.iconSize;
-        icon = L.divIcon({
-          className: '',
-          html: addOvernightBadge(icon.options.html),
-          iconSize: [size[0] + 4, size[1] + 4],
-          iconAnchor: [size[0]/2 + 2, size[1]/2 + 2],
-          popupAnchor: icon.options.popupAnchor
-        });
-      }
-      w.marker.setIcon(icon);
-
-      // Update popup runway warning and overnight indicator
-      var popup = w.marker.getPopup();
-      if (popup) {
-        var content = popup.getContent();
-        // Refresh runway warning text
-        if (w.rwyFt > 0) {
-          var rwColor = unsuitable ? '#ff4444' : (warn ? '#f59e0b' : 'var(--text)');
-          var rwLabel = unsuitable ? '⚠ UNSUITABLE ' : (warn ? '⚠ SHORT ' : '');
-          var newRwy = '<br><span style="color:' + rwColor + '">' + rwLabel + 'Longest paved rwy: ' + w.rwyFt.toLocaleString() + ' ft</span>';
-          content = content.replace(/<br><span style="color:[^"]*">(?:⚠ (?:SHORT|UNSUITABLE) )?Longest paved rwy:.*?<\/span>/, newRwy);
-        }
-        // Remove any existing overnight line
-        content = content.replace(/<br><span class="popup-overnight"[^>]*>.*?<\/span>/g, '');
-        if (w.overnight) {
-          content += '<br><span class="popup-overnight" style="color:var(--overnight);font-size:11px">☽ Overnight stop</span>';
-        }
-        // Refresh fuel warning
-        content = content.replace(/<br><span class="popup-no-fuel"[^>]*>.*?<\/span>/g, '');
-        if (idx > 0 && w.icao) {
-          var acFuel = getAC('A');
-          var fuelKey = acFuel ? String(Math.round(acFuel.speed)) : '';
-          if (fuelKey && !airportHasFuel(w, fuelKey)) {
-            content += '<br><span class="popup-no-fuel" style="color:#f59e0b;font-size:11px">⚠ No fuel services</span>';
-          }
-        }
-        popup.setContent(content);
-      }
-    }
+    if (!w.marker || w.lat === null) return;
+    w.warn = wpNeedsWarn(w.rwyFt);
+    w.marker.setIcon(wpIcon(w, idx));
+    // Popup content is built on open; rebuild an open one so it stays current
+    if (w.marker.isPopupOpen()) w.marker.getPopup().update();
   });
 }
 
@@ -5965,60 +5812,18 @@ window.addFavoriteWP = function(icao) {
     if (OA_CACHE[i].icao === icao) { info = OA_CACHE[i]; break; }
   }
 
-  var color = wpColor(idx);
-  var num   = idx + 1;
-  var name  = info ? info.name : fav.name;
-  var rwyFt = info ? getMaxPavedRwyFt(info) : 3000;
-  var warn  = wpNeedsWarn(rwyFt);
-
-  wp.lat   = fav.lat;
-  wp.lng   = fav.lng;
-  wp.name  = name;
-  wp.icao  = icao;
-  wp.localCode = info ? (info.localCode || null) : null;
-  wp.icaoCode  = info ? (info.icaoCode || null) : null;
-  wp.rwyFt = rwyFt;
-  wp.warn  = warn;
-
-  var popupBody = '<b style="color:'+color+'">'+ wpLabel(wp.idx) +'</b>&nbsp;' +
-    '<span style="color:var(--accent)">' + icao + '</span><br>' + name +
-    '<br><span style="color:var(--text-muted)">' + fav.lat.toFixed(4) + '° / ' + fav.lng.toFixed(4) + '°</span>';
-
-  if (num === 1) {
-    popupBody += '<br><button id="popupReturnBtn" style="margin-top:6px;width:100%;padding:4px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-size:11px;display:none"></button>';
-  }
-
-  wp.marker = L.marker([fav.lat, fav.lng], { icon: warn ? makeWarnIcon(color, num) : makeIcon(color, num) })
-    .bindPopup(popupBody, { autoPan: false }).addTo(map);
-
-  if (num === 1) {
-    wp.marker.on('popupopen', function() {
-      var btn = document.getElementById('popupReturnBtn');
-      if (!btn) return;
-      var placedNow = waypoints.filter(function(w){ return w.lat !== null; });
-      if (placedNow.length >= 2) {
-        btn.style.display = '';
-        btn.textContent = routeClosed ? '\u2715 Remove return to Origin' : '\u21BA Return to Origin';
-        btn.onclick = function() { toggleClosedRoute(); wp.marker.closePopup(); };
-      } else {
-        btn.style.display = 'none';
-      }
-    });
-  }
-
-  // Auto-advance to next unplaced waypoint
-  var next = null, found = false;
-  for (var i = 0; i < waypoints.length; i++) {
-    if (waypoints[i].id === id) { found = true; continue; }
-    if (found && waypoints[i].lat === null) { next = waypoints[i].id; break; }
-  }
-  placingId = next;
+  setWpAirport(wp, {
+    lat: fav.lat, lng: fav.lng, name: info ? info.name : fav.name, icao: icao,
+    localCode: info ? info.localCode : null, icaoCode: info ? info.icaoCode : null
+  }, info ? getMaxPavedRwyFt(info) : 3000);
+  addWpMarker(wp);
+  advancePlacing(id);
 
   drawAllLines(); renderWPList(); updateMode(); recalc();
   fitRouteOrWaypoint();
 
   // Prompt for aircraft after placing the origin, same as the map-click flow
-  if (num === 1) {
+  if (idx === 0) {
     var _selA = document.getElementById('selA');
     if (!_selA || !_selA.value) promptAircraft();
     else if (!paxPopupDismissed) showPaxPopup();
@@ -6344,7 +6149,7 @@ function serializeState() {
     wps: waypoints.map(function(w) {
       return { id:w.id, idx:w.idx, lat:w.lat, lng:w.lng, name:w.name||'',
                icao:w.icao||null, localCode:w.localCode||null, icaoCode:w.icaoCode||null,
-               rwyFt:w.rwyFt||0, warn:!!w.warn, overnight:!!w.overnight,
+               rwyFt:w.rwyFt||0, warn:!!w.warn, overnight:!!w.overnight, autoFuel:!!w.autoFuel,
                originLat:w.originLat||null, originLng:w.originLng||null, driveMi:w.driveMi||null };
     }),
     wpIdCounter: wpIdCounter,
@@ -6420,22 +6225,12 @@ function restoreState(state) {
       }
       var wp = { id:s.id, idx:s.idx, lat:s.lat, lng:s.lng, name:s.name||'',
                  icao:s.icao||null, localCode:s.localCode||null, icaoCode:s.icaoCode||null,
-                 rwyFt:_rsRwy, warn:!!s.warn, overnight:!!s.overnight,
+                 rwyFt:_rsRwy, warn:!!s.warn, overnight:!!s.overnight, autoFuel:!!s.autoFuel,
                  originLat:s.originLat||null, originLng:s.originLng||null,
                  driveMi:s.driveMi||null, marker:null,
                  driveLine:null, driveTimeLabel:null, homeMarker:null, airportIcon:null };
-      if (wp.lat !== null && wp.lat !== undefined) {
-        var color = wpColor(wp.idx), num = wpBadge(wp.idx);
-        var needsWarn = wp.rwyFt > 0 && wpNeedsWarn(wp.rwyFt);
-        var icon = needsWarn ? makeWarnIcon(color, num) : makeIcon(color, num);
-        var pop = '<b style="color:'+color+'">' + wpLabel(wp.idx) + '</b>';
-        if (wp.icao) pop += '&nbsp;<span style="color:var(--accent)">' + wp.icao + '</span>';
-        pop += '<br>' + wp.name;
-        if (wp.rwyFt) pop += '<br><span style="color:var(--text);font-size:11px">Longest paved rwy: ' + wp.rwyFt.toLocaleString() + ' ft</span>';
-        wp.marker = L.marker([wp.lat, wp.lng], { icon:icon })
-          .bindPopup(pop, { autoPan:false }).addTo(map);
-      }
       waypoints.push(wp);
+      if (wp.lat !== null && wp.lat !== undefined) addWpMarker(wp);
     });
 
     // Aircraft A
@@ -6727,22 +6522,13 @@ function applyDefaultOrigin(origin) {
       if (_d < _bestD) { _bestD = _d; oaMatch = _oa2; }
     }
   }
-  var rwyFt = oaMatch ? getMaxPavedRwyFt(oaMatch) : 0;
-  var warn  = rwyFt > 0 && wpNeedsWarn(rwyFt);
-  var wp = { id:id, idx:0, lat:origin.lat, lng:origin.lng, name:origin.name||'',
-             icao:origin.icao||null, localCode:origin.localCode||null, icaoCode:null,
-             rwyFt:rwyFt, warn:warn, overnight:false, marker:null,
+  var wp = { id:id, idx:0, overnight:false, marker:null,
              driveLine:null, driveTimeLabel:null, homeMarker:null, airportIcon:null };
-  var icon = warn ? makeWarnIcon(wpColor(0), 'O') : makeIcon(wpColor(0), 'O');
-  var pop  = '<b style="color:'+wpColor(0)+'">Origin</b>';
-  if (wp.icao) pop += '&nbsp;<span style="color:var(--accent)">'+wp.icao+'</span>';
-  pop += '<br>'+wp.name;
-  if (rwyFt) {
-    var rc = warn ? '#f59e0b' : 'var(--text-muted)';
-    pop += '<br><span style="color:'+rc+';font-size:11px">'+(warn?'⚠ SHORT ':'')+'Longest paved rwy: '+rwyFt.toLocaleString()+' ft</span>';
-  }
-  wp.marker = L.marker([wp.lat, wp.lng], { icon:icon }).bindPopup(pop, {autoPan:false}).addTo(map);
+  setWpAirport(wp, { lat: origin.lat, lng: origin.lng, name: origin.name || '', icao: origin.icao,
+                     localCode: origin.localCode, icaoCode: oaMatch ? oaMatch.icaoCode : null },
+               oaMatch ? getMaxPavedRwyFt(oaMatch) : 0);
   waypoints.push(wp);
+  addWpMarker(wp);
   placingId = null;
   drawAllLines(); renderWPList(); updateMode(); recalc();
   if (typeof updateReturnUI === 'function') updateReturnUI();
