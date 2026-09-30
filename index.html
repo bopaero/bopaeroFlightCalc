@@ -205,12 +205,13 @@ header {
 .wp-overnight.active { color:var(--accent2); }
 .overnight-day-tag {
   display:inline-block; font-family:var(--mono); font-size:9px; font-weight:bold;
-  color:var(--accent2); background:var(--accent2)18; border:1px solid var(--accent2)44;
+  color:var(--accent2); background:color-mix(in srgb, var(--accent2) 9%, transparent);
+  border:1px solid color-mix(in srgb, var(--accent2) 27%, transparent);
   border-radius:3px; padding:1px 4px; margin-left:4px; vertical-align:middle;
 }
 .day-separator {
   text-align:center; margin:6px 0 2px; padding:4px 0;
-  border-top:1px dashed var(--accent2)55;
+  border-top:1px dashed color-mix(in srgb, var(--accent2) 33%, transparent);
 }
 
 .drag-handle {
@@ -1057,7 +1058,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-30.5</span>
+      <span id="appVersion">v2026-09-30.6</span>
     </div>
   </div>
 
@@ -1329,7 +1330,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-30.5';
+var APP_VERSION = 'v2026-09-30.6';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
