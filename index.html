@@ -86,8 +86,6 @@ header {
   padding:0 20px; flex-shrink:0;
 }
 .logo { display:flex; align-items:center; gap:12px; }
-.logo-diamond { width:22px; height:22px; border:2px solid var(--accent); transform:rotate(45deg); position:relative; flex-shrink:0; }
-.logo-diamond::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:7px; height:7px; background:var(--accent); }
 .logo-title { font-size:22px; font-weight:700; letter-spacing:2px; align-self:center; }
 .logo-title span { color:var(--accent); }
 .hdr-right { font-family:var(--mono); font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:16px; }
@@ -457,7 +455,6 @@ select option { background:var(--surface2); }
 
 /* ── MOBILE NAV BAR ──────────────────────────────────────────────────────── */
 .mobile-nav {
-  display:none;
   position:fixed; bottom:0; left:0; right:0; z-index:2000;
   height:88px; background:var(--surface); border-top:1px solid var(--border);
   display:none; align-items:stretch;
@@ -1058,7 +1055,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-30.6</span>
+      <span id="appVersion">v2026-09-30.7</span>
     </div>
   </div>
 
@@ -1330,7 +1327,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-30.6';
+var APP_VERSION = 'v2026-09-30.7';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -2271,15 +2268,6 @@ function geocodeCityFromDB(id, addr, input) {
   setTimeout(function(){ input.style.borderColor = ''; input.placeholder = '\uD83D\uDD0D ICAO code or address...'; }, 4000);
 }
 
-function nearestAirportToCoords(lat, lng) {
-  var nearest = null, nearestDist = Infinity;
-  for (var i = 0; i < OA_CACHE.length; i++) {
-    var d = haversineM(lat, lng, OA_CACHE[i].lat, OA_CACHE[i].lng);
-    if (d < nearestDist) { nearestDist = d; nearest = OA_CACHE[i]; }
-  }
-  return nearest;
-}
-
 function finishCity(id, addr, input, lat, lng, cityHint, stateHint) {
   input.disabled = false;
   input.value = addr;
@@ -2459,7 +2447,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
     if (isMobile()) wp2.marker.openPopup();
     advancePlacing(id);
 
-    // Drive distance — fall back to straight-line * 1.3 until OSRM responds
+    // Drive distance — straight-line × 1.3 until the directions Worker responds
     var distM = haversineM(originLat, originLng, useLat, useLng);
     if (airport && distM > 200) {
       wp2.driveMi = (distM / 1609.344) * 1.3;
@@ -2566,13 +2554,6 @@ function updateDriveRoutesVisibility() {
     });
   });
 }
-function fitBoundsIfMultiple() {
-  var placed = waypoints.filter(function(w){ return w.lat !== null; });
-  if (placed.length >= 2) {
-    map.fitBounds(L.latLngBounds(placed.map(function(w){ return [w.lat, w.lng]; })), { padding: [50, 50] });
-  }
-}
-
 function fitRouteOrWaypoint() {
   var placed = waypoints.filter(function(w){ return w.lat !== null; });
   if (placed.length >= 2) {
@@ -3204,7 +3185,7 @@ var CITY_CACHE = null;
       // Keep using fallback — already initialized above
       OA_READY = true;
       console.log('OurAirports fetch failed, using fallback:', e.message || e);
-      setNasrText('DB: LIMITED (30 AIRPORTS)', '#ff4444');
+      setNasrText('DB: LIMITED (' + OA_CACHE.length + ' AIRPORTS)', '#ff4444');
     });
 })();
 
@@ -3417,88 +3398,8 @@ function csvSplit(line) {
   return res;
 }
 
-function lookupInDB(clusterLat, clusterLng) {
-  var best = null, bestDist = Infinity;
-  for (var i = 0; i < OA_CACHE.length; i++) {
-    var a = OA_CACHE[i];
-    var d = haversineM(clusterLat, clusterLng, a.lat, a.lng);
-    if (d < bestDist) { bestDist = d; best = a; }
-  }
-  console.log('lookupInDB: cache size=' + OA_CACHE.length + ' best=' + (best ? best.name : 'none') + ' dist=' + Math.round(bestDist) + 'm');
-  return (best && bestDist < 25000) ? best : null;
-}
-
 function formatCoordFallback(lat, lng) {
   return lat.toFixed(3) + '\u00b0, ' + lng.toFixed(3) + '\u00b0';
-}
-
-function findBestRunwayCluster(elements, clickLat, clickLng, minRwyFt, minRwyM) {
-  // Build clusters keyed by ~1km grid squares
-  var clusters = {};
-
-  elements.forEach(function(el) {
-    if (el.type !== 'way' || !el.geometry) return;
-    var surface = (el.tags && el.tags.surface) ? el.tags.surface.toLowerCase() : '';
-    if (!isPaved(surface)) return;
-
-    var len = 0;
-    for (var i = 1; i < el.geometry.length; i++) {
-      len += haversineM(el.geometry[i-1].lat, el.geometry[i-1].lon, el.geometry[i].lat, el.geometry[i].lon);
-    }
-    if (len < minRwyM) return;
-
-    var mid  = Math.floor(el.geometry.length / 2);
-    var rLat = el.geometry[mid].lat;
-    var rLng = el.geometry[mid].lon;
-    var key  = rLat.toFixed(2) + ',' + rLng.toFixed(2);
-    var ft   = Math.round(len / 0.3048);
-
-    if (!clusters[key]) clusters[key] = { lat: rLat, lng: rLng, maxRwyFt: 0, runways: [], spread: 0 };
-    if (ft > clusters[key].maxRwyFt) clusters[key].maxRwyFt = ft;
-    clusters[key].runways.push({ lat: rLat, lng: rLng });
-  });
-
-  // Merge nearby clusters (within 8km) — handles airports whose runways span multiple grid cells
-  var keys = Object.keys(clusters);
-  var merged = [];
-  var used = {};
-
-  keys.forEach(function(k) {
-    if (used[k]) return;
-    var group = [clusters[k]];
-    used[k] = true;
-    keys.forEach(function(k2) {
-      if (used[k2] || k2 === k) return;
-      if (haversineM(clusters[k].lat, clusters[k].lng, clusters[k2].lat, clusters[k2].lng) < 8000) {
-        group.push(clusters[k2]);
-        used[k2] = true;
-      }
-    });
-    // Compute merged cluster center and max runway
-    var sumLat = 0, sumLng = 0, maxFt = 0;
-    group.forEach(function(g) { sumLat += g.lat; sumLng += g.lng; if (g.maxRwyFt > maxFt) maxFt = g.maxRwyFt; });
-    var cLat = sumLat / group.length;
-    var cLng = sumLng / group.length;
-    // Compute spread (max distance from center to any runway)
-    var spread = 0;
-    group.forEach(function(g) {
-      g.runways.forEach(function(r) {
-        var d = haversineM(cLat, cLng, r.lat, r.lng);
-        if (d > spread) spread = d;
-      });
-    });
-    if (maxFt >= minRwyFt) merged.push({ lat: cLat, lng: cLng, maxRwyFt: maxFt, spread: spread });
-  });
-
-  if (merged.length === 0) return null;
-
-  // Return the nearest merged cluster to the click point
-  var best = null, bestDist = Infinity;
-  merged.forEach(function(c) {
-    var d = haversineM(clickLat, clickLng, c.lat, c.lng);
-    if (d < bestDist) { bestDist = d; best = c; }
-  });
-  return best;
 }
 
 function isPaved(surface) {
@@ -4086,12 +3987,7 @@ window.toggleAircraftPane = function() {
 
 function updateAircraftToggleLabel() {
   var label = document.getElementById('acToggleLabel');
-  if (!label) return;
-  var selA = document.getElementById('selA');
-  var selectedText = selA && selA.value ? selA.options[selA.selectedIndex].text : '';
-  var hint = document.getElementById('acHelperHint');
-  label.textContent = 'Aircraft Details';
-  if (hint) hint.style.display = 'none';
+  if (label) label.textContent = 'Aircraft Details';
 }
 
 window.setUserType = function(type) {
@@ -4151,12 +4047,6 @@ function applyCostPreset(spdKey) {
   }
   var flyDays = document.getElementById('costFlyingDays');
   if (!flyDays.value) flyDays.value = 1;
-}
-
-function getConsumablesLabel() {
-  var lbl = document.getElementById('consumablesLbl');
-  var text = lbl ? lbl.textContent : 'Fuel/Oil/TKS ($/hr)';
-  return text.replace(' ($/hr)', '');
 }
 
 window.pickAircraft = function(val, s, _fromSettings) {
