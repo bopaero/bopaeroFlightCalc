@@ -1055,7 +1055,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-30.9</span>
+      <span id="appVersion">v2026-09-30.10</span>
     </div>
   </div>
 
@@ -1324,7 +1324,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-30.9';
+var APP_VERSION = 'v2026-09-30.10';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -1443,6 +1443,7 @@ function clearWpExtras(wp) {
   WP_EXTRA_LAYERS.forEach(function(k){ if (wp[k]) { map.removeLayer(wp[k]); wp[k] = null; } });
   wp.driveReq = (wp.driveReq || 0) + 1;
   wp.driveRouteFailed = false;
+  wp.driveSec = null;
 }
 
 function removeWaypoint(id) {
@@ -1720,13 +1721,15 @@ function renderWPList() {
     // Drive distance — shown only when placed
     if (isPlaced && wp.driveMi !== null && wp.driveMi !== undefined) {
       var driveLabel = wp.addrInput ? 'drive from ' + wp.addrInput.toUpperCase() : 'drive to airport';
-      var driveHrs = wp.driveMi / 35; // avg 35 mph
-      var driveMins = Math.round(driveHrs * 60);
+      // Routed time from the directions Worker when we have it (the map label
+      // shows the same); otherwise estimate at an average 35 mph
+      var routed = isFinite(wp.driveSec) && wp.driveSec > 0;
+      var driveMins = routed ? Math.round(wp.driveSec / 60) : Math.round(wp.driveMi / 35 * 60);
       var driveTimeStr = driveMins >= 60 ? Math.floor(driveMins / 60) + 'hr ' + (driveMins % 60) + 'min' : driveMins + 'min';
       var driveWarn = wp.driveRouteFailed
         ? '<span style="color:var(--text-muted)" title="Mapbox Directions unavailable — straight-line estimate, no route drawn on map">(est.)</span>'
         : '';
-      innerHtml += '<div class="wp-drive" style="gap:5px">&#x1F697; <span class="wp-drive-val">' + wp.driveMi.toFixed(1) + ' mi</span><span style="color:var(--accent2)">~' + driveTimeStr + '</span>' + driveWarn + '<span style="color:var(--text-muted)">' + driveLabel + '</span></div>';
+      innerHtml += '<div class="wp-drive" style="gap:5px">&#x1F697; <span class="wp-drive-val">' + wp.driveMi.toFixed(1) + ' mi</span><span style="color:var(--accent2)">' + (routed ? '' : '~') + driveTimeStr + '</span>' + driveWarn + '<span style="color:var(--text-muted)">' + driveLabel + '</span></div>';
     }
 
     // Overnight toggle — shown on placed non-origin waypoints
@@ -6019,7 +6022,7 @@ function serializeState() {
       return { id:w.id, idx:w.idx, lat:w.lat, lng:w.lng, name:w.name||'',
                icao:w.icao||null, localCode:w.localCode||null, icaoCode:w.icaoCode||null,
                rwyFt:w.rwyFt||0, warn:!!w.warn, overnight:!!w.overnight, autoFuel:!!w.autoFuel,
-               originLat:w.originLat||null, originLng:w.originLng||null, driveMi:w.driveMi||null };
+               originLat:w.originLat||null, originLng:w.originLng||null, driveMi:w.driveMi||null, driveSec:w.driveSec||null };
     }),
     wpIdCounter: wpIdCounter,
     routeClosed: routeClosed,
@@ -6096,7 +6099,7 @@ function restoreState(state) {
                  icao:s.icao||null, localCode:s.localCode||null, icaoCode:s.icaoCode||null,
                  rwyFt:_rsRwy, warn:!!s.warn, overnight:!!s.overnight, autoFuel:!!s.autoFuel,
                  originLat:s.originLat||null, originLng:s.originLng||null,
-                 driveMi:s.driveMi||null, marker:null,
+                 driveMi:s.driveMi||null, driveSec:s.driveSec||null, marker:null,
                  driveLine:null, driveTimeLabel:null, homeMarker:null, airportIcon:null };
       waypoints.push(wp);
       if (wp.lat !== null && wp.lat !== undefined) addWpMarker(wp);
