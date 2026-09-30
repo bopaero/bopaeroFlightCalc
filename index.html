@@ -1055,7 +1055,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-30.8</span>
+      <span id="appVersion">v2026-09-30.9</span>
     </div>
   </div>
 
@@ -1292,7 +1292,7 @@ select option { background:var(--surface2); }
       <p id="syncLinkErrorStg" style="color:#f55;font-size:12px;margin:6px 0 0;display:none">Code not found or expired. Try again.</p>
     </div>
 
-    <div id="syncDebugPanel" style="border-top:1px solid var(--border);margin:4px 0 12px;padding-top:12px;font-size:11px;color:var(--text-muted)">
+    <div id="syncDebugPanel" hidden style="border-top:1px solid var(--border);margin:4px 0 12px;padding-top:12px;font-size:11px;color:var(--text-muted)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <span style="text-transform:uppercase;letter-spacing:.06em">Sync Debug</span>
         <span id="syncTokenDisplay" style="font-family:var(--mono);letter-spacing:.05em">—</span>
@@ -1324,7 +1324,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-30.8';
+var APP_VERSION = 'v2026-09-30.9';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -6403,8 +6403,13 @@ function applyDefaultOrigin(origin) {
   if (typeof fitRouteOrWaypoint === 'function') fitRouteOrWaypoint();
 }
 
+// Sync diagnostics are for troubleshooting only: open the app with ?debug to see them
+var SHOW_SYNC_DEBUG = /[?&]debug(=|&|$)/.test(location.search);
+
 function openSettings() {
   if (isMobile()) mobileTab('plan');
+  var dbgPanel = document.getElementById('syncDebugPanel');
+  if (dbgPanel) dbgPanel.hidden = !SHOW_SYNC_DEBUG;
   // Show last 8 chars of sync token so user can compare across devices
   var tok = _syncToken ? _syncToken() : null;
   var tokEl = document.getElementById('syncTokenDisplay');
