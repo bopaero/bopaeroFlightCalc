@@ -1057,7 +1057,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-07.2</span>
+      <span id="appVersion">v2026-09-30.1</span>
     </div>
   </div>
 
@@ -1329,7 +1329,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-07.2';
+var APP_VERSION = 'v2026-09-30.1';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -1440,10 +1440,20 @@ function addWaypoint() {
   recalc();
 }
 
+// The drive route, its time label, the house and the airport icon all belong to
+// one placement. Clear them before any re-placement so none outlive it, and bump
+// driveReq so an in-flight directions response for the old spot is discarded.
+var WP_EXTRA_LAYERS = ['driveLine','driveTimeLabel','homeMarker','airportIcon'];
+function clearWpExtras(wp) {
+  WP_EXTRA_LAYERS.forEach(function(k){ if (wp[k]) { map.removeLayer(wp[k]); wp[k] = null; } });
+  wp.driveReq = (wp.driveReq || 0) + 1;
+  wp.driveRouteFailed = false;
+}
+
 function removeWaypoint(id) {
   var entry = wpById(id);
   if (entry && entry.marker) map.removeLayer(entry.marker);
-  if (entry) ['driveLine','driveTimeLabel','homeMarker','airportIcon'].forEach(function(k){ if (entry[k]) { map.removeLayer(entry[k]); entry[k] = null; } });
+  if (entry) clearWpExtras(entry);
   waypoints = waypoints.filter(function(w) { return w.id !== id; });
   waypoints.forEach(function(w, i) { w.idx = i; });
   if (placingId === id) placingId = null;
@@ -1507,7 +1517,7 @@ function doClearAll(clearPayload) {
   if (clearPayload) { _bypassBeforeUnload = true; location.reload(); return; }
   waypoints.forEach(function(w) {
     if (w.marker) map.removeLayer(w.marker);
-    ['driveLine','driveTimeLabel','homeMarker','airportIcon'].forEach(function(k){ if (w[k]) map.removeLayer(w[k]); });
+    clearWpExtras(w);
   });
   waypoints = [];
   wpIdCounter = 0;
@@ -1848,6 +1858,7 @@ function rePlaceWP(id) {
   if (wp) {
     // Clear placed state so the address/click alternatives show again
     if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
+    clearWpExtras(wp);
     wp.lat = null; wp.lng = null; wp.name = null;
     wp.icao = null; wp.localCode = null; wp.icaoCode = null; wp.rwyFt = 0; wp.warn = false;
     wp.driveMi = null; wp.originLat = null; wp.originLng = null;
@@ -2064,6 +2075,7 @@ function lookupByIdentifier(id, code, input) {
   if (!wp) return false;
 
   if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
+  clearWpExtras(wp);
 
   var color = wpColor(wp.idx);
   var num = wpBadge(wp.idx);
@@ -2328,6 +2340,7 @@ function placeWaypointDirect(id, airport) {
   wp.originLng = airport.lng;
   wp.driveMi   = null;
   if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
+  clearWpExtras(wp);
   // Reuse the same placement logic as placeWaypointFromCoords callback
   var color = wpColor(wp.idx);
   var num = wpBadge(wp.idx);
@@ -2412,6 +2425,7 @@ function placeWaypointFromCoords(id, originLat, originLng) {
   wp.fromApproximate = true; // placed via click/address, not an explicit airport pick — eligible for retro re-filter
 
   if (wp.marker) { map.removeLayer(wp.marker); wp.marker = null; }
+  clearWpExtras(wp);
   var color = wpColor(wp.idx);
   var num = wpBadge(wp.idx);
   wp.marker = L.marker([originLat, originLng], { icon: makeSearchingIcon(color, num) })
@@ -2575,6 +2589,8 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
     '?from=' + oLng + ',' + oLat +
     '&to='   + aLng + ',' + aLat;
   wp.driveRouteFailed = false;
+  var reqId = wp.driveReq = (wp.driveReq || 0) + 1;
+  function stale() { return wp.driveReq !== reqId || !wpById(wp.id); }
   fetch(url).then(function(r){
     if (!r.ok) {
       return r.text().then(function(body){
@@ -2583,6 +2599,7 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
     }
     return r.json();
   }).then(function(j){
+    if (stale()) return;
     if (!j || !j.coordinates || !j.coordinates.length) {
       throw new Error('no route in response' + (j && j.error ? ': ' + j.error : ''));
     }
@@ -2605,6 +2622,7 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
     updateDriveRoutesVisibility();
     renderWPList(); recalc();
   }).catch(function(err){
+    if (stale()) return;
     // Directions call failed — keep the straight-line estimate already in
     // wp.driveMi, but make the degraded state visible instead of silent.
     wp.driveRouteFailed = true;
@@ -2619,7 +2637,7 @@ function fetchDriveRoute(wp, oLat, oLng, aLat, aLng) {
 function updateDriveRoutesVisibility() {
   var show = map.getZoom() >= DRIVE_ROUTE_MIN_ZOOM;
   waypoints.forEach(function(w) {
-    ['driveLine','driveTimeLabel','homeMarker','airportIcon'].forEach(function(k){
+    WP_EXTRA_LAYERS.forEach(function(k){
       if (!w[k]) return;
       if (show && !map.hasLayer(w[k])) w[k].addTo(map);
       else if (!show && map.hasLayer(w[k])) map.removeLayer(w[k]);
@@ -6422,9 +6440,7 @@ function restoreState(state) {
     // Clear existing
     waypoints.forEach(function(w) {
       if (w.marker) { try { map.removeLayer(w.marker); } catch(e) {} }
-      ['driveLine','driveTimeLabel','homeMarker','airportIcon'].forEach(function(k) {
-        if (w[k]) { try { map.removeLayer(w[k]); } catch(e) {} }
-      });
+      clearWpExtras(w);
     });
     gcLines.forEach(function(l)   { try { map.removeLayer(l); } catch(e) {} });
     legLabels.forEach(function(l) { try { map.removeLayer(l); } catch(e) {} });
@@ -6744,6 +6760,7 @@ function applyDefaultOrigin(origin) {
   if (!origin || origin.lat == null) return;
   waypoints.forEach(function(w) {
     if (w.marker) { try { map.removeLayer(w.marker); } catch(e) {} }
+    clearWpExtras(w);
   });
   waypoints = [];
   var id = ++wpIdCounter;
