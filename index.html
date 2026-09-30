@@ -1055,7 +1055,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-30.10</span>
+      <span id="appVersion">v2026-09-30.11</span>
     </div>
   </div>
 
@@ -1324,7 +1324,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-30.10';
+var APP_VERSION = 'v2026-09-30.11';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -5796,7 +5796,7 @@ function syncPush() {
   }).catch(function() {});
 }
 
-function syncPull(cb) {
+function syncPull(cb, atLoad) {
   var token = _syncToken();
   if (!token) { if (cb) cb(false); return; }
   fetch(SYNC_WORKER + '/data', {
@@ -5826,9 +5826,12 @@ function syncPull(cb) {
     // Timestamps proved too fragile (clock skew, old cached clients, inflated
     // timestamps from prior pull cycles). Since syncPush immediately follows and
     // re-uploads the same cloud settings unchanged, there is no data loss.
+    // The load-time pull can land after the user has tapped Restore Trip; applying
+    // settings then would swap the restored trip's aircraft, pilot cost and
+    // occupants for the defaults. Keep the settings for next time instead.
     if (cloud.settings && Object.keys(cloud.settings).length) {
       _saveSettingsLocalRaw(cloud.settings);
-      applySettings(cloud.settings);
+      if (!(atLoad && _tripRestored)) applySettings(cloud.settings);
     }
 
     _updateSyncBadge(true);
@@ -5878,7 +5881,7 @@ function _updateSyncBadge(ok) {
 
 function initSync() {
   _ensureSyncToken();
-  syncPull(null);
+  syncPull(null, true);
 }
 
 // Redeem a sync code typed on this device. Trips and Settings each have their
@@ -5978,6 +5981,7 @@ function _syncFallbackCopy(text) {
   document.body.removeChild(ta);
 };
 var _autoSaveTimer    = null;
+var _tripRestored     = false; // a saved or crashed trip was restored this session
 var _bypassBeforeUnload = false; // set true before programmatic reloads (Clear All)
 
 // Read and immediately clear the clean-exit marker so a crash after "Stay"
@@ -6192,6 +6196,7 @@ function restoreState(state) {
     if (typeof updateReturnUI === 'function') updateReturnUI();
     var placed = waypoints.filter(function(w){ return w.lat!==null; });
     if (placed.length && typeof fitRouteOrWaypoint === 'function') fitRouteOrWaypoint();
+    _tripRestored = true;
     return true;
   } catch(e) { console.warn('TripCalc restore failed:', e); return false; }
 }
