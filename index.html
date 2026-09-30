@@ -1057,7 +1057,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-30.4</span>
+      <span id="appVersion">v2026-09-30.5</span>
     </div>
   </div>
 
@@ -1329,7 +1329,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-30.4';
+var APP_VERSION = 'v2026-09-30.5';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -1687,7 +1687,7 @@ function renderWPList() {
         if (i > 0 && spdKey && !airportHasFuel(wp, spdKey)) {
           subLine += '<br><span style="color:#f59e0b;font-family:var(--mono);font-size:9px">&#9888; NO FUEL SERVICES</span>';
         } else {
-          var fuelLine = airportFuelLine(wp.icao, acA, true);
+          var fuelLine = airportFuelLine(fuelPriceId(wp), acA, true);
           if (fuelLine) subLine += '<br>' + fuelLine;
         }
       }
@@ -2128,7 +2128,7 @@ function wpPopupHtml(w) {
       h += '<br><span style="color:#f59e0b;font-size:11px">' +
            (w.fuelFilterMissed ? '⚠ No fuel-equipped airport nearby — showing closest' : '⚠ No fuel services') + '</span>';
     } else {
-      var fuelLine = airportFuelLine(w.icao, acA, false);
+      var fuelLine = airportFuelLine(fuelPriceId(w), acA, false);
       if (fuelLine) h += '<br>' + fuelLine;
     }
   }
@@ -2771,6 +2771,11 @@ function calcFBOFee(fboData, isJet, nights) {
   return best;
 }
 
+// Key for per-airport fuel prices. The price service answers by FAA location id,
+// so prefer the local code: a stale OurAirports ident gets no price at all
+// (I19 → none, GDK → $7.16), and so do some K-prefixed idents (KI69 → none).
+function fuelPriceId(w) { return (w && (w.localCode || w.icao)) || ''; }
+
 function fetchAirportFuel(icao) {
   if (airportFuelCache[icao]) return;
   airportFuelCache[icao] = 'loading';
@@ -3369,8 +3374,8 @@ var FAA_FUEL_MAP = {};    // LOCATION_ID → fuel types string
       for (var i = 1; i < lines.length; i++) {
         var cols = lines[i].split(',');
         if (cols.length >= 2) {
-          var lid = cols[0].replace(/^"|"$/g,'').trim();
-          var fuel = cols.slice(1).join(',').replace(/^"|"$/g,'').trim();
+          var lid = cols[0].trim().replace(/^"|"$/g,'');
+          var fuel = cols.slice(1).join(',').trim().replace(/^"|"$/g,'');
           if (lid && fuel) FAA_FUEL_MAP[lid] = fuel;
         }
       }
@@ -4226,11 +4231,14 @@ function getAC(s) {
 // ── FUEL AVAILABILITY ─────────────────────────────────────────────────────────
 function airportHasFuel(wp, spdKey) {
   if (!wp || !wp.icao) return false;
-  // Look up by local code (FAA uses 3-letter local codes like 'JFK', not 'KJFK')
+  // FAA data is keyed by the FAA location id. Try the airport's FAA local code
+  // first: OurAirports idents lag re-identifications (Greene County is still I19
+  // there but GDK to the FAA — 133 airports in all), and a stale ident can even
+  // match a different airport's record. Then fall back to the ident with any
+  // leading K stripped ('KJFK' → 'JFK').
   var lid = wp.icao;
-  // Try stripping leading K for US ICAO codes
   var lid3 = lid.length === 4 && lid.charAt(0) === 'K' ? lid.substring(1) : lid;
-  var fuel = FAA_FUEL_MAP[lid3] || FAA_FUEL_MAP[lid] || '';
+  var fuel = (wp.localCode && FAA_FUEL_MAP[wp.localCode]) || FAA_FUEL_MAP[lid3] || FAA_FUEL_MAP[lid] || '';
   if (!fuel) return false;
   var preset = acCostPresets[spdKey];
   if (!preset) return fuel.length > 0; // custom aircraft — any fuel counts
@@ -4762,7 +4770,7 @@ function findFuelStopForLeg(fromWp, toWp, remainingMi, spdKey, excludeIcaos) {
     if (excludeIcaos[a.icao]) continue;
     if (FAA_PUBLIC_SET && FAA_PUBLIC_SET.size && a.country === 'US' && !FAA_PUBLIC_SET.has(a.localCode || a.icao)) continue;
     if (getMaxPavedRwyFt(a) < minFt) continue;
-    if (!airportHasFuel({ icao: a.icao }, spdKey)) continue;
+    if (!airportHasFuel(a, spdKey)) continue;
     var dTargetM = haversineM(a.lat, a.lng, target[0], target[1]);
     if (dTargetM > searchRadM) continue;
     var dFromM = haversineM(a.lat, a.lng, fromWp.lat, fromWp.lng);
@@ -4913,7 +4921,7 @@ function computeTrip() {
   var legs = [], totalMi = 0;
   function addLeg(from, to, overnight) {
     var mi = haversineNm(from.lat, from.lng, to.lat, to.lng) * 1.15078;
-    legs.push({ fromWp: from, toWp: to, mi: mi, overnight: !!overnight, depIcao: from.icao || '' });
+    legs.push({ fromWp: from, toWp: to, mi: mi, overnight: !!overnight, depIcao: fuelPriceId(from) });
     totalMi += mi;
   }
   for (var i = 1; i < placed.length; i++) addLeg(placed[i-1], placed[i], placed[i].overnight);
