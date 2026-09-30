@@ -1055,7 +1055,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-30.7</span>
+      <span id="appVersion">v2026-09-30.8</span>
     </div>
   </div>
 
@@ -1136,9 +1136,6 @@ select option { background:var(--surface2); }
       <span style="font-weight:700;font-size:14px">Get Sync Code</span>
       <button onclick="closeSyncLinkModal()" style="background:none;border:none;color:var(--text);font-size:18px;cursor:pointer;line-height:1">&#x2715;</button>
     </div>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 6px">
-      Open TripCalc on your other device.
-    </p>
     <p style="font-size:13px;color:var(--text-muted);margin:0 0 18px">
       Open TripCalc on your other device, go to <strong>Trips &rarr; Link Another Device</strong>, and enter this code.
     </p>
@@ -1327,7 +1324,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-30.7';
+var APP_VERSION = 'v2026-09-30.8';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -5881,12 +5878,15 @@ function initSync() {
   syncPull(null);
 }
 
-window.syncDoRedeem = function() {
-  var input = document.getElementById('syncLinkCodeInput');
-  var errEl = document.getElementById('syncLinkError');
+// Redeem a sync code typed on this device. Trips and Settings each have their
+// own code box, so the element ids are passed in.
+function _syncRedeem(inputId, errId, onLinked) {
+  var input = document.getElementById(inputId);
+  var errEl = document.getElementById(errId);
   if (!input) return;
+  function showErr(msg) { if (errEl) { errEl.textContent = msg; errEl.style.display = ''; } }
   var code = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (code.length !== 8) { if (errEl) { errEl.textContent = 'Enter all 8 characters.'; errEl.style.display = ''; } return; }
+  if (code.length !== 8) { showErr('Enter all 8 characters.'); return; }
   if (errEl) errEl.style.display = 'none';
   fetch(SYNC_WORKER + '/link/redeem', {
     method: 'POST',
@@ -5894,50 +5894,20 @@ window.syncDoRedeem = function() {
     body: JSON.stringify({ code: code })
   }).then(function(r) { return r.json(); })
   .then(function(d) {
-    if (d.syncToken) {
-      _syncTokenWrite(d.syncToken);
-      var inp = document.getElementById('syncLinkCodeInput');
-      if (inp) inp.value = '';
-      syncPull(function(pulled) {
-        if (typeof _renderTripList === 'function') _renderTripList();
-        _stgToast('&#x2713; Account linked');
-      });
-    } else {
-      if (errEl) { errEl.textContent = 'Code not found or expired. Try again.'; errEl.style.display = ''; }
-    }
+    if (!d.syncToken) { showErr('Code not found or expired. Try again.'); return; }
+    _syncTokenWrite(d.syncToken);
+    input.value = '';
+    syncPull(function() {
+      _renderTripList();
+      if (onLinked) onLinked();
+      _stgToast('&#x2713; Account linked');
+    });
   }).catch(function() {
-    if (errEl) { errEl.textContent = 'Connection error. Check your internet and try again.'; errEl.style.display = ''; }
+    showErr('Connection error. Check your internet and try again.');
   });
-};
-
-window.syncDoRedeemStg = function() {
-  var input = document.getElementById('syncLinkCodeInputStg');
-  var errEl = document.getElementById('syncLinkErrorStg');
-  if (!input) return;
-  var code = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (code.length !== 8) { if (errEl) { errEl.textContent = 'Enter all 8 characters.'; errEl.style.display = ''; } return; }
-  if (errEl) errEl.style.display = 'none';
-  fetch(SYNC_WORKER + '/link/redeem', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: code })
-  }).then(function(r) { return r.json(); })
-  .then(function(d) {
-    if (d.syncToken) {
-      _syncTokenWrite(d.syncToken);
-      input.value = '';
-      syncPull(function(pulled) {
-        if (typeof _renderTripList === 'function') _renderTripList();
-        closeSettings();
-        _stgToast('&#x2713; Account linked');
-      });
-    } else {
-      if (errEl) { errEl.textContent = 'Code not found or expired. Try again.'; errEl.style.display = ''; }
-    }
-  }).catch(function() {
-    if (errEl) { errEl.textContent = 'Connection error. Check your internet and try again.'; errEl.style.display = ''; }
-  });
-};
+}
+window.syncDoRedeem    = function() { _syncRedeem('syncLinkCodeInput', 'syncLinkError'); };
+window.syncDoRedeemStg = function() { _syncRedeem('syncLinkCodeInputStg', 'syncLinkErrorStg', closeSettings); };
 
 window.openSyncLinkModal = function() {
   if (isMobile()) mobileTab('plan');
@@ -6235,7 +6205,6 @@ window.openTripModal = function() {
 };
 window.closeTripModal = function() { document.getElementById('tripModal').style.display = 'none'; };
 
-function _escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function _renderTripList() {
   var saves = _getSaves();
@@ -6248,7 +6217,7 @@ function _renderTripList() {
   list.innerHTML = saves.map(function(s, i) {
     return '<div class="trip-save-item">' +
       '<div class="trip-save-meta">' +
-        '<strong>' + _escHtml(s.name) + '</strong>' +
+        '<strong>' + _escapeHtml(s.name) + '</strong>' +
         '<span>' + (s.date||'') + (s.stops ? ' &middot; ' + s.stops + ' stop' + (s.stops===1?'':'s') : '') + '</span>' +
       '</div>' +
       '<div class="trip-save-actions">' +
