@@ -34,6 +34,13 @@ class H(http.server.SimpleHTTPRequestHandler):
             return self._json(404, {'error': 'not found'})
         body = json.loads(self.rfile.read(int(self.headers.get('Content-Length', 0))) or b'{}')
         LEADS.append(body)
+        # Returning visitor (email only): known@ is on file, down@ simulates a failed lookup
+        if body.get('returning') is True:
+            if body.get('email') == 'known@example.com':
+                return self._json(200, {'ok': True})
+            if body.get('email') == 'down@example.com':
+                return self._json(502, {'error': 'unavailable'})
+            return self._json(404, {'found': False, 'error': 'We don\u2019t have that email yet. Please fill in the form.'})
         if body.get('name') == 'fail':
             return self._json(502, {'error': 'unavailable'})
         return self._json(200, {'ok': True})
