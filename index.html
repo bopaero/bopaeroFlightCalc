@@ -712,9 +712,75 @@ select option { background:var(--surface2); }
   #printArea pre { font-family:Menlo,Consolas,monospace; font-size:10px; line-height:1.4; white-space:pre-wrap; margin:0; color:#000; }
   @page { margin:0.5in; size:letter; }
 }
+
+/* LEAD GATE (2026-10-16) - TripCalc opens behind a short contact form, once per
+   visitor. Base rules first, then its own @media block AFTER them: the older mobile
+   blocks above sit before many base rules, so this block cannot rely on them. */
+.lead-overlay { position:fixed; inset:0; z-index:20000; background:rgba(5,8,12,0.88); display:flex; align-items:center; justify-content:center; padding:16px; overflow-y:auto; }
+.lead-overlay[hidden] { display:none; }
+.lead-panel { background:var(--surface2); border:2px solid var(--accent); border-radius:10px; padding:22px 22px 16px; width:400px; max-width:100%; box-shadow:0 4px 24px rgba(0,0,0,0.5); color:var(--text); font-family:var(--sans); margin:auto; }
+.lead-logo { display:block; height:34px; width:auto; margin:0 auto 10px; }
+.lead-title { font-size:20px; font-weight:800; text-align:center; margin:0 0 6px; }
+.lead-intro { font-size:14px; line-height:1.45; color:var(--text-muted); text-align:center; margin:0 0 16px; }
+.lead-form { display:flex; flex-direction:column; gap:11px; position:relative; }
+.lead-form label { display:flex; flex-direction:column; gap:5px; font-family:var(--mono); font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); }
+.lead-form label .lead-req { text-transform:none; letter-spacing:0; font-family:var(--sans); font-size:11px; }
+.lead-form input, .lead-form select { background:var(--bg); border:1px solid var(--border-bright); color:var(--text); border-radius:6px; padding:11px 12px; font-size:16px; font-family:var(--sans); width:100%; box-sizing:border-box; outline:none; }
+.lead-form input:focus, .lead-form select:focus { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.lead-form [aria-invalid="true"] { border-color:var(--red); box-shadow:0 0 0 1px var(--red); }
+.lead-error { margin:0; padding:9px 12px; border-radius:6px; border-left:3px solid var(--red); background:rgba(255,68,68,0.10); color:var(--text); font-size:14px; }
+.lead-error[hidden] { display:none; }
+.lead-submit { margin-top:4px; padding:13px; border:none; border-radius:8px; background:var(--accent); color:#04121a; font-size:16px; font-weight:800; cursor:pointer; font-family:var(--sans); }
+.lead-submit:hover { filter:brightness(1.1); }
+.lead-submit:disabled { opacity:.7; cursor:progress; }
+.lead-fine { margin:4px 0 0; font-size:11.5px; line-height:1.4; color:var(--text-muted); text-align:center; }
+.lead-fine a { color:var(--accent); }
+.lead-hp { position:absolute; left:-10000px; width:1px; height:1px; overflow:hidden; }
+@media (max-width: 768px) {
+  .lead-overlay { align-items:flex-start; padding:12px; }
+  .lead-panel { padding:18px 16px 14px; }
+  .lead-title { font-size:18px; }
+}
 </style>
 </head>
 <body>
+<!-- LEAD GATE (2026-10-16): shown at launch until the visitor has sent it once.
+     Filled in by initLeadGate(); hidden by default so a visitor who already sent
+     it never sees a flash of it. -->
+<div class="lead-overlay" id="leadGate" role="dialog" aria-modal="true" aria-labelledby="leadGateTitle" hidden>
+  <div class="lead-panel">
+    <img src="bopAeroLogo.png" class="lead-logo logo-dark" alt="bop Aero">
+    <img src="bopAeroLogoLight.png" class="lead-logo logo-light" style="display:none" alt="bop Aero">
+    <h2 class="lead-title" id="leadGateTitle">Welcome to TripCalc</h2>
+    <p class="lead-intro">Tell us who you are to start planning. You&rsquo;ll only need to do this once.</p>
+    <form class="lead-form" id="leadForm" novalidate>
+      <label for="leadName"><span>Name <span class="lead-req">(required)</span></span>
+        <input id="leadName" name="name" type="text" autocomplete="name" maxlength="100" required></label>
+      <label for="leadEmail"><span>Email <span class="lead-req">(required)</span></span>
+        <input id="leadEmail" name="email" type="email" autocomplete="email" inputmode="email" maxlength="254" required></label>
+      <label for="leadPhone">Phone
+        <input id="leadPhone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="32"></label>
+      <label for="leadCompany">Company
+        <input id="leadCompany" name="company" type="text" autocomplete="organization" maxlength="120"></label>
+      <label for="leadProgram">Desired program
+        <select id="leadProgram" name="program">
+          <option value="">Select a program (optional)</option>
+          <option value="sf50-g3">SF50 G3 (new)</option>
+          <option value="sf50-preowned">SF50 pre-owned (G1 / G2 / G2+)</option>
+          <option value="sr22t">SR22T ownership</option>
+          <option value="sr22t-leasing">SR22T leasing</option>
+          <option value="founders">Founder&rsquo;s Circle</option>
+          <option value="not-sure">Not sure yet</option>
+        </select></label>
+      <!-- Honeypot: off-screen, skipped by keyboard and screen readers; bots fill it -->
+      <div class="lead-hp" aria-hidden="true"><label>Website<input name="website" type="text" tabindex="-1" autocomplete="off"></label></div>
+      <p class="lead-error" id="leadError" role="alert" hidden></p>
+      <button type="submit" class="lead-submit" id="leadSubmit">Start planning</button>
+      <p class="lead-fine">We&rsquo;ll only use this to follow up about bop Aero programs.
+        <a href="https://bopaero.com/privacy-policy" target="_blank" rel="noopener">Privacy policy</a></p>
+    </form>
+  </div>
+</div>
 
 <header>
   <div class="logo">
@@ -1055,7 +1121,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-09-30.11</span>
+      <span id="appVersion">v2026-10-16.1</span>
     </div>
   </div>
 
@@ -1324,7 +1390,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-09-30.11';
+var APP_VERSION = 'v2026-10-16.1';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -6637,6 +6703,74 @@ function _stgToast(msg) {
   setTimeout(function(){ t.style.transition='opacity .5s'; t.style.opacity='0'; setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 500); }, 5000);
 }
 
+// ── Lead gate (2026-10-16) ──────────────────────────────────────────────────
+// Raymond: TripCalc, like the bopaero.com calculators, opens after a short contact
+// form - once per visitor. The form posts to the bopaero-leads Worker (in the
+// bopaero-embeds repo), which files the visitor in LeadConnector as a contact and
+// an opportunity. On success the bopaero_lead=1 cookie (no personal data) is set
+// for Domain=bopaero.com, so a visitor who already filled in the calculator form
+// on bopaero.com is never asked again here, and vice versa.
+// Keep in step with bopaero-embeds/components/_shared/lead-gate.js (endpoint,
+// cookie, program list). No silent unlock if the Worker is down: the visitor
+// sees an error and can retry.
+var LEAD_ENDPOINT = 'https://bopaero-leads.compilotrc.workers.dev/lead';
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && window.__bopLeadEndpoint) LEAD_ENDPOINT = window.__bopLeadEndpoint;
+var LEAD_COOKIE = 'bopaero_lead';
+
+function hasLead() {
+  try { return document.cookie.split(/;\s*/).indexOf(LEAD_COOKIE + '=1') !== -1; } catch (e) { return false; }
+}
+function rememberLead() {
+  var h = location.hostname;
+  var domain = (h === 'bopaero.com' || /\.bopaero\.com$/.test(h)) ? '; Domain=bopaero.com' : '';
+  var secure = location.protocol === 'https:' ? '; Secure' : '';
+  try { document.cookie = LEAD_COOKIE + '=1; Path=/; Max-Age=' + (365 * 24 * 60 * 60) + domain + '; SameSite=Lax' + secure; } catch (e) {}
+}
+
+// Runs `then` straight away for a known visitor, or after the form is sent.
+function initLeadGate(then) {
+  if (hasLead()) { then(); return; }
+  var gate = document.getElementById('leadGate');
+  var form = document.getElementById('leadForm');
+  var err = document.getElementById('leadError');
+  var btn = document.getElementById('leadSubmit');
+  if (!gate || !form) { then(); return; }
+  if (isMobile()) mobileTab('plan');   // land on Plan once the gate lifts
+  gate.hidden = false;
+  setTimeout(function () { try { document.getElementById('leadName').focus(); } catch (e) {} }, 50);
+  function fail(msg, field) {
+    err.textContent = msg; err.hidden = false;
+    if (field) { field.setAttribute('aria-invalid', 'true'); field.focus(); }
+  }
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    err.hidden = true;
+    form.querySelectorAll('[aria-invalid]').forEach(function (f) { f.removeAttribute('aria-invalid'); });
+    var f = form.elements;
+    var name = f.name.value.trim(), email = f.email.value.trim();
+    if (!name) return fail('Please enter your name.', f.name);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return fail('Please enter a valid email address.', f.email);
+    var body = { name: name, email: email, phone: f.phone.value.trim(), company: f.company.value.trim(),
+                 program: f.program.value, website: f.website.value, tool: 'tripcalc', page: location.pathname };
+    btn.disabled = true; btn.textContent = 'Sending…';
+    fetch(LEAD_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
+      .then(function (res) {
+        if (res.ok && res.j.ok) {
+          rememberLead();
+          try { if (window.gtag) gtag('event', 'generate_lead', { method: 'tripcalc' }); } catch (e2) {}
+          gate.hidden = true;
+          then();
+          return;
+        }
+        fail((res.status === 400 || res.status === 429) && res.j.error ? res.j.error
+          : 'Sorry, we couldn’t send that just now. Please try again in a moment, or call (513) 450-2FLY.');
+      })
+      .catch(function () { fail('Sorry, we couldn’t reach our server. Please check your connection and try again.'); })
+      .then(function () { btn.disabled = false; btn.textContent = 'Start planning'; });
+  });
+}
+
 // Init
 initMetroDropdown();
 renderWPList();
@@ -6646,8 +6780,8 @@ initMobileLayout();
 initSync();
 // On intentional quit: autosave is present but clean-exit marker was set —
 // honour the user's choice and start fresh. On crash: no clean-exit marker,
-// offer to restore.
-setTimeout(function() {
+// offer to restore. Runs after the lead gate (immediately for a known visitor).
+initLeadGate(function() { setTimeout(function() {
   try {
     var saved = localStorage.getItem(AUTOSAVE_KEY);
     if (!saved) { applySettings(loadSettings()); return; }
@@ -6665,7 +6799,7 @@ setTimeout(function() {
       else { try { localStorage.removeItem(AUTOSAVE_KEY); } catch(e) {} applySettings(loadSettings()); }
     }, 'Restore Trip', 'Start New');
   } catch(e) {}
-}, 300);
+}, 300); });
 // Start with map guard active on all devices
 // Map starts locked; unlock on first interaction anywhere
 setTimeout(lockMap, 300);
