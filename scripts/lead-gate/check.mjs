@@ -48,7 +48,7 @@ for (const view of [{ name: 'desktop', width: 1280, height: 860 }, { name: 'phon
 
   await b.reload(3500);
   is('reload: no gate', await b.eval(`document.getElementById('leadGate').hidden`), true);
-  is('version bumped', await b.eval(`APP_VERSION`), 'v2026-10-16.1');
+  is('version bumped', await b.eval(`APP_VERSION`), 'v2026-10-16.2');
   is('no console errors', b.consoleErrors.filter((e) => !/ERR_|Failed to load resource|net::/.test(e)), []);
   await b.close();
 }
@@ -60,6 +60,37 @@ console.log('\nreturning visitor');
   await b.onNewDocument(MOCK + `document.cookie='bopaero_lead=1; Path=/';`);
   await b.goto(BASE + '/index.html', 3500);
   is('cookie present: gate never shown', await b.eval(`document.getElementById('leadGate').hidden`), true);
+  await b.close();
+}
+// Signed up on another device (desktop), now on a new device with no cookie
+for (const view of [{ name: 'desktop', width: 1280, height: 860 }, { name: 'phone', width: 390, height: 844, mobile: true }]) {
+  console.log(`\n${view.name} · signed up on another device`);
+  const b = await launch(view);
+  await b.onNewDocument(MOCK);
+  await b.goto(BASE + '/index.html', 3500);
+  const shown = (id) => `(function(){ var e = document.getElementById('${id}'); return !!e && e.offsetParent !== null; })()`;
+  await b.click('#leadSwitch'); await b.sleep(150);
+  is('email-only: name hidden, email shown', [await b.eval(shown('leadName')), await b.eval(shown('leadEmail'))], [false, true]);
+  is('email-only: button says Continue', await b.eval(`document.getElementById('leadSubmit').textContent`), 'Continue');
+  await b.screenshot(`${OUT}/tripcalc-${view.name}-4-returning.png`);
+  await b.type('#leadEmail', 'new@example.com');
+  await b.click('#leadSubmit'); await b.sleep(800);
+  is('unknown: full form back, email kept, gate stays', [await b.eval(shown('leadName')), await b.eval(`document.getElementById('leadEmail').value`), await b.eval(`!document.getElementById('leadGate').hidden`)], [true, 'new@example.com', true]);
+  is('unknown: message', await b.eval(`document.getElementById('leadError').textContent`), 'We don’t have that email yet. Please fill in the form.');
+  await b.screenshot(`${OUT}/tripcalc-${view.name}-5-not-found.png`);
+  await b.click('#leadSwitch');
+  await b.type('#leadEmail', 'down@example.com');
+  await b.click('#leadSubmit'); await b.sleep(800);
+  is('lookup down: full form + message', [await b.eval(shown('leadName')), await b.eval(`/couldn.t check/.test(document.getElementById('leadError').textContent)`)], [true, true]);
+  await b.click('#leadSwitch');
+  await b.type('#leadEmail', 'known@example.com');
+  await b.click('#leadSubmit'); await b.sleep(1200);
+  is('known: gate lifted', await b.eval(`document.getElementById('leadGate').hidden`), true);
+  const sent = await (await fetch(BASE + '/mock/leads')).json();
+  const last = sent[sent.length - 1];
+  is('known: sent email only', [last.returning, last.email, last.name, last.tool], [true, 'known@example.com', undefined, 'tripcalc']);
+  is('known: cookie set', ((await b.cookies()).find((c) => c.name === 'bopaero_lead') || {}).value, '1');
+  is('no console errors', b.consoleErrors.filter((e) => !/ERR_|Failed to load resource|net::/.test(e)), []);
   await b.close();
 }
 console.log(`\n${pass} passed, ${fail} failed   screenshots: ${OUT}/tripcalc-*.png`);

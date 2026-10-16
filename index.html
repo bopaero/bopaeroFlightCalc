@@ -733,6 +733,8 @@ select option { background:var(--surface2); }
 .lead-submit { margin-top:4px; padding:13px; border:none; border-radius:8px; background:var(--accent); color:#04121a; font-size:16px; font-weight:800; cursor:pointer; font-family:var(--sans); }
 .lead-submit:hover { filter:brightness(1.1); }
 .lead-submit:disabled { opacity:.7; cursor:progress; }
+.lead-switch { align-self:center; margin:-2px 0 0; padding:4px 6px; border:0; background:none; color:var(--accent); font-size:14px; font-family:var(--sans); text-decoration:underline; cursor:pointer; }
+.lead-form label[hidden] { display:none; }
 .lead-fine { margin:4px 0 0; font-size:11.5px; line-height:1.4; color:var(--text-muted); text-align:center; }
 .lead-fine a { color:var(--accent); }
 .lead-hp { position:absolute; left:-10000px; width:1px; height:1px; overflow:hidden; }
@@ -752,17 +754,17 @@ select option { background:var(--surface2); }
     <img src="bopAeroLogo.png" class="lead-logo logo-dark" alt="bop Aero">
     <img src="bopAeroLogoLight.png" class="lead-logo logo-light" style="display:none" alt="bop Aero">
     <h2 class="lead-title" id="leadGateTitle">Welcome to TripCalc</h2>
-    <p class="lead-intro">Tell us who you are to start planning. You&rsquo;ll only need to do this once.</p>
+    <p class="lead-intro" id="leadIntro">Tell us who you are to start planning. You&rsquo;ll only need to do this once.</p>
     <form class="lead-form" id="leadForm" novalidate>
-      <label for="leadName"><span>Name <span class="lead-req">(required)</span></span>
+      <label data-full for="leadName"><span>Name <span class="lead-req">(required)</span></span>
         <input id="leadName" name="name" type="text" autocomplete="name" maxlength="100" required></label>
       <label for="leadEmail"><span>Email <span class="lead-req">(required)</span></span>
         <input id="leadEmail" name="email" type="email" autocomplete="email" inputmode="email" maxlength="254" required></label>
-      <label for="leadPhone">Phone
+      <label data-full for="leadPhone">Phone
         <input id="leadPhone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="32"></label>
-      <label for="leadCompany">Company
+      <label data-full for="leadCompany">Company
         <input id="leadCompany" name="company" type="text" autocomplete="organization" maxlength="120"></label>
-      <label for="leadProgram">Desired program
+      <label data-full for="leadProgram">Desired program
         <select id="leadProgram" name="program">
           <option value="">Select a program (optional)</option>
           <option value="sf50-g3">SF50 G3 (new)</option>
@@ -776,6 +778,7 @@ select option { background:var(--surface2); }
       <div class="lead-hp" aria-hidden="true"><label>Website<input name="website" type="text" tabindex="-1" autocomplete="off"></label></div>
       <p class="lead-error" id="leadError" role="alert" hidden></p>
       <button type="submit" class="lead-submit" id="leadSubmit">Start planning</button>
+      <button type="button" class="lead-switch" id="leadSwitch">Already signed up on another device?</button>
       <p class="lead-fine">We&rsquo;ll only use this to follow up about bop Aero programs.
         <a href="https://bopaero.com/privacy-policy" target="_blank" rel="noopener">Privacy policy</a></p>
     </form>
@@ -1121,7 +1124,7 @@ select option { background:var(--surface2); }
 
     <div class="sidebar-footer" id="sidebarFooter">
       <span id="nasrCycle">NASR: --</span>
-      <span id="appVersion">v2026-10-16.1</span>
+      <span id="appVersion">v2026-10-16.2</span>
     </div>
   </div>
 
@@ -1390,7 +1393,7 @@ select option { background:var(--surface2); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var APP_VERSION = 'v2026-10-16.1';
+var APP_VERSION = 'v2026-10-16.2';
 (function(){
   ['appVersion','appVersionMobile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=APP_VERSION; });
 })();
@@ -6710,6 +6713,10 @@ function _stgToast(msg) {
 // an opportunity. On success the bopaero_lead=1 cookie (no personal data) is set
 // for Domain=bopaero.com, so a visitor who already filled in the calculator form
 // on bopaero.com is never asked again here, and vice versa.
+// Returning visitors (Raymond 2026-10-16): cookies are per device, so someone who
+// sent the form on their desktop meets it again on their phone. "Already signed up
+// on another device?" switches to email only; the Worker unlocks only if
+// LeadConnector already has that email, otherwise the full form comes back.
 // Keep in step with bopaero-embeds/components/_shared/lead-gate.js (endpoint,
 // cookie, program list). No silent unlock if the Worker is down: the visitor
 // sees an error and can retry.
@@ -6734,7 +6741,23 @@ function initLeadGate(then) {
   var form = document.getElementById('leadForm');
   var err = document.getElementById('leadError');
   var btn = document.getElementById('leadSubmit');
+  var sw = document.getElementById('leadSwitch');
+  var intro = document.getElementById('leadIntro');
   if (!gate || !form) { then(); return; }
+  var introText = intro ? intro.textContent : '';
+  var returning = false;
+  function setReturning(on) {   // email-only mode for a visitor who sent the form elsewhere
+    returning = on;
+    form.querySelectorAll('[data-full]').forEach(function (l) { l.hidden = on; });
+    if (intro) intro.textContent = on ? 'Enter the email you used before to start planning.' : introText;
+    sw.textContent = on ? 'New here? Use the full form' : 'Already signed up on another device?';
+    btn.textContent = on ? 'Continue' : 'Start planning';
+    err.hidden = true;
+  }
+  if (sw) sw.addEventListener('click', function () {
+    setReturning(!returning);
+    document.getElementById(returning ? 'leadEmail' : 'leadName').focus();
+  });
   if (isMobile()) mobileTab('plan');   // land on Plan once the gate lifts
   gate.hidden = false;
   setTimeout(function () { try { document.getElementById('leadName').focus(); } catch (e) {} }, 50);
@@ -6748,26 +6771,36 @@ function initLeadGate(then) {
     form.querySelectorAll('[aria-invalid]').forEach(function (f) { f.removeAttribute('aria-invalid'); });
     var f = form.elements;
     var name = f.name.value.trim(), email = f.email.value.trim();
-    if (!name) return fail('Please enter your name.', f.name);
+    if (!returning && !name) return fail('Please enter your name.', f.name);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return fail('Please enter a valid email address.', f.email);
-    var body = { name: name, email: email, phone: f.phone.value.trim(), company: f.company.value.trim(),
-                 program: f.program.value, website: f.website.value, tool: 'tripcalc', page: location.pathname };
-    btn.disabled = true; btn.textContent = 'Sending…';
+    var wasReturning = returning;
+    var body = wasReturning
+      ? { returning: true, email: email, website: f.website.value, tool: 'tripcalc', page: location.pathname }
+      : { name: name, email: email, phone: f.phone.value.trim(), company: f.company.value.trim(),
+          program: f.program.value, website: f.website.value, tool: 'tripcalc', page: location.pathname };
+    btn.disabled = true; btn.textContent = wasReturning ? 'Checking…' : 'Sending…';
     fetch(LEAD_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
       .then(function (res) {
         if (res.ok && res.j.ok) {
           rememberLead();
-          try { if (window.gtag) gtag('event', 'generate_lead', { method: 'tripcalc' }); } catch (e2) {}
+          try { if (window.gtag) gtag('event', wasReturning ? 'lead_returning' : 'generate_lead', { method: 'tripcalc' }); } catch (e2) {}
           gate.hidden = true;
           then();
+          return;
+        }
+        // Email not on file, or the lookup is unavailable: full form back, email kept
+        if (wasReturning && res.status !== 400 && res.status !== 429) {
+          setReturning(false);
+          fail(res.status === 404 && res.j.error ? res.j.error : 'We couldn’t check that email just now. Please fill in the form.');
+          f.name.focus();
           return;
         }
         fail((res.status === 400 || res.status === 429) && res.j.error ? res.j.error
           : 'Sorry, we couldn’t send that just now. Please try again in a moment, or call (513) 450-2FLY.');
       })
       .catch(function () { fail('Sorry, we couldn’t reach our server. Please check your connection and try again.'); })
-      .then(function () { btn.disabled = false; btn.textContent = 'Start planning'; });
+      .then(function () { btn.disabled = false; btn.textContent = returning ? 'Continue' : 'Start planning'; });
   });
 }
 
