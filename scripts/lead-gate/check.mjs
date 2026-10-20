@@ -48,7 +48,7 @@ for (const view of [{ name: 'desktop', width: 1280, height: 860 }, { name: 'phon
 
   await b.reload(3500);
   is('reload: no gate', await b.eval(`document.getElementById('leadGate').hidden`), true);
-  is('version bumped', await b.eval(`APP_VERSION`), 'v2026-10-16.2');
+  is('version bumped', await b.eval(`APP_VERSION`), 'v2026-10-20.1');
   is('no console errors', b.consoleErrors.filter((e) => !/ERR_|Failed to load resource|net::/.test(e)), []);
   await b.close();
 }
